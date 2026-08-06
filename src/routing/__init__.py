@@ -19,5 +19,23 @@ Stages:
 from .pipeline import RoutingPipeline
 from .sparse import SparseActivation, RoutingWeights
 from .dispatch import AgentDispatch, DispatchResult
+from .jordan_moe import JordanMoEGate, SpinFactor, SwarmComposer
+from .parser import RegexParser
+from .symbolic import SymbolicGraph
+from .jacobian import JacobianLens
+from .constraints import ConstraintEval
 
-__all__ = ["RoutingPipeline", "SparseActivation", "RoutingWeights", "AgentDispatch", "DispatchResult"]
+__all__ = [
+    "RoutingPipeline",
+    "SparseActivation",
+    "RoutingWeights",
+    "AgentDispatch",
+    "DispatchResult",
+    "JordanMoEGate",
+    "SpinFactor",
+    "SwarmComposer",
+    "RegexParser",
+    "SymbolicGraph",
+    "JacobianLens",
+    "ConstraintEval",
+]

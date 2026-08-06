@@ -2,29 +2,29 @@
 Sovereign LLM Engine — Unified Entry Point
 Part of SOVEREIGN PYTHON LLM ENGINE
 
-Wires all subsystems into a single SovereignEngine class:
-  - PythonDaemon   (async TCP daemon + task dispatch)
-  - Swarm          (parallel agent execution)
-  - ToolRegistry   (tool definitions + risk gating)
-  - ToolLookupRegistry (semantic tool search + checkout)
-  - RAGPipeline    (chunker + vector store + embeddings)
-  - RoutingPipeline (11-stage MoE router)
-  - ShadowAgent    (optional non-blocking observer)
+Wires all subsystems into a single SovereignEngine class that manages:
+  - ToolRegistry + IPC (NativeToolRouter)
+  - RoutingPipeline (expert dispatch)
+  - ContinuityManager (task state + recovery)
+  - WORMLedger (cryptographic append-only log)
+  - ReActAgent (reasoning + action loop)
+  - ShadowAgent (optional non-blocking observer)
+  - PathJail + SSRFGuard (security)
 
 Typical usage::
 
     import asyncio
-    from src.sovereign import SovereignEngine
+    from src.sovereign import SovereignEngine, EngineConfig, run_task
 
     async def main():
-        engine = SovereignEngine()
-        await engine.start()
-
-        result = await engine.route("write python code to sort a list", {})
-        print(result.merged_output)
-
-        await engine.ingest("The quick brown fox", {"source": "example"})
-        hits = await engine.search("brown fox")
+        config = EngineConfig(
+            allowed_roots=[Path("/safe/paths")],
+            enable_shadow=True,
+        )
+        engine = SovereignEngine(config)
+        result = await engine.run("write python code to sort a list")
+        print(result)
+        engine.shutdown()
 
     asyncio.run(main())
 """
@@ -33,232 +33,191 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from typing import Any
-
-# ── Daemon / Swarm ──────────────────────────────────────────────────────────
-from .daemon import PythonDaemon, Swarm
+from dataclasses import dataclass, field
+from pathlib import Path
+from typing import AsyncIterator
 
 # ── Tool subsystem ──────────────────────────────────────────────────────────
 from .tools.registry import ToolRegistry
 from .tools.loader import load_all_tools
-from .tools.lookup import ToolLookupRegistry
+from .tools.ipc_router import NativeToolRouter
 
-# ── Retrieval subsystem ─────────────────────────────────────────────────────
-from .retrieval.pipeline import RAGPipeline, PipelineConfig
-from .retrieval.chunker import SemanticChunker, ChunkConfig, ChunkStrategy
-from .retrieval.vector_store import InMemoryVectorStore, EmbeddingGenerator
+# ── Routing pipeline ────────────────────────────────────────────────────────
+from .routing.pipeline import RoutingPipeline
 
-# ── Routing (MoE) ───────────────────────────────────────────────────────────
-from .routing import RoutingPipeline
-from .routing.dispatch import DispatchResult
+# ── Continuity + State ──────────────────────────────────────────────────────
+from .continuity.manager import ContinuityManager
+
+# ── Core subsystems ────────────────────────────────────────────────────────
+from .core.evidence import WORMLedger
+from .core.crypto import generate_signing_key
+from .core.path_jail import PathJail, SSRFGuard
+
+# ── Agents ─────────────────────────────────────────────────────────────────
+from .agents.react import ReActAgent, ReActConfig
+from .agents.shadow import ShadowAgent
 
 logger = logging.getLogger("sovereign.engine")
 
 
 # ---------------------------------------------------------------------------
-# Default expert stubs — replaced by real agents at runtime
+# EngineConfig — Configuration dataclass
 # ---------------------------------------------------------------------------
 
-async def _expert_code(input_text: str, context: dict) -> str:
-    """Default code expert stub."""
-    return f"[code_expert] processed: {input_text[:80]}"
-
-
-async def _expert_query(input_text: str, context: dict) -> str:
-    """Default query expert stub."""
-    return f"[query_expert] answered: {input_text[:80]}"
-
-
-async def _expert_analysis(input_text: str, context: dict) -> str:
-    """Default analysis expert stub."""
-    return f"[analysis_expert] analysed: {input_text[:80]}"
-
-
-DEFAULT_EXPERTS: dict[str, Any] = {
-    "code_expert":     _expert_code,
-    "query_expert":    _expert_query,
-    "analysis_expert": _expert_analysis,
-}
+@dataclass
+class EngineConfig:
+    """Configuration for SovereignEngine."""
+    allowed_roots: list[Path] = field(default_factory=lambda: [Path.cwd()])
+    ledger_path: Path = field(default_factory=lambda: Path("./sovereign.worm"))
+    continuity_dir: Path = field(default_factory=lambda: Path.home() / ".sovereign" / "continuity")
+    max_steps: int = 15
+    enable_shadow: bool = True
+    enable_ipc: bool = True
+    agent_id: str = "sovereign_main"
 
 
 # ---------------------------------------------------------------------------
-# SovereignEngine
+# SovereignEngine — Unified subsystem orchestrator
 # ---------------------------------------------------------------------------
 
 class SovereignEngine:
     """
-    Unified entry point for the Sovereign LLM Engine.
+    Unified entry point for Sovereign LLM Engine.
 
-    Attributes:
-        tool_lookup:      ToolLookupRegistry — semantic tool search for supervisor agents.
-        swarm:            Swarm              — parallel async agent execution.
-        routing_pipeline: RoutingPipeline    — 11-stage sparse MoE router.
+    Wires together:
+      - ToolRegistry + NativeToolRouter for IPC
+      - WORMLedger for cryptographic audit trail
+      - ContinuityManager for task recovery
+      - RoutingPipeline for expert dispatch
+      - ReActAgent for reasoning/action loop
+      - ShadowAgent for optional non-blocking observation
+      - PathJail + SSRFGuard for security boundaries
     """
 
-    def __init__(
-        self,
-        *,
-        daemon_host: str = "127.0.0.1",
-        daemon_port: int = 19002,
-        experts: dict[str, Any] | None = None,
-        top_k_routing: int = 2,
-        rag_config: PipelineConfig | None = None,
-        swarm_concurrency: int = 8,
-        swarm_timeout_ms: int = 30_000,
-    ) -> None:
+    def __init__(self, config: EngineConfig | None = None) -> None:
+        """Initialize all subsystems."""
+        self.config = config or EngineConfig()
+        self._logger = logging.getLogger(f"sovereign.engine.{self.config.agent_id}")
+
+        # Security
+        self.path_jail = PathJail(roots=self.config.allowed_roots)
+        self.ssrf_guard = SSRFGuard()
+        self.signing_key = generate_signing_key()
+
+        # Evidence ledger
+        self.ledger = WORMLedger(str(self.config.ledger_path), self.signing_key)
+
+        # Tools
+        self.registry = ToolRegistry()
+        load_all_tools(self.registry)
+        self.ipc = NativeToolRouter(self.registry) if self.config.enable_ipc else None
+
+        # State + continuity
+        self.continuity = ContinuityManager(str(self.config.continuity_dir))
+
+        # Routing
+        self.routing = RoutingPipeline(registry=self.registry)
+
+        # Agents
+        react_config = ReActConfig(max_steps=self.config.max_steps)
+        self.agent = ReActAgent(
+            agent_id=self.config.agent_id,
+            config=react_config,
+            registry=self.registry,
+            ledger=self.ledger,
+        )
+        self.shadow = ShadowAgent() if self.config.enable_shadow else None
+
+        self._logger.info("SovereignEngine initialized")
+
+    async def run(self, task: str) -> str:
         """
-        Initialise all subsystems (no I/O performed here).
+        Execute a task: route → dispatch → ReActAgent loop → return result.
 
         Args:
-            daemon_host:      TCP host for the background daemon.
-            daemon_port:      TCP port for the background daemon.
-            experts:          Expert callables for the MoE router.
-                              Defaults to three built-in stubs.
-            top_k_routing:    How many experts the router activates per request.
-            rag_config:       Optional custom RAGPipeline configuration.
-            swarm_concurrency: Max concurrent tasks in swarm operations.
-            swarm_timeout_ms:  Per-task timeout for swarm operations.
-        """
-        # ── Tool subsystem ───────────────────────────────────────────────
-        self._registry = ToolRegistry()
-        self.tool_lookup = ToolLookupRegistry(self._registry)
-
-        # ── Daemon ───────────────────────────────────────────────────────
-        self._daemon = PythonDaemon(host=daemon_host, port=daemon_port)
-
-        # ── Swarm ────────────────────────────────────────────────────────
-        self.swarm = Swarm(
-            concurrency=swarm_concurrency,
-            task_timeout=swarm_timeout_ms / 1000.0,  # convert ms → seconds
-        )
-
-        # ── RAG pipeline ─────────────────────────────────────────────────
-        self._rag = RAGPipeline(
-            chunker=SemanticChunker(),
-            vector_store=InMemoryVectorStore(),
-            embedding_gen=EmbeddingGenerator(),
-            config=rag_config or PipelineConfig(),
-        )
-
-        # ── MoE routing pipeline ─────────────────────────────────────────
-        _experts = experts if experts is not None else DEFAULT_EXPERTS
-        self.routing_pipeline = RoutingPipeline(
-            experts=_experts,
-            top_k=top_k_routing,
-        )
-
-        self._started = False
-        logger.info("SovereignEngine initialised (daemon=%s:%s)", daemon_host, daemon_port)
-
-    # -----------------------------------------------------------------------
-    # Lifecycle
-    # -----------------------------------------------------------------------
-
-    async def start(self) -> None:
-        """
-        Start all async subsystems.
-
-        - Loads all tools into the registry
-        - Starts the background TCP daemon as a non-blocking task
-        """
-        if self._started:
-            logger.warning("SovereignEngine.start() called more than once — ignored")
-            return
-
-        # Load tools (synchronous — fast)
-        n_tools = load_all_tools(self._registry)
-        logger.info("Loaded %d tools into registry", n_tools)
-
-        # Start daemon in background (non-blocking)
-        self._daemon_task = asyncio.create_task(
-            self._daemon.start(), name="sovereign-daemon"
-        )
-        logger.info("Daemon started (background task)")
-
-        self._started = True
-
-    # -----------------------------------------------------------------------
-    # Routing
-    # -----------------------------------------------------------------------
-
-    async def route(self, input: str, context: dict) -> dict:
-        """
-        Full MoE routing pipeline: parse → symbolic → Jordan → Jacobian →
-        constraints → sparse-activation → dispatch → merge.
-
-        Args:
-            input:   Natural-language instruction or query.
-            context: Arbitrary key-value context passed to experts.
+            task: Natural-language task description.
 
         Returns:
-            dict with keys:
-              "merged_output"  — combined expert output string
-              "active_experts" — list of expert names that were activated
-              "weights"        — per-expert routing weight dict
-              "success_count"  — number of experts that succeeded
-              "failed_experts" — list of expert names that failed
+            Task result as string.
         """
-        dispatch: DispatchResult = await self.routing_pipeline.route(input, context)
-        return {
-            "merged_output":  dispatch.merged_output,
-            "active_experts": dispatch.routing_weights.active_experts,
-            "weights":        dispatch.routing_weights.weights,
-            "success_count":  dispatch.success_count,
-            "failed_experts": dispatch.failed_experts,
-        }
+        self._logger.info("Starting task: %s", task[:100])
 
-    # -----------------------------------------------------------------------
-    # RAG helpers
-    # -----------------------------------------------------------------------
+        # Create task record in continuity
+        task_id = await self.continuity.create_task(task)
+        self._logger.debug("Task ID: %s", task_id)
 
-    async def ingest(self, text: str, metadata: dict) -> int:
+        try:
+            # Route to appropriate experts
+            dispatch_result = await self.routing.route(task, {})
+
+            # Run ReActAgent loop
+            result = await self.agent.run(task, context={"task_id": task_id})
+
+            # Seal in ledger
+            await self.ledger.append({
+                "task_id": task_id,
+                "task": task,
+                "result": result,
+                "dispatch": str(dispatch_result),
+            })
+
+            # Update continuity
+            await self.continuity.mark_complete(task_id, result)
+
+            return result
+        except Exception as e:
+            self._logger.exception("Task failed: %s", task_id)
+            await self.continuity.mark_failed(task_id, str(e))
+            raise
+
+    async def run_stream(self, task: str) -> AsyncIterator[str]:
         """
-        Chunk *text*, embed every chunk, and add to the vector store.
+        Execute a task with streaming output.
 
         Args:
-            text:     Raw text to ingest.
-            metadata: Arbitrary key-value pairs attached to every chunk.
+            task: Natural-language task description.
 
-        Returns:
-            Number of chunks added.
+        Yields:
+            Partial result chunks as strings.
         """
-        return await self._rag.ingest(text, metadata)
+        self._logger.info("Starting streaming task: %s", task[:100])
+        task_id = await self.continuity.create_task(task)
 
-    async def search(self, query: str) -> list:
-        """
-        RAG search: embed *query* and return the most similar chunks.
+        try:
+            async for chunk in self.agent.run_stream(task, context={"task_id": task_id}):
+                yield chunk
+            await self.continuity.mark_complete(task_id, "streaming complete")
+        except Exception as e:
+            self._logger.exception("Streaming task failed: %s", task_id)
+            await self.continuity.mark_failed(task_id, str(e))
+            raise
 
-        Args:
-            query: Natural-language search string.
+    def shutdown(self) -> None:
+        """Clean up resources."""
+        self._logger.info("Shutting down")
+        if self.ipc:
+            self.ipc.shutdown()
+        self.continuity.shutdown()
+        self._logger.info("Shutdown complete")
 
-        Returns:
-            List of dicts with keys "content", "score", and "metadata".
-        """
-        # RAGPipeline.search returns list[Chunk] directly
-        chunks = await self._rag.search(query, top_k=self._rag.config.top_k)
-        return [
-            {
-                "content":  chunk.content,
-                "score":    round(chunk.embedding[0] if chunk.embedding else 0.0, 6),
-                "metadata": chunk.metadata,
-            }
-            for chunk in chunks
-        ]
 
-    # -----------------------------------------------------------------------
-    # Convenience: recommend tools (delegates to tool_lookup)
-    # -----------------------------------------------------------------------
+# ---------------------------------------------------------------------------
+# Convenience function
+# ---------------------------------------------------------------------------
 
-    def recommend(self, capability_query: str, agent_id: str, top_k: int = 5) -> list:
-        """
-        Shortcut for tool_lookup.recommend() — semantic tool search.
+async def run_task(task: str, config: EngineConfig | None = None) -> str:
+    """
+    Convenience function: create engine, run task, clean up.
 
-        Args:
-            capability_query: Free-text description of the needed capability.
-            agent_id:         Identifier of the requesting agent.
-            top_k:            Maximum number of tools to return.
+    Args:
+        task: Natural-language task description.
+        config: Optional custom EngineConfig.
 
-        Returns:
-            List of ToolDefinition objects ranked by relevance.
-        """
-        return self.tool_lookup.recommend(capability_query, agent_id, top_k=top_k)
+    Returns:
+        Task result as string.
+    """
+    engine = SovereignEngine(config or EngineConfig())
+    try:
+        return await engine.run(task)
+    finally:
+        engine.shutdown()
