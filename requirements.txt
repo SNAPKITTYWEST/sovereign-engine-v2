@@ -1,0 +1,75 @@
+# SOVEREIGN PYTHON LLM ENGINE - Dependencies
+# Updated: 2026-08-03 by AGENT-2 (OMNITOOL-ARCHITECT)
+
+# ==========================================
+# Core Dependencies (Layers 0-5)
+# ==========================================
+
+# Cryptography
+PyNaCl>=1.5.0              # Ed25519 signatures
+
+# Async I/O
+aiofiles>=23.2.0           # Async file operations
+httpx>=0.27.0              # Async HTTP client
+
+# Data Validation
+pydantic>=2.6.0            # Data models
+jsonschema>=4.21.0         # JSONSchema validation
+
+# Scientific Computing
+numpy>=1.26.0              # Arrays and linear algebra
+scipy>=1.12.0              # Scientific algorithms
+
+# ==========================================
+# Embeddings (Phase 3)
+# ==========================================
+
+# Local embeddings
+sentence-transformers>=2.5.0     # Sentence embeddings
+torch>=2.2.0                     # PyTorch (sentence-transformers dep)
+transformers>=4.38.0             # Hugging Face transformers
+
+# ==========================================
+# Web Tools (Phase 5)
+# ==========================================
+
+beautifulsoup4>=4.12.0     # HTML parsing
+lxml>=5.1.0                # XML parser (faster than html.parser)
+
+# ==========================================
+# Cloud Providers
+# ==========================================
+
+boto3>=1.34.0              # AWS SDK (Bedrock)
+botocore>=1.34.0           # AWS core
+
+# ==========================================
+# Future Tools (Not Yet Implemented)
+# ==========================================
+
+# Git operations
+# GitPython>=3.1.0
+
+# Document parsing
+# pypdf2>=3.0.0
+# python-docx>=1.1.0
+# markdown>=3.5.0
+
+# ==========================================
+# Development Dependencies
+# ==========================================
+
+# Testing
+pytest>=8.0.0
+pytest-asyncio>=0.23.0
+pytest-cov>=4.1.0
+pytest-mock>=3.12.0
+
+# Code quality
+black>=24.2.0              # Code formatter
+mypy>=1.8.0                # Type checker
+ruff>=0.2.0                # Fast linter
+
+# Documentation
+mkdocs>=1.5.0              # Documentation generator
+mkdocs-material>=9.5.0     # Material theme
