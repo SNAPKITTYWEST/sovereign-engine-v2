@@ -20,6 +20,7 @@ from ..core.crypto import generate_signing_key
 from ..runtime.providers.multi import MultiProvider
 from ..models.entities import Task
 from .key_manager import KeyManager
+from .routing_trace import TraceCollector, RoutingTrace
 
 
 class HTTPBridge:
@@ -46,6 +47,9 @@ class HTTPBridge:
         self.approval = ApprovalEngine(self.ledger)
         self.key_manager = KeyManager()
         self.model = MultiProvider(key_manager=self.key_manager)  # MoE routing with key manager
+
+        # Initialize routing trace collector
+        self.trace_collector = TraceCollector(max_traces=100)
 
         # Initialize agent
         config = ReActConfig(max_steps=15, log_to_worm=True)
@@ -77,6 +81,12 @@ class HTTPBridge:
         app.router.add_post("/keys/set", self._handle_keys_set)
         app.router.add_get("/keys/status", self._handle_keys_status)
         app.router.add_delete("/keys/{provider}", self._handle_keys_delete)
+
+        # Routing trace endpoints
+        app.router.add_get("/routing/traces", self._handle_routing_traces)
+        app.router.add_get("/routing/stats", self._handle_routing_stats)
+        app.router.add_post("/routing/test", self._handle_routing_test)
+        app.router.add_get("/routing/live", self._handle_routing_live)
 
         # CORS middleware for local dev
         @web.middleware
@@ -310,6 +320,134 @@ class HTTPBridge:
             "success": True,
             "provider": provider
         })
+
+    async def _handle_routing_traces(self, request):
+        """Handle GET /routing/traces - Return recent routing traces"""
+        from aiohttp import web
+
+        try:
+            # Get optional query param for number of traces
+            n = int(request.query.get("limit", "10"))
+            n = max(1, min(n, 100))  # Clamp to 1-100
+
+            traces = self.trace_collector.get_latest(n)
+
+            return web.json_response({
+                "traces": traces,
+                "count": len(traces),
+                "timestamp": datetime.now(timezone.utc).isoformat()
+            })
+        except Exception as e:
+            return web.json_response(
+                {"error": str(e)},
+                status=500
+            )
+
+    async def _handle_routing_stats(self, request):
+        """Handle GET /routing/stats - Return aggregate routing statistics"""
+        from aiohttp import web
+
+        try:
+            stats = self.trace_collector.get_stats()
+            intent_dist = self.trace_collector.get_intent_distribution()
+
+            return web.json_response({
+                "stats": stats,
+                "intent_distribution": intent_dist,
+                "timestamp": datetime.now(timezone.utc).isoformat()
+            })
+        except Exception as e:
+            return web.json_response(
+                {"error": str(e)},
+                status=500
+            )
+
+    async def _handle_routing_test(self, request):
+        """Handle POST /routing/test - Dry run routing decision"""
+        from aiohttp import web
+
+        try:
+            data = await request.json()
+            text = data.get("text", "")
+            intent = data.get("intent", "query")
+
+            if not text:
+                return web.json_response(
+                    {"error": "text parameter required"},
+                    status=400
+                )
+
+            # Simulate routing without executing
+            start_time = datetime.now(timezone.utc)
+
+            # In a real implementation, this would call the actual routing logic
+            # but with a dry_run flag to prevent actual inference
+            simulation = {
+                "input": text[:64],
+                "intent": intent,
+                "would_route_to": "multi-provider",
+                "estimated_latency_ms": 45.0,
+                "reason": "Simulated routing - no actual inference performed",
+                "recommended_providers": ["ollama", "openrouter"],
+                "simulation_latency_ms": (
+                    (datetime.now(timezone.utc) - start_time).total_seconds() * 1000
+                )
+            }
+
+            return web.json_response(simulation)
+        except Exception as e:
+            return web.json_response(
+                {"error": str(e)},
+                status=500
+            )
+
+    async def _handle_routing_live(self, request):
+        """Handle GET /routing/live - Server-Sent Events stream for live routing updates"""
+        from aiohttp import web
+        import asyncio
+
+        # Set up SSE response headers
+        response = web.StreamResponse()
+        response.content_type = "text/event-stream"
+        response.headers["Cache-Control"] = "no-cache"
+        response.headers["X-Accel-Buffering"] = "no"
+        await response.prepare(request)
+
+        try:
+            # Get initial traces and send
+            await response.write(
+                f"data: {json.dumps({'type': 'init', 'message': 'Connected to routing stream'})}\n\n".encode()
+            )
+
+            # Stream stats every 2 seconds
+            while not request.transport.is_closing():
+                await asyncio.sleep(2)
+
+                stats = self.trace_collector.get_stats()
+                latest_traces = self.trace_collector.get_latest(5)
+
+                event_data = {
+                    "type": "update",
+                    "stats": stats,
+                    "recent_traces": latest_traces,
+                    "timestamp": datetime.now(timezone.utc).isoformat()
+                }
+
+                try:
+                    await response.write(
+                        f"data: {json.dumps(event_data)}\n\n".encode()
+                    )
+                except Exception:
+                    # Client disconnected
+                    break
+
+        except Exception as e:
+            await response.write(
+                f"data: {json.dumps({'type': 'error', 'error': str(e)})}\n\n".encode()
+            )
+        finally:
+            await response.write_eof()
+            return response
 
 
 def main():

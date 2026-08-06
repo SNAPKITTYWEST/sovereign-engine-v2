@@ -28,8 +28,8 @@ from typing import Any, Optional
 
 IR_MAGIC            = b'SOVR'
 IR_VERSION          = 1
-IR_HEADER_SIZE      = 16    # magic(4) + version(1) + flags(1) + node_count(2) + edge_count(2) + timestamp(8)
-IR_NODE_SIZE        = 32    # fixed per node
+IR_HEADER_SIZE      = 18    # magic(4) + version(1) + flags(1) + node_count(2) + edge_count(2) + timestamp(8)
+IR_NODE_SIZE        = 28    # fixed per node
 IR_EDGE_SIZE        = 16    # fixed per edge
 IR_CHECKSUM_SIZE    = 32    # Blake2b-256 appended at end
 

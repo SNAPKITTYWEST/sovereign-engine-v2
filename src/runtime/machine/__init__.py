@@ -82,7 +82,6 @@ from .ctypes_bridge import (
     decode_ipc_header,
     encode_dispatch_packet,
     decode_dispatch_packet,
-    encode_rex as ctypes_encode_rex,
 )
 
 from .binary_ir import (

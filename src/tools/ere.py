@@ -58,10 +58,10 @@ class EREGate:
     # P1: Hardcoded secrets
     P1_PATTERNS: list[re.Pattern] = [
         re.compile(r"sk-[a-zA-Z0-9]{20,}"),
-        re.compile(r"api[_-]?key\s*[=:]\s*['"][^'"]{8,}", re.IGNORECASE),
-        re.compile(r"password\s*[=:]\s*['"][^'"]{4,}", re.IGNORECASE),
-        re.compile(r"secret\s*[=:]\s*['"][^'"]{8,}", re.IGNORECASE),
-        re.compile(r"token\s*[=:]\s*['"][^'"]{20,}", re.IGNORECASE),
+        re.compile(r'api[_-]?key\s*[=:]\s*[\'"][^\'"]{8,}', re.IGNORECASE),
+        re.compile(r'password\s*[=:]\s*[\'"][^\'"]{4,}', re.IGNORECASE),
+        re.compile(r'secret\s*[=:]\s*[\'"][^\'"]{8,}', re.IGNORECASE),
+        re.compile(r'token\s*[=:]\s*[\'"][^\'"]{20,}', re.IGNORECASE),
         re.compile(r"-----BEGIN (RSA |EC )?PRIVATE KEY-----"),
     ]
 
