@@ -143,7 +143,7 @@ class ShadowAgent:
     Usage:
         shadow = ShadowAgent(
             agent_id="shadow-01",
-            ledger_path=Path("/tmp/shadow_ledger.jsonl"),
+            ledger_path=Path("/tmp/shadow_ledger.worm"),
         )
         shadow.attach("primary-agent-42")
 
@@ -178,7 +178,7 @@ class ShadowAgent:
 
         # WORM ledger (optional; if no path, use a temp file)
         if ledger_path is None:
-            ledger_path = Path(f"/tmp/shadow_{agent_id}.jsonl")
+            ledger_path = Path(f"/tmp/shadow_{agent_id}.worm")
         signing_key = generate_signing_key()
         self._ledger = WORMLedger(ledger_path, signing_key)
 

@@ -78,7 +78,7 @@ async def run_agent(args):
     # Initialize components
     registry = ToolRegistry()
     approval = ApprovalEngine()
-    ledger = WORMLedger(Path("evidence.jsonl"))
+    ledger = WORMLedger(Path("evidence.worm"))
 
     # Initialize model
     model = BedrockProvider(region="us-east-1")

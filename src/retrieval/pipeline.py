@@ -60,7 +60,7 @@ class RAGPipeline:
     Typical usage::
 
         chunker   = SemanticChunker()
-        store     = InMemoryVectorStore(persist_path="./index.jsonl")
+        store     = InMemoryVectorStore(persist_path="./index.worm")
         emb_gen   = EmbeddingGenerator()
         pipeline  = RAGPipeline(chunker, store, emb_gen)
 

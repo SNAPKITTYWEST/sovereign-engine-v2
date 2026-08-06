@@ -40,7 +40,7 @@ class HTTPBridge:
 
         # Initialize components
         signing_key = generate_signing_key()
-        self.ledger = WORMLedger(Path("bridge_evidence.jsonl"), signing_key)
+        self.ledger = WORMLedger(Path("bridge_evidence.worm"), signing_key)
         self.registry = ToolRegistry()
         load_all_tools(self.registry)  # Load filesystem, code, etc tools
         self.approval = ApprovalEngine(self.ledger)

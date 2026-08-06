@@ -35,7 +35,7 @@ class StdioBridge:
     def __init__(self):
         # Initialize components
         signing_key = generate_signing_key()
-        self.ledger = WORMLedger(Path("bridge_evidence.jsonl"), signing_key)
+        self.ledger = WORMLedger(Path("bridge_evidence.worm"), signing_key)
         self.registry = ToolRegistry()
         self.approval = ApprovalEngine(self.ledger)
         self.model = MultiProvider()  # OpenRouter → Ollama fallback
