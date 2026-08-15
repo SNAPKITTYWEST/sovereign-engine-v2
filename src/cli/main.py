@@ -10,9 +10,13 @@ import sys
 from pathlib import Path
 import argparse
 
+# Sovereign node key gate — must pass before model routing activates
+from sovereign.node_key import require_node_key
+
 
 def main():
     """Main CLI entry point"""
+    require_node_key()
     parser = argparse.ArgumentParser(
         prog="sovereign-engine",
         description="Sovereign Python LLM Engine - Provider-neutral agent runtime"
