@@ -16,3 +16,6 @@ build/
 /continuity/
 .vscode/
 .idea/
+sovereign_gate/authority_sk.pem
+sovereign_gate/.node_sk
+sovereign_gate/*.pem.backup
