@@ -198,7 +198,7 @@ Native Win32 application. No Electron. No web view. Direct2D GPU rendering, ConP
 
 ## The Engine
 
-**Location:** `src/` — 170 modules, 49,517 lines. **Pure Python 3.11+ stdlib. Zero pip dependencies.**
+**Location:** `src/` — 170 modules, 49,517 lines. 3.11+ stdlib. Zero pip dependencies.**
 
 | Package | Lines | What It Does |
 |---------|-------|-------------|
