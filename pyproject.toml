@@ -5,16 +5,43 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "sovereign-engine"
 version = "2.0.0"
-description = "Production-grade LLM agent framework with Jordan algebraic MoE routing"
+description = "Production-grade LLM agent framework with Jordan algebraic MoE routing, binary WORM storage, NAND-complete VM, and native x86-64 assembly runtime"
 requires-python = ">=3.11"
-license = {text = "Proprietary"}
+license = {text = "BSL-1.1"}
 authors = [
     {name = "SnapKitty", email = "jessicalw34@gmail.com"}
 ]
+readme = "README.md"
+keywords = [
+    "llm", "agent", "routing", "jordan-algebra", "worm",
+    "machine-code", "x86-64", "nand", "moe", "ipc"
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Software Development :: Compilers",
+    "Operating System :: Microsoft :: Windows",
+    "Operating System :: POSIX :: Linux",
+]
+
+[project.urls]
+Homepage = "https://github.com/SNAPKITTYWEST/sovereign-engine-v2"
+Repository = "https://github.com/SNAPKITTYWEST/sovereign-engine-v2"
 
 [project.scripts]
 sovereign = "src.cli.main:main"
 
+[project.optional-dependencies]
+bedrock = ["boto3>=1.28"]
+pytorch = ["torch>=2.0"]
+
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["src*"]
+
+[tool.setuptools.package-data]
+"src" = ["py.typed"]

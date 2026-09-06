@@ -1,0 +1,151 @@
+{
+    "$schema": "sovereign-ide-config/v2",
+    "version": "2.0.0",
+
+    "terminal": {
+        "mode": "fallback",
+        "fallback_gate": {
+            "enabled": true,
+            "agent_always_gated": true,
+            "user_direct_bypass": true,
+            "max_pending_size": 65536,
+            "history_capacity": 256,
+            "highlight_staged": true,
+            "staged_color": "#FFD700",
+            "rejected_color": "#FF4444"
+        },
+        "shell": "cmd.exe",
+        "default_cols": 120,
+        "default_rows": 30,
+        "scroll_buffer": 10000
+    },
+
+    "keybindings": {
+        "chord_timeout_ms": 1000,
+        "bindings": [
+            {
+                "keys": "Ctrl+K D",
+                "action": "terminal.populate",
+                "description": "Route text to terminal without executing",
+                "when": "terminal.focused"
+            },
+            {
+                "keys": "Ctrl+Shift+A",
+                "action": "agent.quick_action",
+                "description": "Send selection to agent for processing",
+                "when": "editor.hasSelection"
+            },
+            {
+                "keys": "Enter",
+                "action": "gate.confirm",
+                "description": "Execute staged terminal command",
+                "when": "gate.hasPending"
+            },
+            {
+                "keys": "Escape",
+                "action": "gate.reject",
+                "description": "Cancel staged terminal command",
+                "when": "gate.hasPending"
+            },
+            {
+                "keys": "Ctrl+Shift+E",
+                "action": "gate.toggle_mode",
+                "description": "Toggle Direct/Fallback terminal mode"
+            },
+            {
+                "keys": "Ctrl+Shift+P",
+                "action": "gate.preview_mode",
+                "description": "Set terminal to read-only preview mode"
+            }
+        ]
+    },
+
+    "agent": {
+        "code_references": {
+            "enabled": true,
+            "syntax": "@path#Lstart-end",
+            "max_refs_per_response": 64,
+            "auto_navigate": false,
+            "path_jail": true,
+            "allow_parent_traversal": false
+        },
+        "quick_actions": {
+            "enabled": true,
+            "actions": [
+                { "id": "explain",   "label": "Explain",    "shortcut": "Ctrl+Shift+A, E" },
+                { "id": "refactor",  "label": "Refactor",   "shortcut": "Ctrl+Shift+A, R" },
+                { "id": "fix",       "label": "Fix Bugs",   "shortcut": "Ctrl+Shift+A, F" },
+                { "id": "test",      "label": "Gen Tests",  "shortcut": "Ctrl+Shift+A, T" },
+                { "id": "document",  "label": "Document",   "shortcut": "Ctrl+Shift+A, D" },
+                { "id": "review",    "label": "Review",     "shortcut": "Ctrl+Shift+A, V" }
+            ],
+            "output_panel": "split_right",
+            "auto_apply": false
+        },
+        "bridge": {
+            "transport": "http",
+            "host": "127.0.0.1",
+            "port": 19000,
+            "timeout_ms": 30000,
+            "retry_count": 0,
+            "health_check_interval_ms": 5000
+        }
+    },
+
+    "editor": {
+        "buffer_type": "piece_table",
+        "undo_capacity": 1024,
+        "auto_save": false,
+        "font_family": "Cascadia Code",
+        "font_size": 14,
+        "tab_size": 4,
+        "insert_spaces": true,
+        "line_numbers": true,
+        "minimap": false,
+        "word_wrap": false
+    },
+
+    "security": {
+        "path_jail": {
+            "enabled": true,
+            "allowed_roots": ["${workspaceRoot}"],
+            "deny_patterns": [
+                "**/.env",
+                "**/.env.*",
+                "**/credentials*",
+                "**/secrets*",
+                "**/*.pem",
+                "**/*.key"
+            ]
+        },
+        "agent_execution": {
+            "require_confirmation": true,
+            "blocked_commands": [
+                "rm -rf",
+                "del /s /q",
+                "format",
+                "fdisk",
+                "mkfs",
+                "dd if=",
+                ":(){:|:&};:",
+                "shutdown",
+                "reboot"
+            ],
+            "max_output_size": 1048576
+        }
+    },
+
+    "workspace": {
+        "trust_level": "restricted",
+        "auto_detect_project": true,
+        "file_watcher": true,
+        "exclude_patterns": [
+            "node_modules",
+            ".git",
+            "__pycache__",
+            "target",
+            "build",
+            "dist"
+        ]
+    }
+}

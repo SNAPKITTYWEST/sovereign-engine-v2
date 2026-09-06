@@ -1,0 +1,15 @@
+[package]
+name = "drain-pipeline"
+version = "0.1.0"
+edition = "2021"
+description = "Fixed-point tensor drain pipeline with Kani verification harness"
+
+[[bin]]
+name = "drain_pipeline"
+path = "src/main.rs"
+
+[dev-dependencies]
+kani-verifier = { version = "*", optional = true }
+
+[features]
+kani = []
