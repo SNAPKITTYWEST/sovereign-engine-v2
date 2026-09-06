@@ -12,7 +12,7 @@
 ![Rust](https://img.shields.io/badge/Rust-CATN%20%2B%20ZK-red)
 ![Ada/SPARK](https://img.shields.io/badge/Ada%2FSPARK-MAGMA%20FSM-brightgreen)
 ![x86-64](https://img.shields.io/badge/x86--64-AVX512%20%2B%20AMX-blueviolet)
-![Source](https://img.shields.io/badge/Source-83%2C473%20lines-green)
+![Source](https://img.shields.io/badge/Source-79%2C935%20lines-green)
 ![License](https://img.shields.io/badge/License-BSL%201.1-yellow)
 
 ---
@@ -27,7 +27,7 @@ A sovereign compute stack. Silicon RTL to formal proofs to native IDE — in one
 │   Lean 4 entropy proof · Agda mirror · OpenQASM         │
 ├─────────────────────────────────────────────────────────┤
 │                  DESKTOP LAYER                          │
-│   C Win32 IDE (Direct2D)  ·  Electron chat shell        │
+│   C Win32 IDE (Direct2D) · BEAM process VM (WASM)       │
 ├─────────────────────────────────────────────────────────┤
 │                  ENGINE LAYER                           │
 │   Jordan routing · ReAct agents · 34 tools · WORM seal  │
@@ -42,7 +42,7 @@ A sovereign compute stack. Silicon RTL to formal proofs to native IDE — in one
 └─────────────────────────────────────────────────────────┘
 ```
 
-**339 source files. 83,473 lines. 20+ languages.**
+**312 source files. 79,935 lines. 20+ languages.**
 
 ---
 
@@ -69,9 +69,6 @@ asyncio.run(main())
 # Build the C IDE (Windows — requires CMake + MSVC)
 cd ide/native && cmake -B build -G "Visual Studio 17 2022"
 cmake --build build --config Release
-
-# Run the Electron IDE
-cd ide/desktop && npm install && npm run desktop
 ```
 
 ---
@@ -88,7 +85,7 @@ graph TB
 
     subgraph "Desktop"
         IDE_C[C Win32 IDE]
-        IDE_E[Electron Desktop]
+        BEAM[BEAM Process VM — WASM]
     end
 
     subgraph "Engine"
@@ -117,7 +114,8 @@ graph TB
     end
 
     IDE_C --> ROUTE
-    IDE_E --> ROUTE
+    BEAM --> ROUTE
+    BEAM --> MAGMA
     ROUTE --> AGENT
     AGENT --> TOOLS
     AGENT --> ATTN
@@ -324,7 +322,7 @@ The integrated block (`HyperbolicCIFGUMTCPI`) replaces the entire attention + FF
 | `asr/` | Qwen3 forced aligner, fine-tuning, compiler DAG meta-engine |
 | `resonance/` | Tensor net, plugboard, fabric, sentence gen, UMO, bridge |
 | `bridge/` | HTTP server :19000, stdio JSON-RPC, routing trace, key manager |
-| `wasm/` | M5 WAT (4096-byte buffer, 7 registers), MacroWASM decoder, tunnel matrix |
+| `wasm/` | M5 WAT (4KB buffer, 7 registers, AC VM), tunnel_matrix (256KB, 4-core memcpy), tunnel_borehole (0xDEADBEEF apertures), MacroWASM decoder |
 | `magma/` | Macro MAGMA + springboard |
 | `scanner/` | AST analyzer, dependency graph |
 | `daemon/` | Asyncio TCP :19002, swarm (fan_out, map_reduce, race) |
@@ -366,16 +364,54 @@ Native Win32 application. No Electron. No web view. Direct2D GPU rendering, ConP
 | `git/` | Status, diff, commit |
 | `platform/windows/` | Application, window, shell |
 
-### Electron Desktop IDE — `ide/desktop/`
+### BEAM Process VM — `ide/beam/`
 
-| Component | What It Does |
-|-----------|-------------|
-| `backend/bob.ts` | BOB reasoning engine bridge |
-| `backend/model-client.ts` | Ollama/Anthropic/OpenRouter/OpenAI adapters |
-| `backend/tools.ts` | Sovereign Engine tool dispatch |
-| `backend/sandbox.ts` | Code execution sandbox |
-| `backend/audit.ts` | WORM audit trail |
-| `backend/workspace.ts` | Project management |
+Erlang-model process VM running inside WebAssembly. Replaces the Electron/TypeScript abstraction layer. No Chromium. No V8. No npm. Processes communicate via direct memory mailboxes on the same linear memory substrate as M5 and the tunnel matrix.
+
+**`beam_vm.wat`** — Core virtual machine (552 lines)
+
+| Export | What It Does |
+|--------|-------------|
+| `spawn(module, func, priority)` | Create lightweight process — scans 256-slot table, initializes PCB (pid, status, heap_ptr, mailbox head/tail, reductions), returns pid |
+| `send(dst_pid, tag, val)` | Erlang `!` operator — writes 32-byte message (sender, tag, payload, tick) into per-process ring buffer, wakes blocked receivers |
+| `receive(out_ptr)` | Pattern-match pop — reads next message from current process mailbox, sets process to `waiting` if empty |
+| `schedule()` | Priority round-robin — sweeps 256 slots, selects highest-priority ready process, context-switches (demote running → ready, promote selected → running), refills reduction counter |
+| `reduce()` | Burn one reduction — returns remaining. 0 = timeslice exhausted, reschedule |
+| `kill(pid, reason)` | Terminate process — sets status to dead, sends EXIT to linked trap handler |
+| `link(pid_a, pid_b)` | Bidirectional process link — either dies, the other gets `{EXIT, pid, reason}` |
+| `gc_dead()` | Sweep dead slots — zeroes reclaimed PCBs, returns count freed |
+
+Memory: 512KB (8 pages). Process table (256 slots × 256B), mailbox rings (256 × 512B), per-process heap (256 × 512B), atom table, module table, stack frames.
+
+**`beam_bridge.wat`** — M5 ↔ Tunnel ↔ Agent Memory Bridge (324 lines)
+
+| Export | What It Does |
+|--------|-------------|
+| `register_agent(slot, pid, type)` | Bind BEAM process as agent in 256-entry dispatch table |
+| `dispatch_to_agent(type)` | Route request to correct BEAM process by agent type, mark busy |
+| `m5_read/m5_write` | Direct byte access to 4KB M5 mirror — no HTTP, no JSON |
+| `write_response/read_response` | 64KB model response buffer — inference results land here |
+| `audit_append(tick, type, action, payload)` | Append-only 32-byte WORM records — no text, no parse |
+| `history_push(role, ts, ptr, len)` | 256-slot chat history ring (256B/slot) — overwrites oldest on full |
+| `route_to_pipeline(ptr, len)` | Write raw bytes into 48KB routing scratch — Stage 1 of 11-stage pipeline reads from here via mmap |
+| `seal_worm(ptr, len)` | DJB2 hash → seal staging area — chained with previous seal |
+
+**`beam_agents.wat`** — Sovereign Agent Processes (349 lines)
+
+8 agent types replace the TypeScript modules:
+
+| Agent | Was | What It Does Now |
+|-------|-----|-----------------|
+| 0: chat | `bob.ts` | BOB reasoning — accepts prompt via mailbox, routes through pipeline, returns response via result buffer |
+| 1: tool | `tools.ts` | Tool dispatch — msg_tag = tool_id, msg_val = arg pointer, executes, writes result |
+| 2: model | `model-client.ts` | Inference — selects provider (local/ollama/anthropic/openrouter) from msg_tag, forwards prompt |
+| 3: audit | `audit.ts` | WORM append — every agent action sealed, no mutation |
+| 4: workspace | `workspace.ts` | Project state — file trees, git status, workspace config |
+| 5: sandbox | `sandbox.ts` | Code execution — msg_val points to code in agent scratch memory |
+| 6: routing | *new* | 11-stage pipeline as a BEAM process — reductions map to pipeline stages |
+| 7: entropy | *new* | Governor process — sweeps all agents, blocks any with H > 0.20 (Q16.16 fixed-point), unblocks when entropy drops |
+
+Every agent checks entropy before processing. Agent 7 (entropy governor) runs at max priority every scheduler tick. Trust scores are milli-units (0–1000). Blocked agents resume automatically when the governor clears them.
 
 ---
 
@@ -476,15 +512,15 @@ Unified: [The Sovereign Stack](https://snapkittywest.github.io/hyperkitty/papers
 | Engine core | Python 3.11 | 170 | 49,517 |
 | C Win32 IDE | C | 59 | 7,481 |
 | Hardware kernels | NASM + CUDA + SV + P4 | 32 | 5,670 |
-| Electron IDE | TypeScript | 30 | 4,763 |
 | MAGMA protocol | Ada/SPARK + Rust | 14 | 2,331 |
 | NARM runtime | C + ASM + Fortran | 9 | 2,322 |
 | Hardware RTL | SystemVerilog + Scala | 19 | 1,917 |
 | Formal proofs | Lean 4 + Agda | 5 | 1,447 |
+| BEAM VM | WebAssembly (WAT) | 3 | 1,225 |
 | Tests | Python | 5 | 1,203 |
 | CATN tensor network | Rust | 9 | 1,051 |
 | AToKio | Haskell | 1 | 299 |
-| **Total** | **20+ languages** | **339** | **83,473** |
+| **Total** | **20+ languages** | **312** | **79,935** |
 
 ---
 
