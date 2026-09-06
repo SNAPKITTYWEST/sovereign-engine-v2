@@ -1,0 +1,254 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  network.xsd - canonical schema for the Python reference implementation
+  (report SECTION 11). This is the shape-checking half of "the XML must
+  correspond directly to the Python model": every element/attribute name
+  here matches a field sparse_routing.parser.xml_parser reads, and every
+  field xml_parser reads has a defined element/attribute here - there is
+  no field on either side with no corresponding definition on the other.
+
+  As in the companion Bash reference implementation, this schema
+  deliberately does NOT encode semantic/mathematical invariants (I1-I9):
+  those need graph or numeric reasoning a schema cannot express, and are
+  checked by sparse_routing.verification.verify_all after parsing.
+-->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+           elementFormDefault="qualified">
+
+  <xs:simpleType name="identifier">
+    <xs:restriction base="xs:string">
+      <xs:pattern value="[A-Za-z_][A-Za-z0-9_]*"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="tensorIdentifier">
+    <xs:restriction base="xs:string">
+      <xs:pattern value="[A-Za-z_][A-Za-z0-9_]*(\.[0-9]+)*"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="activationState">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="active"/>
+      <xs:enumeration value="inactive"/>
+      <xs:enumeration value="pruned"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="sparsityClass">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="low"/>
+      <xs:enumeration value="medium"/>
+      <xs:enumeration value="high"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="rankBackend">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="computed"/>
+      <xs:enumeration value="structural"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:element name="execution">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="max_recursion_depth" type="xs:nonNegativeInteger"/>
+        <xs:element name="rank_backend" type="rankBackend"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="nodes">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="node" minOccurs="1" maxOccurs="unbounded">
+          <xs:complexType>
+            <xs:attribute name="id" type="identifier" use="required"/>
+            <xs:attribute name="priority" type="xs:integer" use="required"/>
+          </xs:complexType>
+        </xs:element>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="edges">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="edge" minOccurs="0" maxOccurs="unbounded">
+          <xs:complexType>
+            <xs:attribute name="id" type="identifier" use="required"/>
+            <xs:attribute name="source" type="identifier" use="required"/>
+            <xs:attribute name="destination" type="identifier" use="required"/>
+            <xs:attribute name="computation_latency" type="xs:decimal" use="required"/>
+            <xs:attribute name="communication_latency" type="xs:decimal" use="required"/>
+            <xs:attribute name="synchronization_latency" type="xs:decimal" use="required"/>
+            <xs:attribute name="weight" type="xs:decimal" use="required"/>
+            <xs:attribute name="activation_state" type="activationState" use="required"/>
+            <xs:attribute name="tensor_dependency" type="tensorIdentifier" use="required"/>
+            <xs:attribute name="routing_priority" type="xs:integer" use="required"/>
+            <xs:attribute name="sparsity_class" type="sparsityClass" use="required"/>
+          </xs:complexType>
+        </xs:element>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:complexType name="tensorType">
+    <xs:sequence>
+      <xs:element name="recursion" minOccurs="0">
+        <xs:complexType>
+          <xs:sequence>
+            <xs:element name="tensor" type="tensorType" maxOccurs="unbounded"/>
+          </xs:sequence>
+          <xs:attribute name="max_depth" type="xs:nonNegativeInteger" use="required"/>
+        </xs:complexType>
+      </xs:element>
+    </xs:sequence>
+    <xs:attribute name="id" type="tensorIdentifier" use="required"/>
+    <xs:attribute name="shape" type="xs:string" use="required"/>
+    <xs:attribute name="dtype" type="xs:string" use="required"/>
+    <xs:attribute name="rank_hint" type="xs:nonNegativeInteger" use="optional"/>
+    <xs:attribute name="sparse" type="xs:boolean" use="optional" default="false"/>
+  </xs:complexType>
+
+  <xs:element name="tensors">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="tensor" type="tensorType" maxOccurs="unbounded"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="routing">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="hierarchy">
+          <xs:complexType>
+            <xs:attribute name="root" type="identifier" use="required"/>
+            <xs:attribute name="forbid_cycles" type="xs:boolean" use="required"/>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="latency">
+          <xs:complexType>
+            <xs:attribute name="threshold" type="xs:decimal" use="required"/>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="sparsity">
+          <xs:complexType>
+            <xs:attribute name="max_ratio" type="xs:decimal" use="required"/>
+            <xs:attribute name="allow_expansion" type="xs:boolean" use="required"/>
+          </xs:complexType>
+        </xs:element>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="jacobian">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="function">
+          <xs:complexType>
+            <xs:attribute name="name" type="identifier" use="required"/>
+            <xs:attribute name="input_dim" type="xs:positiveInteger" use="required"/>
+            <xs:attribute name="output_dim" type="xs:positiveInteger" use="required"/>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="matrix" minOccurs="0">
+          <xs:complexType>
+            <xs:simpleContent>
+              <xs:extension base="xs:string">
+                <xs:attribute name="rows" type="xs:positiveInteger" use="required"/>
+                <xs:attribute name="cols" type="xs:positiveInteger" use="required"/>
+              </xs:extension>
+            </xs:simpleContent>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="rank">
+          <xs:complexType>
+            <xs:attribute name="thresholds_min" type="xs:nonNegativeInteger" use="required"/>
+            <xs:attribute name="thresholds_max" type="xs:nonNegativeInteger" use="required"/>
+            <xs:attribute name="slack" type="xs:nonNegativeInteger" use="required"/>
+          </xs:complexType>
+        </xs:element>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="adaptation">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="rules">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="rule" minOccurs="0" maxOccurs="unbounded">
+                <xs:complexType>
+                  <xs:attribute name="id" type="identifier" use="required"/>
+                  <xs:attribute name="condition" use="required">
+                    <xs:simpleType>
+                      <xs:restriction base="xs:string">
+                        <xs:enumeration value="latency_exceeds_threshold"/>
+                        <xs:enumeration value="rank_decreases"/>
+                        <xs:enumeration value="rank_increases"/>
+                        <xs:enumeration value="tensor_dimension_changes"/>
+                        <xs:enumeration value="sparsity_exceeds_maximum"/>
+                      </xs:restriction>
+                    </xs:simpleType>
+                  </xs:attribute>
+                  <xs:attribute name="action" use="required">
+                    <xs:simpleType>
+                      <xs:restriction base="xs:string">
+                        <xs:enumeration value="evaluate_alternate_route"/>
+                        <xs:enumeration value="evaluate_redundant_edge_removal"/>
+                        <xs:enumeration value="evaluate_capacity_expansion"/>
+                        <xs:enumeration value="recompute_dependent_routing_metadata"/>
+                        <xs:enumeration value="reject_topology_expansion"/>
+                      </xs:restriction>
+                    </xs:simpleType>
+                  </xs:attribute>
+                </xs:complexType>
+              </xs:element>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="verification">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="invariants">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="invariant" minOccurs="0" maxOccurs="unbounded">
+                <xs:complexType>
+                  <xs:attribute name="id" type="xs:string" use="required"/>
+                  <xs:attribute name="description" type="xs:string" use="required"/>
+                </xs:complexType>
+              </xs:element>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="network">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element ref="execution"/>
+        <xs:element ref="nodes"/>
+        <xs:element ref="edges"/>
+        <xs:element ref="tensors"/>
+        <xs:element ref="routing"/>
+        <xs:element ref="jacobian"/>
+        <xs:element ref="adaptation"/>
+        <xs:element ref="verification"/>
+      </xs:sequence>
+      <xs:attribute name="name" type="identifier" use="required"/>
+      <xs:attribute name="version" type="xs:string" use="required"/>
+    </xs:complexType>
+  </xs:element>
+
+</xs:schema>

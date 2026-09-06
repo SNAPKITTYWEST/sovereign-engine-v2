@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Canonical example instance, matching the companion Bash reference
+  implementation's spec/network.xml topology exactly (same 5 nodes, 5
+  edges, one recursively nested tensor, same rank-deficient 3x3 Jacobian
+  matrix) - so route_total_latency, bottleneck_node, and rank computed
+  by this Python implementation can be cross-checked against that
+  independent implementation's output for the same input.
+-->
+<network name="demo_network" version="1.0">
+
+  <execution>
+    <max_recursion_depth>4</max_recursion_depth>
+    <rank_backend>computed</rank_backend>
+  </execution>
+
+  <nodes>
+    <node id="n1" priority="10"/>
+    <node id="n2" priority="8"/>
+    <node id="n3" priority="8"/>
+    <node id="n4" priority="5"/>
+    <node id="n5" priority="3"/>
+  </nodes>
+
+  <edges>
+    <edge id="e1" source="n1" destination="n2"
+          computation_latency="0.10" communication_latency="0.05" synchronization_latency="0.02"
+          weight="1.0" activation_state="active" tensor_dependency="t1"
+          routing_priority="9" sparsity_class="low"/>
+    <edge id="e2" source="n1" destination="n3"
+          computation_latency="0.12" communication_latency="0.04" synchronization_latency="0.01"
+          weight="1.0" activation_state="active" tensor_dependency="t1"
+          routing_priority="9" sparsity_class="low"/>
+    <edge id="e3" source="n2" destination="n4"
+          computation_latency="0.20" communication_latency="0.05" synchronization_latency="0.02"
+          weight="0.8" activation_state="active" tensor_dependency="t1.1"
+          routing_priority="5" sparsity_class="low"/>
+    <edge id="e4" source="n3" destination="n4"
+          computation_latency="0.15" communication_latency="0.03" synchronization_latency="0.01"
+          weight="0.8" activation_state="active" tensor_dependency="t1.1"
+          routing_priority="6" sparsity_class="low"/>
+    <edge id="e5" source="n4" destination="n5"
+          computation_latency="0.18" communication_latency="0.02" synchronization_latency="0.01"
+          weight="1.0" activation_state="active" tensor_dependency="t1"
+          routing_priority="4" sparsity_class="medium"/>
+  </edges>
+
+  <tensors>
+    <tensor id="t1" shape="3,3" dtype="float32" rank_hint="2" sparse="false">
+      <recursion max_depth="2">
+        <tensor id="t1.1" shape="3" dtype="float32" rank_hint="1" sparse="true"/>
+      </recursion>
+    </tensor>
+  </tensors>
+
+  <routing>
+    <hierarchy root="n1" forbid_cycles="true"/>
+    <latency threshold="0.90"/>
+    <sparsity max_ratio="0.35" allow_expansion="false"/>
+  </routing>
+
+  <jacobian>
+    <function name="f" input_dim="3" output_dim="3"/>
+    <!-- rank-deficient by construction: row3 = row1 + row2, real rank = 2 -->
+    <matrix rows="3" cols="3">
+      1,0,1;
+      0,1,1;
+      1,1,2
+    </matrix>
+    <rank thresholds_min="1" thresholds_max="3" slack="1"/>
+  </jacobian>
+
+  <adaptation>
+    <rules>
+      <rule id="r1" condition="latency_exceeds_threshold" action="evaluate_alternate_route"/>
+      <rule id="r2" condition="rank_decreases" action="evaluate_redundant_edge_removal"/>
+      <rule id="r3" condition="rank_increases" action="evaluate_capacity_expansion"/>
+      <rule id="r4" condition="tensor_dimension_changes" action="recompute_dependent_routing_metadata"/>
+      <rule id="r5" condition="sparsity_exceeds_maximum" action="reject_topology_expansion"/>
+    </rules>
+  </adaptation>
+
+  <verification>
+    <invariants>
+      <invariant id="I1" description="Valid Nodes -- every edge references an existing node"/>
+      <invariant id="I2" description="Valid Edges -- no malformed edge exists"/>
+      <invariant id="I3" description="Nonnegative Latency -- L(e) >= 0"/>
+      <invariant id="I4" description="Tensor Validity -- all tensor dimensions are positive and valid"/>
+      <invariant id="I5" description="Recursion Bound -- d(T) &lt;= d_max"/>
+      <invariant id="I6" description="Sparsity Bound -- rho(A) &lt;= rho_max"/>
+      <invariant id="I7" description="Rank Validity -- 0 &lt;= rank(J) &lt;= min(dim(input), dim(output))"/>
+      <invariant id="I8" description="Deterministic Adaptation -- identical state and identical observations produce identical adaptations"/>
+      <invariant id="I9" description="Atomic Commit -- invalid adaptations never replace the previous valid state"/>
+    </invariants>
+  </verification>
+
+</network>
