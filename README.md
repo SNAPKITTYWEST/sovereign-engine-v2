@@ -504,6 +504,20 @@ Unified: [The Sovereign Stack](https://snapkittywest.github.io/hyperkitty/papers
 
 ---
 
+## Desktop IDE
+
+The Electron desktop IDE lives in `ide/desktop`. It opens this repo as the workspace, stores model keys through Electron `safeStorage`, supports Ollama/Anthropic/OpenRouter/OpenCode/Llama/OpenAI-compatible chat providers, and exposes allowlisted Sovereign Engine tools to model chat.
+
+```powershell
+cd ide\desktop
+npm install
+npm run desktop
+```
+
+Bridge-backed tools use `python -m src.bridge.http_server` from the engine root.
+
+---
+
 ## License
 
 BSL 1.1 → MIT 2029-01-01

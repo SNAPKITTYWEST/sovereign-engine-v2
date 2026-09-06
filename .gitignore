@@ -11,3 +11,7 @@ routing_worm.jsonl
 *.worm.jsonl
 *.plan
 checkpoints/
+ide/desktop/node_modules/
+.claude/
+.continuity/
+__pycache__/
