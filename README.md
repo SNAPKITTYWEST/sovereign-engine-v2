@@ -186,7 +186,6 @@ Internal sovereign agent language: **§VERB:AGENT:ACTION{payload}**
 | `src/lib.rs` | Rust | Biot-Savart field computation + Ed25519 certification |
 | `bindings/rust/ada_ffi.rs` | Rust | CoreState ↔ C ABI, imaginary()/fold_i()/ectot() |
 | `bindings/rust/magmad_client.rs` | Rust | REST client (health/verify/anchor/forge) + CoreTransition::dispatch() |
-| `bindings/ts/magma_bindings.ts` | TypeScript | Pipeline execution + anchor safety certificate |
 | `node/lib/node.js` | JavaScript | Orphan-node graph (functor isolated from RBG) |
 
 ### NARM Runtime — `narm/`
@@ -217,7 +216,7 @@ Non-Autoregressive Reconstruction Machine. NASA systems engineering spec.
 | `microrom/decode_microrom.py` | Python | Disassembler |
 | `microrom/virtual_circuit_board.py` | Python | Self-sustaining resonance loop |
 
-Centre-seeded `vm.state.nodes[128] = 1` → classic Wolfram rule-16 propagation.
+Center-seeded `vm.state.nodes[128] = 1` → classic Wolfram rule-16 propagation.
 
 ### ISA Layer — `src/isa/`
 
@@ -348,7 +347,7 @@ The integrated block (`HyperbolicCIFGUMTCPI`) replaces the entire attention + FF
 
 ### C Win32 IDE — `ide/native/`
 
-Native Win32 application. No Electron. No web view. Direct2D GPU rendering, ConPTY terminal, Win32 message loop.
+Native Win32 application. Direct2D GPU rendering, ConPTY terminal, Win32 message loop. No web view.
 
 | Directory | Purpose |
 |-----------|---------|
@@ -366,7 +365,7 @@ Native Win32 application. No Electron. No web view. Direct2D GPU rendering, ConP
 
 ### BEAM Process VM — `ide/beam/`
 
-Erlang-model process VM running inside WebAssembly. Replaces the Electron/TypeScript abstraction layer. No Chromium. No V8. No npm. Processes communicate via direct memory mailboxes on the same linear memory substrate as M5 and the tunnel matrix.
+Erlang-model process VM running inside WebAssembly. Lightweight processes communicate via direct memory mailboxes on the same linear memory substrate as M5 and the tunnel matrix. No browser runtime. No package manager. No serialization layer.
 
 **`beam_vm.wat`** — Core virtual machine (552 lines)
 
@@ -398,18 +397,18 @@ Memory: 512KB (8 pages). Process table (256 slots × 256B), mailbox rings (256 �
 
 **`beam_agents.wat`** — Sovereign Agent Processes (349 lines)
 
-8 agent types replace the TypeScript modules:
+8 agent types, each a BEAM process:
 
-| Agent | Was | What It Does Now |
-|-------|-----|-----------------|
-| 0: chat | `bob.ts` | BOB reasoning — accepts prompt via mailbox, routes through pipeline, returns response via result buffer |
-| 1: tool | `tools.ts` | Tool dispatch — msg_tag = tool_id, msg_val = arg pointer, executes, writes result |
-| 2: model | `model-client.ts` | Inference — selects provider (local/ollama/anthropic/openrouter) from msg_tag, forwards prompt |
-| 3: audit | `audit.ts` | WORM append — every agent action sealed, no mutation |
-| 4: workspace | `workspace.ts` | Project state — file trees, git status, workspace config |
-| 5: sandbox | `sandbox.ts` | Code execution — msg_val points to code in agent scratch memory |
-| 6: routing | *new* | 11-stage pipeline as a BEAM process — reductions map to pipeline stages |
-| 7: entropy | *new* | Governor process — sweeps all agents, blocks any with H > 0.20 (Q16.16 fixed-point), unblocks when entropy drops |
+| Agent | What It Does |
+|-------|-------------|
+| 0: chat | BOB reasoning — accepts prompt via mailbox, routes through pipeline, returns response via result buffer |
+| 1: tool | Tool dispatch — msg_tag = tool_id, msg_val = arg pointer, executes, writes result to scratch |
+| 2: model | Inference — selects provider (local/ollama/anthropic/openrouter) from msg_tag, forwards prompt |
+| 3: audit | WORM append — every agent action sealed into append-only log, no mutation |
+| 4: workspace | Project state — file trees, git status, workspace config |
+| 5: sandbox | Code execution — msg_val points to code in agent scratch memory |
+| 6: routing | 11-stage pipeline as a BEAM process — reductions map to pipeline stages |
+| 7: entropy | Governor — sweeps all agents every tick, blocks any with H > 0.20 (Q16.16 fixed-point), unblocks when entropy drops |
 
 Every agent checks entropy before processing. Agent 7 (entropy governor) runs at max priority every scheduler tick. Trust scores are milli-units (0–1000). Blocked agents resume automatically when the governor clears them.
 
