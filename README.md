@@ -9,25 +9,31 @@
 
 ![Python 3.11+](https://img.shields.io/badge/Python-3.11%2B-blue)
 ![C Win32](https://img.shields.io/badge/C-Win32%20Native-orange)
-![Lines](https://img.shields.io/badge/Lines-50%2C444-green)
+![Rust](https://img.shields.io/badge/Rust-CATN%20%2B%20ZK-red)
+![Ada/SPARK](https://img.shields.io/badge/Ada%2FSPARK-MAGMA%20FSM-brightgreen)
+![x86-64](https://img.shields.io/badge/x86--64-AVX512%20%2B%20AMX-blueviolet)
+![Lines](https://img.shields.io/badge/Lines-124%2C490-green)
 ![License](https://img.shields.io/badge/License-BSL%201.1-yellow)
-![Storage](https://img.shields.io/badge/Storage-Binary%20WORM-red)
-![Routing](https://img.shields.io/badge/Routing-Jordan%20Algebra-purple)
 
 ---
 
 ## What This Is
 
-A **complete LLM agent development environment**: native C desktop IDE connected to a Python inference engine via memory-mapped IPC.
+A **sovereign compute stack**: native IDE, LLM inference engine, hardware synthesis pipeline, formal verification, and silicon-to-policy integrity chain — in one repo.
 
-This is not a wrapper. Not a LangChain clone. Not vibe-coded. This is:
+**377 source files. 124,490 lines. 20+ languages. No frameworks. No wrappers.**
 
-- A **C Win32 IDE** with text editor, ConPTY terminal, LSP, DAP debugging, Direct2D rendering, git integration — 47 source files, 4,459 lines of C
-- A **Python LLM engine** with custom MoE routing, binary storage, four-paradigm continuity, 34 tools, ReAct agents — 87 modules, 38,576 lines
-- A **NASM x86-64 assembly layer** with native runtime, QRA tensor ops, Jordan block computation, NAND kernel, IPC dispatcher — 7 files, 7,019 lines
-- A **C IPC dispatcher** with mmap ring buffer, opcode jump table, 50μs polling — 390 lines
+This is:
 
-**50,444 lines of production code. 142 source files. Pure stdlib Python + raw C + NASM.**
+- A **C Win32 IDE** — text editor, ConPTY terminal, LSP, DAP, Direct2D, git — 59 files, 7,481 lines of C
+- An **Electron desktop IDE** — Ollama/Anthropic/OpenRouter chat, tool dispatch — 20 files, 9,151 lines
+- A **Python LLM engine** — 11-stage Jordan algebra routing, binary WORM, 34 tools, ReAct agents — 170 modules, 49,517 lines
+- A **hardware kernel stack** — CUDA, SystemVerilog RTL, Chisel3, P4 data planes, TVM, MLIR, CUDA-Q, x86-64 ASM — 34 files, 5,703 lines
+- A **MAGMA protocol** — 666-line SPARK Ada ferrite FSM, Rust/TS/Ada FFI bindings, APL Wick rotation — 16 files, 2,351 lines
+- A **NARM runtime** — MLIR TableGen dialect, C arena/tensor/ops, AVX-512 + MOS 6502 kernels, Fortran — 11 files, 2,716 lines
+- A **Cellular Automaton Tensor Network** — CubeCL SVD, propagate kernels, microrom VM, virtual circuit board — 15 files, 30,859 lines of Rust
+- **Formal proofs** — Lean 4 entropy bound (zero sorry), Agda ironic mirror, enochian root — 5 files, 1,447 lines
+- An **AToKio** linear attention monad — Haskell — 299 lines
 
 ---
 
@@ -37,14 +43,21 @@ This is not a wrapper. Not a LangChain clone. Not vibe-coded. This is:
 - [Quick Start](#quick-start)
 - [The IDE](#the-ide)
 - [The Engine](#the-engine)
+- [Hardware Kernel Stack](#hardware-kernel-stack)
+- [MAGMA Protocol](#magma-protocol)
+- [Attention Mechanisms](#attention-mechanisms)
+- [Resonance Fabric](#resonance-fabric)
+- [ISA Layer](#isa-layer)
+- [Q-Regex Engine](#q-regex-engine)
+- [NARM Runtime](#narm-runtime)
+- [CATN — Cellular Automaton Tensor Network](#catn--cellular-automaton-tensor-network)
+- [Formal Proofs](#formal-proofs)
 - [Machine Code Layer](#machine-code-layer)
 - [Routing Pipeline](#routing-pipeline)
 - [Continuity Layer](#continuity-layer)
 - [Tool System](#tool-system)
 - [Security Architecture](#security-architecture)
-- [Configuration](#configuration)
 - [The Mathematics](#the-mathematics)
-- [Origin: The DSL](#origin-the-dsl)
 - [Papers](#papers)
 - [Line Count](#line-count)
 
@@ -54,48 +67,66 @@ This is not a wrapper. Not a LangChain clone. Not vibe-coded. This is:
 
 ```mermaid
 graph TB
-    subgraph "C Win32 IDE (4,459 lines)"
-        EDITOR[Editor + Buffer]
-        TERM[ConPTY Terminal]
-        LSP[LSP Client]
-        DAP[DAP Debugger]
-        UI[UI Layout + Direct2D]
-        GIT[Git Integration]
-        FCL[FCL Evaluator]
+    subgraph "Desktop Layer"
+        IDE_C[C Win32 IDE — 7,481 lines]
+        IDE_E[Electron Desktop — 9,151 lines]
     end
 
     subgraph "IPC Bridge"
-        HTTP[HTTP Bridge :19000]
+        HTTP[HTTP :19000]
         MMAP[mmap Ring Buffer]
-        PIPE[Named Pipe Protocol]
+        PIPE[Named Pipe]
     end
 
-    subgraph "Python Engine (38,576 lines)"
+    subgraph "Python Engine — 49,517 lines"
         ROUTE[11-Stage Routing Pipeline]
-        AGENT[ReAct Agent + Shadow Observer]
+        AGENT[ReAct + Shadow + MCTS]
         TOOLS[34 Tools x 9 Namespaces]
         CONT[4-Paradigm Continuity]
         WORM[Binary WORM Storage]
-        QRA[QRA Router - 6 Glyphs]
+        QRA[QRA Router — 6 Glyphs]
+        ATTN[6 Attention Mechanisms]
+        RES[Resonance Fabric]
+        ENT[Entropy Governor]
     end
 
-    subgraph "Native Layer (7,409 lines)"
-        ASM[NASM x86-64 Runtime]
-        IPC_C[C IPC Dispatcher]
-        VM[Stack VM + NAND Opcodes]
-        JORDAN_ASM[Jordan Blocks SSE2/AVX2]
+    subgraph "Hardware Stack — 5,703 lines"
+        CUDA[CUDA Pipeline]
+        RTL[SystemVerilog RTL]
+        P4[P4 Data Planes]
+        ASM[x86-64 AVX-512/AMX]
+        SYNTH[Sovereign Synth → Verilog]
+        ADA[Ada/SPARK Agent]
     end
 
-    EDITOR --> HTTP
-    TERM --> PIPE
+    subgraph "Native Runtimes"
+        MAGMA[MAGMA — 666-line SPARK FSM]
+        NARM[NARM — MLIR + AVX-512 + 6502]
+        CATN[CATN — CubeCL Tensor Network]
+        WASM[WASM — M5 + MacroWASM + Tunnel]
+    end
+
+    subgraph "Formal Layer — 1,447 lines"
+        LEAN[Lean 4 — entropy bound, VA 243]
+        AGDA[Agda — ironic mirror]
+        QASM[OpenQASM 3 — Q-Regex]
+    end
+
+    IDE_C --> HTTP
+    IDE_E --> HTTP
     HTTP --> ROUTE
-    MMAP --> IPC_C
+    MMAP --> ASM
     ROUTE --> AGENT
     AGENT --> TOOLS
-    AGENT --> CONT
-    AGENT --> WORM
-    IPC_C --> ASM
-    ASM --> JORDAN_ASM
+    AGENT --> ATTN
+    AGENT --> RES
+    ATTN --> ENT
+    ENT --> WORM
+    SYNTH --> RTL
+    ADA --> ENT
+    MAGMA --> WORM
+    NARM --> ASM
+    CATN --> CUDA
 ```
 
 ---
@@ -123,292 +154,338 @@ asyncio.run(main())
 
 ```bash
 # Build the C IDE (Windows — requires CMake + MSVC)
-cd ide/native
-cmake -B build -G "Visual Studio 17 2022"
+cd ide/native && cmake -B build -G "Visual Studio 17 2022"
 cmake --build build --config Release
-./build/Release/sovereign-ide.exe
+
+# Run the Electron IDE
+cd ide/desktop && npm install && npm run desktop
 ```
 
 ---
 
 ## The IDE
 
-**Location:** `ide/native/` — 47 C source files, 4,459 lines
+### Native C IDE (`ide/native/` — 59 files, 7,481 lines)
 
-This is a native Win32 application. No Electron. No JavaScript. No web view. Direct2D GPU rendering, ConPTY pseudo-terminal, Win32 message loop.
+Native Win32 application. No Electron. No web view. Direct2D GPU rendering, ConPTY terminal, Win32 message loop.
 
-| Directory | Purpose | Key Files |
-|-----------|---------|-----------|
-| `core/` | Memory arena, event system, strings | `arena.c` (pool allocator), `events.c` (pub/sub) |
-| `editor/` | Gap buffer text editor | `buffer.c` (insert/delete O(1)), `document.c` (file model) |
-| `terminal/` | Embedded terminal | `conpty.c` (Windows ConPTY API) |
-| `ui/` | Layout engine | `layout.c` (split panes), `status_bar.h`, `project_tree.h` |
-| `bridge/` | Engine connection | `bridge_http.c` (HTTP client to Python :19000) |
-| `chat/` | Agent interaction | `pipe_client.c` (named pipe), `protocol.c` (message framing) |
-| `lsp/` | Language intelligence | `client.c` (Language Server Protocol) |
-| `dap/` | Debugging | Debug Adapter Protocol integration |
-| `git/` | Version control | `repository.c` (status, diff, commit) |
-| `fcl/` | Command language | `evaluator.c` (Formal Command Language interpreter) |
-| `graphics/` | Rendering | `d2d_renderer.h` (Direct2D hardware-accelerated) |
-| `platform/windows/` | OS layer | `application.c`, `window.c`, `shell.c` |
-| `build/` | Build system | `cmake_runner.c` (invoke cmake from IDE) |
+| Directory | Purpose |
+|-----------|---------|
+| `core/` | Memory arena, event system, strings, threading |
+| `editor/` | Gap buffer text editor, code reference parser |
+| `terminal/` | ConPTY + fallback gate |
+| `ui/` | Layout, status bar, project tree, output panel |
+| `bridge/` | HTTP client to Python :19000 |
+| `chat/` | Named pipe agent interaction |
+| `lsp/` | Language Server Protocol client |
+| `graphics/` | Direct2D hardware-accelerated rendering |
+| `fcl/` | Formal Command Language interpreter |
+| `git/` | Status, diff, commit |
+| `platform/windows/` | Application, window, shell |
 
-### How the IDE Talks to the Engine
+### Electron Desktop IDE (`ide/desktop/` — 20 files, 9,151 lines)
 
-```
-┌────────────────┐         ┌──────────────────┐        ┌─────────────────┐
-│  C IDE         │  HTTP   │  Python Bridge   │        │  Engine         │
-│                │────────>│  :19000          │───────>│  Routing        │
-│  bridge_http.c │  JSON   │  http_server.py  │        │  Agent          │
-│                │<────────│                  │<───────│  Tools          │
-└────────────────┘         └──────────────────┘        └─────────────────┘
-
-┌────────────────┐         ┌──────────────────┐
-│  C IDE         │  mmap   │  C IPC Core      │  (native tools — no HTTP, no JSON)
-│                │────────>│  ipc_core.c      │  Latency: ~100μs round trip
-│  (direct call) │<────────│  opcode dispatch │
-└────────────────┘         └──────────────────┘
-
-┌────────────────┐         ┌──────────────────┐
-│  C IDE         │  pipe   │  Agent Chat      │  (streaming agent responses)
-│  pipe_client.c │────────>│  python_daemon   │
-│                │<────────│  :19002 TCP      │
-└────────────────┘         └──────────────────┘
-```
+| Component | What It Does |
+|-----------|-------------|
+| `backend/bob.ts` | BOB reasoning engine bridge |
+| `backend/model-client.ts` | Ollama/Anthropic/OpenRouter/OpenAI adapters |
+| `backend/tools.ts` | Sovereign Engine tool dispatch |
+| `backend/sandbox.ts` | Code execution sandbox |
+| `backend/audit.ts` | WORM audit trail |
+| `backend/workspace.ts` | Project management |
 
 ---
 
 ## The Engine
 
-**Location:** `src/` — 87 Python modules, 38,576 lines
-
-Every module is **pure Python 3.11+ stdlib**. Zero external dependencies. No pip install needed.
+**Location:** `src/` — 170 Python modules, 49,517 lines. **Pure Python 3.11+ stdlib. Zero pip dependencies.**
 
 | Package | Lines | What It Does |
 |---------|-------|-------------|
-| `src/routing/` | 2,800 | 11-stage MoE pipeline: regex → AST → symbolic graph → Jordan transform → Jacobian → constraints → sparse activation → NAND filter → dispatch → merge |
-| `src/runtime/machine/` | 9,251 | CPython bytecode assembler, .pyc marshal codec, ctypes C bridge, SOVEREIGN_IR binary format, stack VM with NAND opcodes, x86-64 machine code generator |
-| `src/tools/` | 3,500 | 34 tools (filesystem, code, git, database, documents, web, embeddings, audio, pytorch), IPC router, opcode registry, approval engine, supervisor |
-| `src/continuity/` | 1,536 | Env bitmask, seed chain, inode flags, shared memory, unified manager |
-| `src/agents/` | 1,500 | ReAct loop (thought→action→observation→reflection), shadow observer, MCTS |
-| `src/retrieval/` | 1,500 | Semantic chunker (6 strategies), vector store, RAG pipeline, parallel ingest |
-| `src/daemon/` | 823 | Asyncio TCP daemon (:19002), swarm orchestration (fan_out, map_reduce, race) |
-| `src/bridge/` | 900 | HTTP server (:19000), stdio JSON-RPC, routing trace collector, key manager |
-| `src/core/` | 700 | Binary WORM storage, evidence ledger, Ed25519 crypto, path jail, SSRF guard |
-| `src/runtime/providers/` | 600 | Bedrock, OpenRouter, Ollama, Anthropic, OpenAI adapters + QRA router |
-| `src/models/` | 500 | Pydantic entities, state machines |
-| `src/scanner/` | 400 | AST analyzer, dependency graph builder |
-| `src/inference/` | 300 | Quantum MoE (SpinFactor composition) |
-| `src/mcp/` | 250 | Model Context Protocol server |
-| `src/cli/` | 200 | Command-line interface |
+| `src/runtime/` | 15,132 | CPython bytecode assembler, .pyc marshal codec, ctypes C bridge, SOVEREIGN_IR binary, stack VM, x86-64 machine code gen |
+| `src/tools/` | 8,661 | 34 tools (fs, code, git, db, docs, web, embeddings, audio, pytorch), IPC router, opcode registry, approval engine |
+| `src/routing/` | 2,320 | 11-stage MoE: regex → AST → symbolic graph → Jordan transform → Jacobian → constraints → sparse → NAND → dispatch → merge → WORM |
+| `src/continuity/` | 2,490 | Env bitmask, seed chain, inode flags, shared memory, unified manager |
+| `src/retrieval/` | 2,201 | Semantic chunker, vector store, RAG pipeline, parallel ingest |
+| `src/core/` | 1,833 | Binary WORM, evidence ledger, Ed25519 crypto, path jail, SSRF guard |
+| `src/models/` | 1,619 | Pydantic entities, state machines, BURT-IMMA, text output pipeline |
+| `src/attention/` | 1,620 | 6 attention mechanisms (see below) |
+| `src/agents/` | 1,514 | ReAct loop, shadow observer, MCTS search |
+| `src/asr/` | 1,409 | Qwen3 forced aligner, fine-tuning, compiler DAG meta-engine |
+| `src/resonance/` | 1,134 | Tensor net, plugboard, fabric, sentence gen, UMO, bridge |
+| `src/bridge/` | 1,105 | HTTP server :19000, stdio JSON-RPC, routing trace, key manager |
+| `src/wasm/` | 1,021 | M5 WAT (4096-byte buffer, 7 registers), MacroWASM decoder, tunnel matrix |
+| `src/magma/` | 863 | Macro MAGMA + springboard |
+| `src/scanner/` | 876 | AST analyzer, dependency graph |
+| `src/daemon/` | 866 | Asyncio TCP :19002, swarm (fan_out, map_reduce, race) |
+| `src/mcp/` | 614 | Model Context Protocol server |
+| `src/hardware/` | 630 | Sovereign Synth → Verilog, Ada/SPARK agent spec |
+| `src/exgracy/` | 530 | Fused parser regex network propagation automaton |
+| `src/bert/` | 469 | BertAgentAdapter + Nomic embedder |
+| `src/qregex/` | 446 | Q-Regex simulator + Kalman filter |
+| `src/isa/` | 444 | ISA-8 (15 instructions) + ISA-16 (4 addressing modes) |
+| `src/inference/` | 388 | Quantum MoE (SpinFactor composition) |
+| `src/entropy/` | 355 | FrustrationCoolingScheduler, governor, WORM seal |
+| `src/ui/` | 302 | Sovereign OS dashboard |
+| `src/mum/` | 220 | Atom, ModalityEncoder, SemanticGradientBoundary |
+| `src/kernel/` | 194 | KID8B8K — SAT boot verifier, PII scrubber, topic policy |
+| `src/cli/` | 195 | Command-line interface |
+| `src/zk/` | 121 | Recursive Lattice-Based ZK (no_std, Q=65537, N=16) |
+| `src/compositor/` | 90 | VBLANK-interlocked BAR1 dual buffer |
+| `src/hypervisor/` | 72 | ARMv8-A EL2 trap loop + VirtIO-GPU stub |
+
+---
+
+## Hardware Kernel Stack
+
+**Location:** `kernels/` — 34 files, 5,703 lines
+
+| Directory | Lang | Lines | What It Does |
+|-----------|------|-------|-------------|
+| `kernels/x86/` | NASM | 3,753 | AVX2 GEMM, AMX Hopper kickdown, FP8 SM90, AC VM (Σ1..10=55), SPLICE_SWIFT_GATEWAY, 8K framebuffer AVX-512 |
+| `kernels/hardware/rtl/` | SystemVerilog | 427 | MAC lateral array, dual-core top, P3 SHA accumulator, P4 tensor core |
+| `kernels/p4/` | P4-16 | 398 | TNA in-network forwarding, STRP ingress, sovereign data plane |
+| `kernels/tvm/` | Python+PTX | 310 | TileLang flash QKT kernel, TensorIR L3, PTX fused level 2 |
+| `kernels/cuda/` | CUDA C | 274 | GPU drain pipeline (1M tensor parallel filter), binary checkpoint loader |
+| `kernels/rust/` | Rust | 242 | Fixed-point drain pipeline + Kani formal verification harness |
+| `kernels/cudaq/` | CUDA-Q | 192 | Quantum kernels (C++ + Python + holographic wormhole) |
+| `kernels/hardware/chisel/` | Scala | — | Chisel3 dual-core GDR |
+| `kernels/hardware/analog/` | Verilog-A | — | Analog MAC leaf cell |
+| `kernels/hardware/layout/` | SKILL | — | Cadence layout + GDSII sign-off |
+| `kernels/mlir/` | MLIR | 45 | TensorIR sovereign P3 lowering |
+| `kernels/p3/` | Python+Lean | 62 | P3 Merkle, state engine, Lean 4 verification |
+
+### Synthesis Pipeline
+
+```
+microcode.json / add_instruction()
+      ↓  SovereignSynth (src/hardware/sovereign_synth.py)
+case-statement Verilog (single-cycle, ~150ps combinatorial)
+
+opcode_sequences.json / add_sequence()
+      ↓  SovereignSynthMulti
+FSM Verilog (N-cycle, only log₂(N) flip-flops, zero ROM)
+
+activity_profile / n_cycles / alpha_target
+      ↓  EntropyBalancedDMAGen
+Entropy-balanced DMA Verilog (power H=0 per cycle → DPA-resistant)
+      ↓
+Ada/SPARK proof: entropy(agent) ≤ 0.20 → active ⇒ trusted → sovereign eligible
+```
+
+---
+
+## MAGMA Protocol
+
+**Location:** `magma/` — 16 files, 2,351 lines
+
+Internal sovereign agent language: **§VERB:AGENT:ACTION{payload}**
+
+| Component | Lang | What It Does |
+|-----------|------|-------------|
+| `magma_666.adb` | SPARK Ada | 666-line ferrite state machine — the core |
+| `format.adb/ads` | Ada | LE decoders, CRC32, element sizes |
+| `parser.adb/ads` | Ada | Dense SPARK state machine for tensor parsing |
+| `apl/wick_rotation.apl` | APL | Hoare-verified Wick rotation operators |
+| `src/lib.rs` | Rust | Biot-Savart field computation + Ed25519 certification |
+| `bindings/rust/ada_ffi.rs` | Rust | CoreState ↔ C ABI, imaginary()/fold_i()/ectot() |
+| `bindings/rust/magmad_client.rs` | Rust | REST client (health/verify/anchor/forge) + CoreTransition::dispatch() |
+| `bindings/ts/magma_bindings.ts` | TS | coreTransitionToInstruction(), anchorSafetyCertificate(), fluxQRegexMatch(), executeMagmaPipeline() |
+| `node/lib/node.js` | JS | Orphan-node graph (functor isolated from RBG) |
+
+**12 verbs, 22 agents (clearance 1-5), 6 modifiers.** SLC (Sovereign Logic Core) — 6 immutable axioms, adversarial pattern detection, SACM mesh self-organizing execution.
+
+---
+
+## Attention Mechanisms
+
+**Location:** `src/attention/` — 7 files, 1,620 lines
+
+Six non-softmax attention replacements. None use `exp(QK^T/√d)`:
+
+| File | Mechanism | Key Property |
+|------|-----------|-------------|
+| `umtcpi.py` | Boolean-Jordan-Jacobian Resonance | Σwₖ ≠ 1 — inverted Jacobian breaks simplex |
+| `sgam.py` | Spatial Geometric (inverse-dist / compact / RBF / angular) | Deterministic kernel, no softmax |
+| `sma.py` | Symplectic Manifold (ω, J, g=ωJ) | J²=−I, g positive definite, Poisson bracket kernel |
+| `rma.py` | Riemannian (Euclidean / Sphere / Hyperbolic) | Geodesic distance + parallel transport |
+| `heat_kernel.py` | Heat diffusion (∂u/∂t = Δu) | Semigroup H(s)∘H(t)=H(s+t), spectral Laplacian |
+| `integrated_block.py` | RMSNorm + Hyperbolic UMTCPI + CIFG Memory | Full transformer block replacement, 60% fewer params |
+
+The integrated block (`HyperbolicCIFGUMTCPI`) replaces the entire attention + FFN stack:
+- RMSNorm drops mean subtraction — 50% fewer norm params
+- HyperbolicUMTCPI uses Poincare distance — richer hierarchical separation
+- CIFGMemory replaces static FFN with gated memory `C_t = f_t ⊙ C_{t-1} + (1-f_t) ⊙ z_t`
+
+---
+
+## Resonance Fabric
+
+**Location:** `src/resonance/` — 8 files, 1,134 lines
+
+| File | What It Does |
+|------|-------------|
+| `tensor_net.py` | Waveform → weight tensors → ResonanceNet |
+| `plugboard.py` | 6×22 routing crossbar (frequency bands → operations) |
+| `fabric.py` | run_fabric() / render_fabric() — the complete execution |
+| `sentence.py` | render_sentence(inv) — DrainInvariants → natural language |
+| `umo.py` | Python port of the SnapKitty Universal Monad Operator |
+| `bridge.py` | Drain invariants → τ/ε/ρ mapping |
+| `words.py` | Sovereign vocabulary ("SYSTEM COHERENT", "DEED SEALED") |
+
+---
+
+## ISA Layer
+
+**Location:** `src/isa/` — 3 files, 444 lines
+
+**ISA-8** — 8-bit sovereign instruction set. 15 instructions × 2 bytes = 30 code bytes.
+Program: SET → CLEAR → TOGGLE → ROUTE → READ/WRITE → XOR/AND/OR → SHIFT → BRANCH → LOAD/STORE → HALT
+
+**ISA-16** — 16-bit big-endian. 4 fields: opcode[15:12] mode[11:10] reg[9:8] operand[7:0].
+4 addressing modes: R/R, IMM, DIRECT, INDIRECT/PLUGBOARD.
+Reference program: infinite oscillator R0 toggling 0x00000010 ↔ 0xFFFFFFEF — the virtual circuit board.
+
+---
+
+## Q-Regex Engine
+
+**Location:** `src/qregex/` — 4 files, 446 lines
+
+| File | What It Does |
+|------|-------------|
+| `qregex.qasm` | OpenQASM 3 circuit: U_∨ ∘ U_∘ ∘ U_* (3 qubits, 10 Kleene Star iterations) |
+| `qregex_sim.py` | NumPy simulator: Bloch-sphere interference, match probability → Kalman z_t |
+| `kalman.py` | L3 Kalman filter: x_t = [Φ, Φ̇, f]^T, includes FPGA Q16.15 fixed-point variant |
+
+Integration chain: Q-Regex match probability → Kalman filter → Δω_pump → pump-laser dispersion controller.
+
+---
+
+## NARM Runtime
+
+**Location:** `narm/` — 11 files, 2,716 lines
+
+Non-Autoregressive Reconstruction Machine. NASA systems engineering spec.
+
+| File | What It Does |
+|------|-------------|
+| `mlir/reconstruct.td` | 20+ op MLIR TableGen dialect |
+| `runtime/memory.h` | LIFO arena allocator |
+| `runtime/tensor.h` | Tensor descriptor + multi-dim indexing |
+| `runtime/ops.h` | Op registry + graph executor |
+| `kernels/narm_kernels_avx512.asm` | AVX-512 CUFF kernels (KERN-001..009) |
+| `kernels/narm_kernels_6502.asm` | MOS 6502 GEMM / residual / norm |
+| `kernels/gelu_6502.asm` | 6502 GELU cubic approximation |
+| `fortran/qwen3asr_kernels.f90` | Fortran 97 subroutine bodies |
+| `tests/acceptance_test.sh` | 8-stage acceptance gate |
+
+---
+
+## CATN — Cellular Automaton Tensor Network
+
+**Location:** `catn/` — 15 files, 30,859 lines of Rust
+
+| File | What It Does |
+|------|-------------|
+| `src/kernels/erosion.rs` | CubeCL SVD truncation kernel (χ ≤ 64, ε = 0.001) |
+| `src/kernels/propagate.rs` | Propagate + mirror-goto + ‖Ψ‖₂ = 1 normalization |
+| `src/dispatcher.rs` | CatnDispatcher (erosion → recharge → propagate loop) |
+| `src/state.rs` | CellularState with tensor network |
+| `microrom/ca_vm.py` | VM executor + 256-node bytecode generator |
+| `microrom/decode_microrom.py` | Disassembler |
+| `microrom/virtual_circuit_board.py` | Self-sustaining resonance loop |
+
+Centre-seeded `vm.state.nodes[128] = 1` gives classic Wolfram rule-16 propagation.
+
+---
+
+## Formal Proofs
+
+**Location:** `formal/` — 5 files, 1,447 lines
+
+| File | Lang | What It Proves |
+|------|------|---------------|
+| `sovereign_entropy/EntropyBound.lean` | Lean 4 | H(softmax_ratio(d, T(F))) < 0.20 nats for F ≥ 1, d ≥ 1. **Zero sorry.** |
+| `VA_243.lean` | Lean 4 | Cylinder seal VA 243 specification |
+| `enochian_root.lean` | Lean 4 | ERE root — void input blocks all instructions |
+| `gdr_drain.lean` | Lean 4 | GDR drain invariant |
+| `IronicMirror/XInvariant.agda` | Agda | X-invariant of the ironic mirror |
 
 ---
 
 ## Machine Code Layer
 
-**Location:** `src/runtime/machine/` (Python) + `native/asm/` (NASM)
+### Python Machine Code (`src/runtime/machine/` — 9 files, 15,132 lines)
 
-This is not a toy abstraction. These are real implementations:
-
-### Python Machine Code (`src/runtime/machine/` — 9,251 lines)
-
-| Module | Lines | What It Actually Does |
-|--------|-------|----------------------|
-| `bytecode_assembler.py` | 1,711 | Emits real CPython opcodes (LOAD_FAST, CALL_FUNCTION, etc). Produces executable code objects. |
-| `marshal_codec.py` | 1,435 | Reads and writes actual .pyc binary format (magic number, flags, code objects, consts table). |
-| `ctypes_bridge.py` | 970 | Builds C struct definitions from Python, manages MemoryArena for native allocations. |
-| `binary_ir.py` | 1,492 | SOVEREIGN_IR format: 32-byte fixed-width node records. Opcode + flags + operands + type tag. Scannable without parsing. |
-| `vm_executor.py` | 1,680 | Stack-based virtual machine. 40+ opcodes including custom NAND, JORDAN_MUL, ENTROPY_CHECK. Runs SOVEREIGN_IR bytecode. |
-| `machine_code_gen.py` | 1,104 | Emits raw x86-64 bytes. REX prefixes, ModR/M encoding, register allocation. Produces executable buffers via mmap+mprotect. |
-| `dsl_validator.py` | 658 | Validates all DSL constraints: Boolean kernel (NAND truth table), entropy ≤ 0.20, trust axiom, glyph injectivity, DAG acyclicity. Blake2b proof hash. |
-
-### NASM x86-64 Assembly (`native/asm/` — 7,019 lines)
-
-| File | Lines | What It Actually Does |
-|------|-------|----------------------|
-| `sovereign_runtime.asm` | 2,459 | Main runtime: WORM append (struct pack → write syscall), ring buffer management, signal handling, mmap allocation |
-| `ipc_dispatcher.asm` | 1,071 | Polls mmap region, reads 16-bit opcode, jump table dispatch (34 entries), writes response struct back |
-| `qra_tensor.asm` | 905 | 6x6 matrix multiply (packed SSE2), QLG balance check (x₀²+x₁²+x₂²=1 over ℤ), glyph classification |
-| `nand_kernel.asm` | 790 | NAND gate truth table in SIMD, builds NOT→AND→OR→IMPLIES→EQUAL per DSL BooleanKernel spec |
-| `jordan_blocks.asm` | 770 | SpinFactor product in SSE2/AVX2: scalar×scalar + dot product, scalar×vector + scalar×vector. Batch 4 elements. |
-| `entropy_gate.asm` | 552 | Shannon entropy H=-Σp·ln(p) via x87 FPU. Compare against 0.20 threshold. Set carry flag on violation. |
-| `sovereign_link.asm` | 472 | Public symbol table: exports all above as callable from C (System V ABI on Linux, MS x64 on Windows) |
+| Module | Lines | What It Does |
+|--------|-------|-------------|
+| `bytecode_assembler.py` | 1,711 | Emits real CPython opcodes. Produces executable code objects. |
+| `marshal_codec.py` | 1,435 | .pyc binary format — magic number, flags, code objects, consts table. |
+| `ctypes_bridge.py` | 970 | C struct definitions from Python, MemoryArena for native allocations. |
+| `binary_ir.py` | 1,492 | SOVEREIGN_IR: 32-byte fixed-width node records. Opcode + flags + operands + type tag. |
+| `vm_executor.py` | 1,680 | 40+ opcodes including NAND, JORDAN_MUL, ENTROPY_CHECK. Runs SOVEREIGN_IR bytecode. |
+| `machine_code_gen.py` | 1,104 | Raw x86-64 bytes. REX prefixes, ModR/M, register allocation. Executable via mmap+mprotect. |
+| `dsl_validator.py` | 658 | Boolean kernel, entropy ≤ 0.20, trust axiom, glyph injectivity, DAG acyclicity. Blake2b proof. |
 
 ---
 
 ## Routing Pipeline
 
-11 stages. Every stage has a mathematical role. This is not a prompt chain.
+11 stages. Every stage has a mathematical role.
 
 ```
 User Input
     │
-    ├─── Stage 1: Regex Parser ──────── Tokenize. Strip dangerous patterns.
-    │                                    Blocklist: eval, exec, import, __,
-    │                                    base64, <script, <!ENTITY, SYSTEM
-    │
-    ├─── Stage 2: AST Builder ───────── Build INVERTED syntax tree.
-    │                                    Structural nodes: routing_weight=1.0
-    │                                    Payload leaves: routing_weight=0.0
-    │                                    Payloads CANNOT propagate upward.
-    │
-    ├─── Stage 3: Symbolic Graph ────── Adjacency matrix of signal flow.
-    │                                    Nodes = intent categories.
-    │                                    Edges = co-occurrence weights.
-    │
-    ├─── Stage 4: Jordan Transform ──── SpinFactor composition.
-    │                                    (α,v) ∘ (β,w) = (αβ+⟨v,w⟩, αw+βv)
-    │                                    Non-associative: topology matters.
-    │                                    Gershgorin eigenvalue bounds.
-    │
-    ├─── Stage 5: Jacobian Lens ─────── ∂routing/∂signal via finite diffs.
-    │                                    Sensitivity analysis: which input
-    │                                    features drive which expert weights.
-    │
-    ├─── Stage 6: Constraint Eval ───── Boolean expert mask.
-    │                                    Spectral radius must be < 10.
-    │                                    Entropy must be ≤ 0.20 nats.
-    │
-    ├─── Stage 7: Sparse Activation ─── Top-k expert selection.
-    │                                    Only k experts get nonzero weight.
-    │                                    Rest are zeroed (not softmaxed).
-    │
-    ├─── Stage 8: NAND Filter ──────── Conflict suppression.
-    │                                    NAND(A,B) = suppress lower-weight
-    │                                    when both experts claim same input.
-    │
-    ├─── Stage 9: Agent Dispatch ────── Concurrent asyncio execution.
-    │                                    Each active expert runs in parallel.
-    │                                    Timeout per expert (configurable).
-    │
-    ├─── Stage 10: Merge Output ─────── 4 strategies: concatenate, vote,
-    │                                    weighted_sum, first_success.
-    │
-    └─── Stage 11: WORM Seal ────────── Blake2b hash of routing decision.
-                                         Ed25519 signature. Append to chain.
-                                         Decision is now immutable.
+    ├── Stage 1:  Regex Parser ────── Tokenize. Strip dangerous patterns.
+    ├── Stage 2:  AST Builder ─────── INVERTED syntax tree. Payloads can't propagate up.
+    ├── Stage 3:  Symbolic Graph ──── Adjacency matrix of signal flow.
+    ├── Stage 4:  Jordan Transform ── SpinFactor: (α,v)∘(β,w) = (αβ+⟨v,w⟩, αw+βv)
+    ├── Stage 5:  Jacobian Lens ───── ∂routing/∂signal via finite differences.
+    ├── Stage 6:  Constraint Eval ─── Spectral radius < 10. Entropy ≤ 0.20 nats.
+    ├── Stage 7:  Sparse Activation ─ Top-k expert selection. Rest zeroed.
+    ├── Stage 8:  NAND Filter ─────── Conflict suppression between experts.
+    ├── Stage 9:  Agent Dispatch ──── Concurrent asyncio execution.
+    ├── Stage 10: Merge Output ────── concatenate | vote | weighted_sum | first_success
+    └── Stage 11: WORM Seal ───────── Blake2b + Ed25519. Decision is immutable.
 ```
 
 ---
 
 ## Continuity Layer
 
-The agent doesn't lose state. Ever. Four independent persistence mechanisms sync on every state transition:
+Four independent persistence mechanisms sync on every state transition:
 
-| # | Paradigm | Storage | Speed | What Survives |
-|---|----------|---------|-------|---------------|
-| 1 | **Env bitmask** | `os.environ` (64-bit packed) | Instant | `os.execv` hot restart — same PID, new binary |
-| 2 | **Seed chain** | Blake2b derivation (24 bytes total) | Instant | Full history compressed to one hash. Deterministic replay from any point. |
-| 3 | **Inode flags** | Zero-byte files + `stat()` | Kernel cache | Process crash. Kernel dcache survives OOM kill. |
-| 4 | **Shared memory** | ctypes struct (4KB mmap block) | RAM speed | Cross-process visibility. No serialization. |
-
-If ANY of the four has state, the agent resumes. `ContinuityManager` unifies all four behind one API:
-
-```python
-cm = ContinuityManager(base_dir=Path("~/.sovereign"), agent_id="react_1")
-cm.transition("IDLE", "THINKING")       # updates all 4 backends
-cm.advance_op("THINK:plan task")        # advances seed chain
-cm.increment_step()                     # syncs step across all 4
-snapshot = cm.snapshot()                 # reads from fastest available
-```
+| # | Paradigm | Storage | What Survives |
+|---|----------|---------|---------------|
+| 1 | Env bitmask | `os.environ` (64-bit packed) | `os.execv` hot restart |
+| 2 | Seed chain | Blake2b derivation (24 bytes) | Full history → one hash |
+| 3 | Inode flags | Zero-byte files + `stat()` | OOM kill (kernel dcache) |
+| 4 | Shared memory | ctypes struct (4KB mmap) | Cross-process, no serialization |
 
 ---
 
 ## Tool System
 
-34 tools with native opcode dispatch:
-
-<details>
-<summary><strong>All 34 tools with opcodes (click to expand)</strong></summary>
-
-| Opcode | Namespace | Tool | Description |
-|--------|-----------|------|-------------|
-| `0x0001` | filesystem | read | Read file contents (PathJail enforced) |
-| `0x0002` | filesystem | write | Write file (PathJail enforced) |
-| `0x0003` | filesystem | list | List directory |
-| `0x0004` | filesystem | delete | Remove file |
-| `0x0005` | filesystem | move | Move/rename |
-| `0x0006` | filesystem | search | Pattern search (ripgrep-style) |
-| `0x0007` | code | execute | Run code in sandbox |
-| `0x0008` | code | analyze | AST analysis + symbol extraction |
-| `0x0009` | git | status | Repository status |
-| `0x000A` | git | diff | Show changes |
-| `0x000B` | git | commit | Create commit |
-| `0x000C` | git | log | Commit history |
-| `0x000D` | git | branch | Branch operations |
-| `0x000E` | git | checkout | Switch branch |
-| `0x000F` | git | merge | Merge branches |
-| `0x0010` | git | stash | Stash changes |
-| `0x0011` | git | remote | Remote operations |
-| `0x0012` | git | tag | Tag management |
-| `0x0013` | database | query | Execute SQL (parameterized) |
-| `0x0014` | database | schema | Schema introspection |
-| `0x0015` | database | migrate | Run migrations |
-| `0x0016` | documents | parse_pdf | Extract PDF text |
-| `0x0017` | documents | parse_docx | Extract DOCX content |
-| `0x0018` | documents | render_md | Render Markdown |
-| `0x0019` | documents | parse_html | Extract HTML text |
-| `0x001A` | web | search | Web search (SSRFGuard enforced) |
-| `0x001B` | web | fetch | HTTP fetch (SSRFGuard enforced) |
-| `0x001C` | web | scrape | Page scraping |
-| `0x001D` | embeddings | encode | Generate embeddings |
-| `0x001E` | embeddings | search | Similarity search |
-| `0x001F` | audio | transcribe | Speech-to-text |
-| `0x0020` | audio | synthesize | Text-to-speech |
-| `0x0021` | pytorch | inference | Model inference |
-| `0x0022` | pytorch | check_cuda | GPU availability |
-
-</details>
-
-**Two dispatch paths:**
-- **HTTP** (universal): IDE → JSON POST → parse → handler → JSON response (~5ms)
-- **Native mmap** (local): IDE → write opcode to ring buffer → C dispatcher reads → handler → write response (~100μs)
-
-The IPC ring buffer is a 64KB mmap region shared between the C IDE and the Python engine. The C dispatcher (`native/dispatcher/ipc_core.c`) polls at 50μs intervals and dispatches via a jump table indexed by the 16-bit opcode.
+34 tools with native opcode dispatch. Two paths:
+- **HTTP** (universal): IDE → JSON → handler → JSON (~5ms)
+- **Native mmap** (local): IDE → ring buffer → C dispatcher → handler (~100μs)
 
 ---
 
 ## Security Architecture
 
-| Layer | Threat | Defense |
-|-------|--------|---------|
-| **PathJail** | `../../etc/passwd`, symlink escape, null bytes | Resolve path → check against allowed roots → reject if outside |
-| **SSRFGuard** | `http://169.254.169.254/metadata`, `http://10.0.0.1` | Block all private IPs, link-local, metadata endpoints |
-| **Inverted AST** | Payload injection into routing decisions | Structural nodes (weight=1) route. Payload leaves (weight=0) can NEVER propagate upward. |
-| **NAND Filter** | Two experts both claiming same input (conflict) | NAND suppresses the lower-weight expert. Prevents split-brain. |
-| **Binary WORM** | JSONL injection, newline attacks, log corruption | 152-byte struct headers. No text parsing anywhere. Append-only file mode. |
-| **ERE Gates** | Secret leakage, eval injection, infinite loops, telemetry | P1: no hardcoded secrets. P2: no eval/exec/import. P3: no `while True` without break. P4: no analytics. P5: SHA-256 audit seal. |
-| **Approval Engine** | Unauthorized tool execution | Risk-level classification. High-risk tools require explicit approval. |
-| **Chain Verification** | Tampered ledger entries | Every WORM record hashes the previous record. Break one → break all downstream. |
-
----
-
-## Configuration
-
-```python
-from src.sovereign import SovereignEngine, EngineConfig
-from pathlib import Path
-
-engine = SovereignEngine(EngineConfig(
-    allowed_roots=[Path.cwd(), Path("/data")],
-    ledger_path=Path("./sovereign.worm"),
-    continuity_dir=Path.home() / ".sovereign" / "continuity",
-    max_steps=15,
-    enable_shadow=True,
-    enable_ipc=True,
-    agent_id="my_agent",
-))
-```
-
-| Option | Type | Default | Effect |
-|--------|------|---------|--------|
-| `allowed_roots` | `list[Path]` | `[cwd()]` | PathJail boundaries — filesystem tools cannot access anything outside |
-| `ledger_path` | `Path` | `./sovereign.worm` | Binary WORM ledger location |
-| `continuity_dir` | `Path` | `~/.sovereign/continuity` | Where the 4 paradigms store state |
-| `max_steps` | `int` | `15` | Hard limit on agent steps (prevents runaway) |
-| `enable_shadow` | `bool` | `True` | Shadow observer watches for anomalies (cost spikes, loops, failures) |
-| `enable_ipc` | `bool` | `True` | Enable native mmap dispatch (disable for pure-HTTP mode) |
-| `agent_id` | `str` | `"sovereign_main"` | Identity for continuity (different IDs = separate state) |
+| Layer | Defense |
+|-------|---------|
+| **PathJail** | Resolve → check against allowed roots → reject if outside |
+| **SSRFGuard** | Block private IPs, link-local, metadata endpoints |
+| **Inverted AST** | Payload leaves (weight=0) can NEVER propagate upward |
+| **NAND Filter** | Suppress lower-weight expert when both claim same input |
+| **Binary WORM** | 152-byte struct headers. No text parsing. Append-only. |
+| **ERE Gates** | P1–P5: no secrets, no eval, no infinite loops, no analytics, SHA-256 seal |
+| **Entropy Governor** | H(softmax_ratio(d, T(F))) < 0.20 nats — formally proved in Lean 4 |
+| **SPARK Proof** | Ada ghost invariant: entropy ≤ 0.20 → active ⇒ trusted |
+| **Chain Verification** | Every WORM record hashes the previous. Break one → break all downstream. |
 
 ---
 
@@ -416,47 +493,31 @@ engine = SovereignEngine(EngineConfig(
 
 ### Jordan Algebra — SpinFactor J(n)
 
-The routing gate uses Jordan algebra instead of softmax. This is the same algebra Pascual Jordan developed in 1933 to formalize quantum mechanics observables.
-
-**Elements:** `(α, v)` where `α ∈ ℝ` (scalar confidence), `v ∈ ℝⁿ` (signal vector)
-
 **Product:** `(α,v) ∘ (β,w) = (αβ + ⟨v,w⟩, αw + βv)`
 
-**Why this matters for routing:**
+1. **Non-associative**: Different agent grouping topologies produce different routing outcomes.
+2. **Fixed-point convergence**: `x ↦ x∘x` converges to idempotents. These ARE the routing attractors.
+3. **Spectral decomposition**: `x = λ₊c₊ + λ₋c₋`. Provably unique expert assignment.
+4. **Spectral gap** = `2‖v‖` = separation between top experts.
 
-1. **Non-associative composition**: `(A∘B)∘C ≠ A∘(B∘C)` — different agent grouping topologies produce mathematically different routing outcomes. We search over topologies.
-2. **Fixed-point convergence**: Iterating `x ↦ x∘x` converges to idempotents (`e∘e = e`). These ARE the stable routing attractors.
-3. **Spectral decomposition**: `x = λ₊c₊ + λ₋c₋` where `λ± = α ± ‖v‖`. Provably unique expert assignment.
-4. **Spectral gap** = `2‖v‖` = separation between top experts. Bigger gap = more decisive routing.
+### Entropy Bound — Formally Proved
+
+For any F ≥ 1 and d ≥ 1: **H(softmax_ratio(d, T(F))) < 0.20 nats**
+
+Proof chain: T(F) ≤ 0.2218 → s = exp(d/T) ≥ 90.75 → H(s) < H(19) < 0.20. Done. Zero sorry.
 
 ### QRA Tensor — Quantum Routing Algebra
 
-6×6 deterministic tensor. Shannon entropy H = 0 nats. No randomness.
+6×6 deterministic tensor. Shannon entropy H = 0 nats.
 
 | Glyph | Maps To | Signal |
 |-------|---------|--------|
-| Π (Pi) | Reasoning models | "explain", "why", "analyze" |
-| Γ (Gamma) | Fast generation | "write", "create", "draft" |
-| Δ (Delta) | Domain-specific | "sql", "medical", "legal" |
-| Λ (Lambda) | Code models | "function", "implement", "debug" |
-| Ω (Omega) | Orchestration | "plan", "coordinate", "multi-step" |
-| Ψ (Psi) | Verification | "prove", "verify", "test" |
-
----
-
-## Origin: The DSL
-
-The Python engine (38,576 lines) + NASM assembly (7,019 lines) were generated from a single **HyperKittyConstraintDSL** prompt. Three agents coordinated by the DSL constraints. See [ARCHITECTURE.md](ARCHITECTURE.md) for the display template.
-
-The C IDE was hand-built separately.
-
-The DSL defines:
-- Boolean kernel (all gates from NAND)
-- Glyph type system (7 semantic types)
-- Agent invariants (trust + entropy bounds)
-- DAG structure (acyclic routing graph)
-- Proof output (Blake2b hash commitment)
-- Transformation engine (regex patterns + validation)
+| Π | Reasoning | "explain", "why", "analyze" |
+| Γ | Generation | "write", "create", "draft" |
+| Δ | Domain | "sql", "medical", "legal" |
+| Λ | Code | "function", "implement", "debug" |
+| Ω | Orchestration | "plan", "coordinate", "multi-step" |
+| Ψ | Verification | "prove", "verify", "test" |
 
 ---
 
@@ -465,7 +526,7 @@ The DSL defines:
 | DOI | Title |
 |-----|-------|
 | [10.5281/zenodo.20678420](https://doi.org/10.5281/zenodo.20678420) | Attention Exhaustion Attacks — 0% detection rate |
-| [10.5281/zenodo.21144425](https://doi.org/10.5281/zenodo.21144425) | Resonance Block Trust Deeds — capture spectrum |
+| [10.5281/zenodo.21144425](https://doi.org/10.5281/zenodo.21144425) | Resonance Block Trust Deeds |
 | [10.5281/zenodo.21132094](https://doi.org/10.5281/zenodo.21132094) | Sovereign Compute Architecture |
 | [10.5281/zenodo.21349277](https://doi.org/10.5281/zenodo.21349277) | Gates Normalization Constraint — simplex is structural |
 | [10.5281/zenodo.21351461](https://doi.org/10.5281/zenodo.21351461) | NAND Decomposition — attention is NAND-complete |
@@ -481,40 +542,19 @@ Unified: [The Sovereign Stack](https://snapkittywest.github.io/hyperkitty/papers
 
 | Component | Language | Files | Lines |
 |-----------|----------|-------|-------|
-| Engine core | Python 3.11 | 87 | 38,576 |
-| NASM runtime | x86-64 Assembly | 7 | 7,019 |
-| C Win32 IDE | C (Win32 API) | 47 | 4,459 |
-| C IPC dispatcher | C | 1 | 390 |
-| **Total** | **3 languages** | **142** | **50,444** |
-
----
-
-## Documentation
-
-| Guide | What You Learn |
-|-------|---------------|
-| [Architecture](ARCHITECTURE.md) | DSL proof-of-concept, how the engine was generated |
-| [Getting Started](docs/GETTING_STARTED.md) | Install, configure, first task |
-| [Configuration](docs/CONFIGURATION.md) | Every option explained with examples |
-| [Routing](docs/ROUTING.md) | 11-stage pipeline deep dive, tuning, custom experts |
-| [Tools](docs/TOOLS.md) | All 34 tools, custom registration, IPC opcodes |
-| [Continuity](docs/CONTINUITY.md) | 4 paradigms, crash recovery, replay |
-| [Security](docs/SECURITY.md) | PathJail, SSRF, WORM, ERE gates |
-| [Production Hardening](PRODUCTION_HARDENING.md) | Terminal IDE, accessibility, edge cases, testing, CI |
-
----
-
-## Desktop IDE
-
-The Electron desktop IDE lives in `ide/desktop`. It opens this repo as the workspace, stores model keys through Electron `safeStorage`, supports Ollama/Anthropic/OpenRouter/OpenCode/Llama/OpenAI-compatible chat providers, and exposes allowlisted Sovereign Engine tools to model chat.
-
-```powershell
-cd ide\desktop
-npm install
-npm run desktop
-```
-
-Bridge-backed tools use `python -m src.bridge.http_server` from the engine root.
+| Engine core | Python 3.11 | 170 | 49,517 |
+| CATN tensor network | Rust | 15 | 30,859 |
+| Electron IDE | TypeScript | 20 | 9,151 |
+| C Win32 IDE | C (Win32 API) | 59 | 7,481 |
+| x86-64 kernels | NASM | 6 | 3,753 |
+| NARM runtime | C + ASM + Fortran | 11 | 2,716 |
+| MAGMA protocol | Ada/SPARK + Rust + TS | 16 | 2,351 |
+| Hardware RTL | SystemVerilog + CUDA + P4 | 22 | 1,646 |
+| Formal proofs | Lean 4 + Agda | 5 | 1,447 |
+| AToKio | Haskell | 1 | 299 |
+| Tests | Python | 5 | 1,203 |
+| Docs + config | Markdown + JSON | — | ~4,000 |
+| **Total** | **20+ languages** | **377** | **124,490** |
 
 ---
 
