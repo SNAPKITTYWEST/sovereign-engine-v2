@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Deliberately not well-formed: the <nodes> element is never closed and an
+  attribute value is unterminated. xmllint -noout must reject this before
+  any schema or invariant logic runs at all.
+  Expected: validate_xml() fails at the well-formedness check -> exit 65.
+-->
+<network name="malformed_network" version="1.0">
+  <execution>
+    <max_recursion_depth>4</max_recursion_depth>
+    <hash_algorithm>sha256</hash_algorithm>
+    <rank_backend>computed</rank_backend>
+  </execution>
+  <nodes>
+    <node id="n1" priority="10"/>
+    <node id="n2" priority="8
+  </nodes>
+</network>

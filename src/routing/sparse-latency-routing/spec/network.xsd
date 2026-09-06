@@ -1,0 +1,304 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  network.xsd — canonical schema for the Sparse Latency Routing Hierarchy.
+
+  This schema is the machine-checkable half of the "XML is the formal
+  source of truth" requirement: any network.xml that validates against
+  this file is guaranteed (by libxml2 / xmllint, not by hope) to have
+  every field the bash implementation depends on, in the shape it
+  expects. It does NOT and cannot check semantic invariants that need
+  graph or numeric reasoning (e.g. "no forbidden cycles", "sparsity
+  ratio within bounds", "rank within thresholds") — those are I1..I12,
+  checked by verify_invariants() in bin/sparse_router.sh after parsing.
+  A schema cannot express "this attribute's value, interpreted as a
+  graph property, must hold" — only a real invariant checker can.
+-->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+           elementFormDefault="qualified">
+
+  <xs:simpleType name="identifier">
+    <!-- mirrors the IDENTIFIER regex token: ^[A-Za-z_][A-Za-z0-9_]*$ -->
+    <xs:restriction base="xs:string">
+      <xs:pattern value="[A-Za-z_][A-Za-z0-9_]*"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="tensorIdentifier">
+    <!-- recursive tensors use dotted paths (t1, t1.1, t1.1.2, ...) to name
+         a nested tensor uniquely; see TENSOR_EXPR in the regex lexer spec -->
+    <xs:restriction base="xs:string">
+      <xs:pattern value="[A-Za-z_][A-Za-z0-9_]*(\.[0-9]+)*"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="nonNegativeLatency">
+    <xs:restriction base="xs:decimal">
+      <xs:minInclusive value="0"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="activationState">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="active"/>
+      <xs:enumeration value="inactive"/>
+      <xs:enumeration value="pruned"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="sparsityClass">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="low"/>
+      <xs:enumeration value="medium"/>
+      <xs:enumeration value="high"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="rankBackend">
+    <xs:restriction base="xs:string">
+      <!-- "computed": a real matrix is supplied and rank is computed via
+           numpy.linalg.matrix_rank. "structural": no matrix is supplied
+           and rank is a labeled heuristic derived from graph structure.
+           The bash implementation refuses to call a structural value
+           "the Jacobian rank" in any emitted artifact — see SECTION 20. -->
+      <xs:enumeration value="computed"/>
+      <xs:enumeration value="structural"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <!-- ================= execution ================= -->
+  <xs:element name="execution">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="max_recursion_depth" type="xs:positiveInteger"/>
+        <xs:element name="hash_algorithm" type="xs:string" fixed="sha256"/>
+        <xs:element name="rank_backend" type="rankBackend"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+  <!-- ================= nodes / edges ================= -->
+  <xs:element name="nodes">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="node" minOccurs="1" maxOccurs="unbounded">
+          <xs:complexType>
+            <xs:attribute name="id" type="identifier" use="required"/>
+            <xs:attribute name="priority" type="xs:integer" use="required"/>
+          </xs:complexType>
+        </xs:element>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="edges">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="edge" minOccurs="0" maxOccurs="unbounded">
+          <xs:complexType>
+            <xs:attribute name="id" type="identifier" use="required"/>
+            <xs:attribute name="source" type="identifier" use="required"/>
+            <xs:attribute name="destination" type="identifier" use="required"/>
+            <xs:attribute name="computation_latency" type="xs:decimal" use="required"/>
+            <xs:attribute name="communication_latency" type="xs:decimal" use="required"/>
+            <xs:attribute name="synchronization_latency" type="xs:decimal" use="required"/>
+            <xs:attribute name="weight" type="xs:decimal" use="required"/>
+            <xs:attribute name="activation_state" type="activationState" use="required"/>
+            <xs:attribute name="tensor_dependency" type="tensorIdentifier" use="required"/>
+            <xs:attribute name="routing_priority" type="xs:integer" use="required"/>
+            <xs:attribute name="sparsity_class" type="sparsityClass" use="required"/>
+          </xs:complexType>
+        </xs:element>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+  <!-- ================= recursive tensor ================= -->
+  <xs:complexType name="tensorType">
+    <xs:sequence>
+      <xs:element name="recursion" minOccurs="0">
+        <xs:complexType>
+          <xs:sequence>
+            <xs:element name="tensor" type="tensorType" maxOccurs="unbounded"/>
+          </xs:sequence>
+          <xs:attribute name="max_depth" type="xs:nonNegativeInteger" use="required"/>
+        </xs:complexType>
+      </xs:element>
+    </xs:sequence>
+    <xs:attribute name="id" type="tensorIdentifier" use="required"/>
+    <!-- comma-separated positive integers, e.g. "4,4" or "8" (scalar has no shape) -->
+    <xs:attribute name="shape" type="xs:string" use="required"/>
+    <xs:attribute name="dtype" type="xs:string" use="required"/>
+    <xs:attribute name="rank_hint" type="xs:nonNegativeInteger" use="optional"/>
+    <xs:attribute name="sparse" type="xs:boolean" use="optional" default="false"/>
+  </xs:complexType>
+
+  <xs:element name="tensors">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="tensor" type="tensorType" maxOccurs="unbounded"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+  <!-- ================= routing ================= -->
+  <xs:element name="routing">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="hierarchy">
+          <xs:complexType>
+            <xs:attribute name="root" type="identifier" use="required"/>
+            <xs:attribute name="forbid_cycles" type="xs:boolean" use="required"/>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="latency">
+          <xs:complexType>
+            <xs:attribute name="objective" use="required">
+              <xs:simpleType>
+                <xs:restriction base="xs:string">
+                  <xs:enumeration value="minimize"/>
+                </xs:restriction>
+              </xs:simpleType>
+            </xs:attribute>
+            <xs:attribute name="threshold" type="nonNegativeLatency" use="required"/>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="sparsity">
+          <xs:complexType>
+            <!-- upper bound on |E| / |V|^2 -->
+            <xs:attribute name="max_ratio" type="xs:decimal" use="required"/>
+            <xs:attribute name="allow_expansion" type="xs:boolean" use="required"/>
+          </xs:complexType>
+        </xs:element>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+  <!-- ================= jacobian ================= -->
+  <xs:element name="jacobian">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="function">
+          <xs:complexType>
+            <xs:attribute name="name" type="identifier" use="required"/>
+            <xs:attribute name="input_dim" type="xs:positiveInteger" use="required"/>
+            <xs:attribute name="output_dim" type="xs:positiveInteger" use="required"/>
+          </xs:complexType>
+        </xs:element>
+        <!-- optional: a real numeric matrix. When present, calculate_rank()
+             computes a real rank via numpy. When absent, rank is structural. -->
+        <xs:element name="matrix" minOccurs="0">
+          <xs:complexType>
+            <xs:simpleContent>
+              <xs:extension base="xs:string">
+                <xs:attribute name="rows" type="xs:positiveInteger" use="required"/>
+                <xs:attribute name="cols" type="xs:positiveInteger" use="required"/>
+              </xs:extension>
+            </xs:simpleContent>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="rank">
+          <xs:complexType>
+            <xs:attribute name="thresholds_min" type="xs:nonNegativeInteger" use="required"/>
+            <xs:attribute name="thresholds_max" type="xs:nonNegativeInteger" use="required"/>
+            <xs:attribute name="slack" type="xs:nonNegativeInteger" use="required"/>
+          </xs:complexType>
+        </xs:element>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+  <!-- ================= parser (regex lexer rules, documented not executed from XML) ================= -->
+  <xs:element name="parser">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="regex" minOccurs="1" maxOccurs="unbounded">
+          <xs:complexType>
+            <xs:attribute name="name" type="xs:string" use="required"/>
+            <xs:attribute name="pattern" type="xs:string" use="required"/>
+          </xs:complexType>
+        </xs:element>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+  <!-- ================= adaptation ================= -->
+  <xs:element name="adaptation">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="rules">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="rule" minOccurs="0" maxOccurs="unbounded">
+                <xs:complexType>
+                  <xs:attribute name="id" type="identifier" use="required"/>
+                  <xs:attribute name="condition" use="required">
+                    <xs:simpleType>
+                      <xs:restriction base="xs:string">
+                        <xs:enumeration value="latency_exceeds_threshold"/>
+                        <xs:enumeration value="rank_decreases"/>
+                        <xs:enumeration value="rank_increases"/>
+                        <xs:enumeration value="tensor_dimension_changes"/>
+                        <xs:enumeration value="sparsity_exceeds_maximum"/>
+                      </xs:restriction>
+                    </xs:simpleType>
+                  </xs:attribute>
+                  <xs:attribute name="action" use="required">
+                    <xs:simpleType>
+                      <xs:restriction base="xs:string">
+                        <xs:enumeration value="evaluate_alternate_route"/>
+                        <xs:enumeration value="evaluate_redundant_edge_removal"/>
+                        <xs:enumeration value="evaluate_capacity_expansion"/>
+                        <xs:enumeration value="recompute_dependent_routing_metadata"/>
+                        <xs:enumeration value="reject_topology_expansion"/>
+                      </xs:restriction>
+                    </xs:simpleType>
+                  </xs:attribute>
+                </xs:complexType>
+              </xs:element>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+  <!-- ================= verification ================= -->
+  <xs:element name="verification">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="invariants">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="invariant" minOccurs="0" maxOccurs="unbounded">
+                <xs:complexType>
+                  <xs:attribute name="id" type="xs:string" use="required"/>
+                  <xs:attribute name="description" type="xs:string" use="required"/>
+                </xs:complexType>
+              </xs:element>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+  <!-- ================= root ================= -->
+  <xs:element name="network">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element ref="execution"/>
+        <xs:element ref="nodes"/>
+        <xs:element ref="edges"/>
+        <xs:element ref="tensors"/>
+        <xs:element ref="routing"/>
+        <xs:element ref="jacobian"/>
+        <xs:element ref="parser"/>
+        <xs:element ref="adaptation"/>
+        <xs:element ref="verification"/>
+      </xs:sequence>
+      <xs:attribute name="name" type="identifier" use="required"/>
+      <xs:attribute name="version" type="xs:string" use="required"/>
+    </xs:complexType>
+  </xs:element>
+
+</xs:schema>
