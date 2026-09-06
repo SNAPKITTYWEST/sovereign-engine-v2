@@ -12,7 +12,7 @@
 ![Rust](https://img.shields.io/badge/Rust-CATN%20%2B%20ZK-red)
 ![Ada/SPARK](https://img.shields.io/badge/Ada%2FSPARK-MAGMA%20FSM-brightgreen)
 ![x86-64](https://img.shields.io/badge/x86--64-AVX512%20%2B%20AMX-blueviolet)
-![Lines](https://img.shields.io/badge/Lines-124%2C490-green)
+![Lines](https://img.shields.io/badge/Source-83%2C473%20lines-green)
 ![License](https://img.shields.io/badge/License-BSL%201.1-yellow)
 
 ---
@@ -21,17 +21,17 @@
 
 A **sovereign compute stack**: native IDE, LLM inference engine, hardware synthesis pipeline, formal verification, and silicon-to-policy integrity chain — in one repo.
 
-**377 source files. 124,490 lines. 20+ languages. No frameworks. No wrappers.**
+**339 source files. 83,473 lines of code. 20+ languages. No frameworks. No wrappers.**
 
 This is:
 
 - A **C Win32 IDE** — text editor, ConPTY terminal, LSP, DAP, Direct2D, git — 59 files, 7,481 lines of C
-- An **Electron desktop IDE** — Ollama/Anthropic/OpenRouter chat, tool dispatch — 20 files, 9,151 lines
+- An **Electron desktop IDE** — Ollama/Anthropic/OpenRouter chat, tool dispatch — 30 files, 4,763 lines
 - A **Python LLM engine** — 11-stage Jordan algebra routing, binary WORM, 34 tools, ReAct agents — 170 modules, 49,517 lines
-- A **hardware kernel stack** — CUDA, SystemVerilog RTL, Chisel3, P4 data planes, TVM, MLIR, CUDA-Q, x86-64 ASM — 34 files, 5,703 lines
-- A **MAGMA protocol** — 666-line SPARK Ada ferrite FSM, Rust/TS/Ada FFI bindings, APL Wick rotation — 16 files, 2,351 lines
-- A **NARM runtime** — MLIR TableGen dialect, C arena/tensor/ops, AVX-512 + MOS 6502 kernels, Fortran — 11 files, 2,716 lines
-- A **Cellular Automaton Tensor Network** — CubeCL SVD, propagate kernels, microrom VM, virtual circuit board — 15 files, 30,859 lines of Rust
+- A **hardware kernel stack** — CUDA, SystemVerilog RTL, Chisel3, P4 data planes, TVM, MLIR, CUDA-Q, x86-64 ASM — 32 files, 5,670 lines
+- A **MAGMA protocol** — 666-line SPARK Ada ferrite FSM, Rust/TS/Ada FFI bindings, APL Wick rotation — 14 files, 2,331 lines
+- A **NARM runtime** — MLIR TableGen dialect, C arena/tensor/ops, AVX-512 + MOS 6502 kernels, Fortran — 9 files, 2,322 lines
+- A **Cellular Automaton Tensor Network** — CubeCL SVD, propagate kernels, microrom VM, virtual circuit board — 9 Rust files, 1,051 lines
 - **Formal proofs** — Lean 4 entropy bound (zero sorry), Agda ironic mirror, enochian root — 5 files, 1,447 lines
 - An **AToKio** linear attention monad — Haskell — 299 lines
 
@@ -198,7 +198,7 @@ Native Win32 application. No Electron. No web view. Direct2D GPU rendering, ConP
 
 ## The Engine
 
-**Location:** `src/` — 170 Python modules, 49,517 lines. **Pure Python 3.11+ stdlib. Zero pip dependencies.**
+**Location:** `src/` — 170 modules, 49,517 lines. **Pure Python 3.11+ stdlib. Zero pip dependencies.**
 
 | Package | Lines | What It Does |
 |---------|-------|-------------|
@@ -238,7 +238,7 @@ Native Win32 application. No Electron. No web view. Direct2D GPU rendering, ConP
 
 ## Hardware Kernel Stack
 
-**Location:** `kernels/` — 34 files, 5,703 lines
+**Location:** `kernels/` — 32 source files, 5,670 lines
 
 | Directory | Lang | Lines | What It Does |
 |-----------|------|-------|-------------|
@@ -277,7 +277,7 @@ Ada/SPARK proof: entropy(agent) ≤ 0.20 → active ⇒ trusted → sovereign el
 
 ## MAGMA Protocol
 
-**Location:** `magma/` — 16 files, 2,351 lines
+**Location:** `magma/` — 14 source files, 2,331 lines
 
 Internal sovereign agent language: **§VERB:AGENT:ACTION{payload}**
 
@@ -364,7 +364,7 @@ Integration chain: Q-Regex match probability → Kalman filter → Δω_pump →
 
 ## NARM Runtime
 
-**Location:** `narm/` — 11 files, 2,716 lines
+**Location:** `narm/` — 9 source files, 2,322 lines
 
 Non-Autoregressive Reconstruction Machine. NASA systems engineering spec.
 
@@ -384,7 +384,7 @@ Non-Autoregressive Reconstruction Machine. NASA systems engineering spec.
 
 ## CATN — Cellular Automaton Tensor Network
 
-**Location:** `catn/` — 15 files, 30,859 lines of Rust
+**Location:** `catn/` — 9 source files, 1,051 lines of Rust
 
 | File | What It Does |
 |------|-------------|
@@ -543,18 +543,17 @@ Unified: [The Sovereign Stack](https://snapkittywest.github.io/hyperkitty/papers
 | Component | Language | Files | Lines |
 |-----------|----------|-------|-------|
 | Engine core | Python 3.11 | 170 | 49,517 |
-| CATN tensor network | Rust | 15 | 30,859 |
-| Electron IDE | TypeScript | 20 | 9,151 |
 | C Win32 IDE | C (Win32 API) | 59 | 7,481 |
 | x86-64 kernels | NASM | 6 | 3,753 |
-| NARM runtime | C + ASM + Fortran | 11 | 2,716 |
-| MAGMA protocol | Ada/SPARK + Rust + TS | 16 | 2,351 |
-| Hardware RTL | SystemVerilog + CUDA + P4 | 22 | 1,646 |
+| Electron IDE | TypeScript | 30 | 4,763 |
+| MAGMA protocol | Ada/SPARK + Rust + TS | 14 | 2,331 |
+| NARM runtime | C + ASM + Fortran | 9 | 2,322 |
+| Hardware RTL | SystemVerilog + CUDA + P4 | 19 | 1,917 |
 | Formal proofs | Lean 4 + Agda | 5 | 1,447 |
+| CATN tensor network | Rust | 9 | 1,051 |
 | AToKio | Haskell | 1 | 299 |
 | Tests | Python | 5 | 1,203 |
-| Docs + config | Markdown + JSON | — | ~4,000 |
-| **Total** | **20+ languages** | **377** | **124,490** |
+| **Total source** | **20+ languages** | **339** | **83,473** |
 
 ---
 
