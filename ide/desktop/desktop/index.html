@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; worker-src 'self' blob:; img-src 'self' data:; font-src 'self' data:"
+    />
+    <title>Sovereign Engine Desktop IDE</title>
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="titlebar">
+        <div class="brand">
+          <span class="brand-mark">BOB</span>
+          <span class="brand-title">Sovereign Engine IDE</span>
+        </div>
+        <div class="root-pill" title="Workspace root">
+          <i data-lucide="folder-root"></i>
+          <span id="rootPath">Loading workspace</span>
+        </div>
+        <div id="status" class="status" data-kind="idle">Booting</div>
+      </header>
+
+      <main class="workbench">
+        <aside class="sidebar">
+          <div class="panel-heading">
+            <span>Explorer</span>
+            <button id="refreshButton" class="icon-button" type="button" title="Refresh explorer">
+              <i data-lucide="refresh-cw"></i>
+            </button>
+          </div>
+          <div id="fileTree" class="file-tree"></div>
+        </aside>
+
+        <section class="editor-column">
+          <div class="editor-toolbar">
+            <div class="file-chip">
+              <i data-lucide="file-code"></i>
+              <span id="fileName">README.md</span>
+              <small id="fileMeta">markdown</small>
+            </div>
+            <button id="saveButton" class="tool-button compact" type="button" title="Save file">
+              <i data-lucide="save"></i>
+              <span>Save</span>
+            </button>
+          </div>
+          <div id="editorHost" class="editor-host"></div>
+          <section class="terminal-panel">
+            <div class="terminal-toolbar">
+              <div id="quickCommands" class="quick-commands"></div>
+              <label class="command-entry">
+                <i data-lucide="terminal"></i>
+                <input id="commandInput" type="text" value="python -m pytest" spellcheck="false" />
+              </label>
+              <button id="runButton" class="tool-button compact" type="button" title="Run sandbox command">
+                <i data-lucide="play"></i>
+                <span>Run</span>
+              </button>
+            </div>
+            <pre id="terminal" class="terminal-output" aria-live="polite"></pre>
+          </section>
+        </section>
+
+        <aside class="right-rail">
+          <section class="chat-panel">
+            <div class="panel-heading">
+              <span>BOB</span>
+              <label class="tools-toggle" title="Allow the active model to call allowlisted Sovereign tools">
+                <input id="toolsEnabled" type="checkbox" checked />
+                <span>Tools</span>
+              </label>
+            </div>
+            <div id="chatLog" class="chat-log"></div>
+            <div class="chat-composer">
+              <textarea id="chatInput" rows="3" spellcheck="true"></textarea>
+              <button id="chatButton" class="icon-button send" type="button" title="Send to BOB">
+                <i data-lucide="send"></i>
+              </button>
+            </div>
+          </section>
+
+          <section class="model-panel">
+            <div class="panel-heading">
+              <span>Models</span>
+              <i data-lucide="key-round"></i>
+            </div>
+            <div class="model-form">
+              <label>
+                <span>Provider</span>
+                <select id="providerSelect"></select>
+              </label>
+              <label>
+                <span>Model</span>
+                <input id="modelInput" type="text" spellcheck="false" />
+              </label>
+              <label>
+                <span>Base URL</span>
+                <input id="baseUrlInput" type="text" spellcheck="false" />
+              </label>
+              <label>
+                <span>API key</span>
+                <input id="apiKeyInput" type="password" spellcheck="false" autocomplete="off" />
+              </label>
+              <div class="model-actions">
+                <button id="saveProviderButton" class="tool-button compact" type="button" title="Save provider settings">
+                  <i data-lucide="save"></i>
+                  <span>Save</span>
+                </button>
+                <button id="clearKeyButton" class="icon-button" type="button" title="Clear saved API key">
+                  <i data-lucide="key-square"></i>
+                </button>
+                <span id="providerState" class="provider-state">Local</span>
+              </div>
+            </div>
+          </section>
+
+          <section class="trace-panel">
+            <div class="panel-heading">
+              <span>Sovereign Tools</span>
+              <i data-lucide="activity"></i>
+            </div>
+            <div id="toolList" class="tool-list"></div>
+            <div id="trace" class="trace-log"></div>
+          </section>
+        </aside>
+      </main>
+    </div>
+
+    <script type="module" src="./renderer.ts"></script>
+  </body>
+</html>

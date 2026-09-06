@@ -1,0 +1,49 @@
+{
+  "name": "sovereign-engine-desktop-ide",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc && vite build",
+    "typecheck": "tsc --noEmit",
+    "test": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js",
+    "verify": "npm run build && npm test",
+    "dev": "vite",
+    "preview": "vite preview",
+    "desktop:build": "npm run build",
+    "desktop:start": "electron dist/desktop/main.js",
+    "desktop": "npm run desktop:build && npm run desktop:start"
+  },
+  "devDependencies": {
+    "@types/jest": "^30.0.0",
+    "@types/node": "^24.0.3",
+    "electron": "^43.4.1",
+    "jest": "^30.0.0",
+    "monaco-editor": "^0.56.0",
+    "ts-jest": "^29.4.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.8.3",
+    "vite": "^7.1.2"
+  },
+  "jest": {
+    "preset": "ts-jest/presets/default-esm",
+    "testEnvironment": "node",
+    "testMatch": [
+      "<rootDir>/tests/**/*.test.ts",
+      "<rootDir>/universe/**/*.test.ts"
+    ],
+    "testPathIgnorePatterns": [
+      "<rootDir>/dist/",
+      "<rootDir>/node_modules/"
+    ],
+    "extensionsToTreatAsEsm": [
+      ".ts"
+    ],
+    "moduleNameMapper": {
+      "^(\\.{1,2}/.*)\\.js$": "$1"
+    }
+  },
+  "dependencies": {
+    "lucide": "^0.468.0"
+  }
+}
