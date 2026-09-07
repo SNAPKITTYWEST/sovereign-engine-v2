@@ -1,0 +1,14 @@
+{
+  "model_type": "burt-imma",
+  "architectures": ["CIFGMatrixMemoryCell"],
+  "input_dim": 768,
+  "hidden_dim": 768,
+  "activation": "SmoothLeaky",
+  "smooth_leaky_alpha": 0.1,
+  "entropy_budget_nats": 0.20,
+  "memory_type": "rank1_outer_product",
+  "gate_type": "CIFG",
+  "spectral_projection": true,
+  "torch_dtype": "float32",
+  "transformers_version": "4.40.0"
+}

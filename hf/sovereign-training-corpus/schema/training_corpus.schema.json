@@ -1,0 +1,72 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "SovereignTrainingCorpus",
+  "type": "object",
+  "required": ["repo", "summary", "metadata_tree", "relationship_graph", "training_corpus"],
+  "properties": {
+    "repo": { "type": "string" },
+    "summary": {
+      "type": "object",
+      "required": ["domain", "architecture_type", "primary_language", "major_components"],
+      "properties": {
+        "domain":             { "type": "string" },
+        "architecture_type":  { "type": "string" },
+        "primary_language":   { "type": "string" },
+        "major_components":   { "type": "array", "items": { "type": "string" } },
+        "data_stores":        { "type": "array", "items": { "type": "string" } },
+        "external_interfaces":{ "type": "array", "items": { "type": "string" } },
+        "evidence_files_read":{ "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "metadata_tree": { "$ref": "#/definitions/Node" },
+    "relationship_graph": {
+      "type": "array",
+      "items": { "$ref": "#/definitions/Edge" }
+    },
+    "training_corpus": {
+      "type": "object",
+      "required": ["DISCOVERY","EXTRACTION","CLASSIFICATION","RELATIONSHIP","ARCHITECTURE","BEHAVIOR","RECONSTRUCTION"],
+      "properties": {
+        "DISCOVERY":      { "type": "array", "items": { "$ref": "#/definitions/Example" } },
+        "EXTRACTION":     { "type": "array", "items": { "$ref": "#/definitions/Example" } },
+        "CLASSIFICATION": { "type": "array", "items": { "$ref": "#/definitions/Example" } },
+        "RELATIONSHIP":   { "type": "array", "items": { "$ref": "#/definitions/Example" } },
+        "ARCHITECTURE":   { "type": "array", "items": { "$ref": "#/definitions/Example" } },
+        "BEHAVIOR":       { "type": "array", "items": { "$ref": "#/definitions/Example" } },
+        "RECONSTRUCTION": { "type": "array", "items": { "$ref": "#/definitions/Example" } }
+      }
+    }
+  },
+  "definitions": {
+    "Node": {
+      "type": "object",
+      "required": ["node_id", "node_type", "name"],
+      "properties": {
+        "node_id":   { "type": "string" },
+        "node_type": { "type": "string", "enum": ["repository","subsystem","component","schema","api","test","config"] },
+        "name":      { "type": "string" },
+        "children":  { "type": "array", "items": { "$ref": "#/definitions/Node" } }
+      }
+    },
+    "Edge": {
+      "type": "object",
+      "required": ["from", "to", "relationship", "evidence", "confidence"],
+      "properties": {
+        "from":         { "type": "string" },
+        "to":           { "type": "string" },
+        "relationship": { "type": "string" },
+        "evidence":     { "type": "string" },
+        "confidence":   { "type": "string", "enum": ["OBSERVED","DERIVED","INFERRED","HYPOTHESIZED"] }
+      }
+    },
+    "Example": {
+      "type": "object",
+      "required": ["question", "answer", "evidence"],
+      "properties": {
+        "question": { "type": "string" },
+        "answer":   { "type": "string" },
+        "evidence": { "type": "string" }
+      }
+    }
+  }
+}
