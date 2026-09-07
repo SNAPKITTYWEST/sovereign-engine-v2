@@ -1373,31 +1373,64 @@ DimensionWithin←{
 ⍝ 073  VALIDATE CONFIGURATION
 ⍝ ----------------------------------------------------------------
 
-AssertConfiguration←{
-    epsilon chiMax←⍺
+AssertConfig←{
+    cfg←⍵
+    ⎕Assert 2=≢cfg          ⍝ [epsilon chiMax]
+    epsilon chiMax←cfg
     ⎕Assert epsilon>0
     ⎕Assert chiMax>0
-    ⎕Assert chiMax=⌊chiMax
-    1
+    cfg
+}
+
+AssertConfigFinite←{
+    cfg←⍵
+    ⎕Assert IsFinite cfg
+    cfg
+}
+
+ValidateConfig←{
+    cfg←⍵
+    cfg←AssertConfig cfg
+    cfg←AssertConfigFinite cfg
+    cfg
 }
 
 ⍝ ----------------------------------------------------------------
-⍝ 074  CONFIGURATION RECORD
+⍝ 074  CONFIGURED LIQUID STEP
 ⍝ ----------------------------------------------------------------
 
-LiquidConfig←{
-    epsilon chiMax←⍺
-    AssertConfiguration epsilon chiMax
-    epsilon chiMax
+ConfiguredLiquidStep←{
+    cfg operator state←⍺
+    cfg←ValidateConfig cfg
+    epsilon chiMax←cfg
+    next←operator state
+    LiquidAssert (epsilon chiMax) next
+}
+
+ConfiguredLiquidChain←{
+    cfg state←⍺
+    cfg←ValidateConfig cfg
+    epsilon chiMax←cfg
+    StrictLiquidChain epsilon chiMax state
 }
 
 ⍝ ----------------------------------------------------------------
-⍝ 075  CONFIGURED ASSERTOR
+⍝ 075  CONFIG + STATE SEAL
 ⍝ ----------------------------------------------------------------
 
-ConfiguredLiquidAssert←{
-    config state←⍺
-    LiquidAssert config state
+ConfigStateSeal←{
+    cfg state←⍺
+    cfg←ValidateConfig cfg
+    epsilon chiMax←cfg
+    sig←StateSignature state
+    ⍕epsilon,',',chiMax,',',sig
+}
+
+AssertConfigStateSeal←{
+    expected cfg state←⍺
+    actual←ConfigStateSeal cfg state
+    ⎕Assert expected≡actual
+    state
 }
 
 ⍝ ----------------------------------------------------------------
