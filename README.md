@@ -731,24 +731,15 @@ swift build    # macOS 14+ / iOS 17+
 
 ```
   the-49th-call/
-  ├── src/lib.rs              Rust core library (Cargo)
-  ├── ere.pl                  Prolog ERE (Enochian Root Engine)
-  ├── substrate/
-  │   ├── soul_spec.hs        Haskell soul specification
-  │   ├── substrate.apl       APL substrate computation
-  │   ├── subleq.asm          SUBLEQ one-instruction set computer
-  │   ├── mamari.cbl          COBOL mamari module
-  │   └── comefrom.i          INTERCAL COMEFROM control flow
-  ├── invert/
-  │   ├── call49_rtl.pl       Prolog RTL inversion
-  │   ├── soul_inverted.hs    Haskell inverted soul
-  │   └── substrate_rtl.apl   APL RTL substrate
-  ├── net/
-  │   ├── gates_231.mjs       ES module — 231 gate network
-  │   ├── grid.html           Grid visualization
-  │   └── masters.pl          Prolog master registry
-  ├── decode/                 Arabic + Aramaic + Hebrew root tables
-  └── ENOCH_BOB_PATTERN_MATCH.py  Pattern matching engine
+  ├── src/
+  │   ├── Cargo.toml
+  │   └── lib.rs              Rust core library
+  └── substrate/
+      ├── soul_spec.hs        Haskell soul specification
+      ├── substrate.apl       APL substrate computation
+      ├── subleq.asm          SUBLEQ one-instruction set computer
+      ├── mamari.cbl          COBOL mamari module
+      └── comefrom.i          INTERCAL COMEFROM control flow
 
   Gnostic Arithmetic (proofs/ + runtime/):
   ├── proofs/GnosticArithmetic.lean    Abjad matrix, Wafq magic squares, 360° cipher
