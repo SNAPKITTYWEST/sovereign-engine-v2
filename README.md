@@ -1,48 +1,778 @@
 ```
-   ____                              _                ______            _
-  / ___|  _____   _____ _ __ ___(_) __ _ _ __   | ____| _ __   __ _(_)_ __   ___
-  \___ \ / _ \ \ / / _ \ '__/ _ \ |/ _` | '_ \  |  _| | '_ \ / _` | | '_ \ / _ \
-   ___) | (_) \ V /  __/ | |  __/ | (_| | | | | | |___| | | | (_| | | | | |  __/
-  |____/ \___/ \_/ \___|_|  \___|_|\__, |_| |_| |_____|_| |_|\__, |_|_| |_|\___|
-                                    |___/                      |___/          v2.0
+  ███████╗ ██████╗ ██╗   ██╗███████╗██████╗ ███████╗██╗ ██████╗ ███╗   ██╗
+  ██╔════╝██╔═══██╗██║   ██║██╔════╝██╔══██╗██╔════╝██║██╔════╝ ████╗  ██║
+  ███████╗██║   ██║██║   ██║█████╗  ██████╔╝█████╗  ██║██║  ███╗██╔██╗ ██║
+  ╚════██║██║   ██║╚██╗ ██╔╝██╔══╝  ██╔══██╗██╔══╝  ██║██║   ██║██║╚██╗██║
+  ███████║╚██████╔╝ ╚████╔╝ ███████╗██║  ██║███████╗██║╚██████╔╝██║ ╚████║
+  ╚══════╝ ╚═════╝   ╚═══╝  ╚══════╝╚═╝  ╚═╝╚══════╝╚═╝ ╚═════╝ ╚═╝  ╚═══╝
+                     E N G I N E   v 2 . 0   —   S O V E R E I G N
 ```
 
-![Python 3.11+](https://img.shields.io/badge/Python-3.11%2B-blue)
-![C Win32](https://img.shields.io/badge/C-Win32%20Native-orange)
-![Rust](https://img.shields.io/badge/Rust-CATN%20%2B%20ZK-red)
-![Ada/SPARK](https://img.shields.io/badge/Ada%2FSPARK-MAGMA%20FSM-brightgreen)
-![x86-64](https://img.shields.io/badge/x86--64-AVX512%20%2B%20AMX-blueviolet)
-![Source](https://img.shields.io/badge/Source-79%2C935%20lines-green)
-![License](https://img.shields.io/badge/License-BSL%201.1-yellow)
+[![Python 3.11+](https://img.shields.io/badge/Python-3.11%2B-blue?style=flat-square)](https://python.org)
+[![Haskell](https://img.shields.io/badge/Haskell-LiquidHaskell-5E5086?style=flat-square)](https://haskell.org)
+[![Lean 4](https://img.shields.io/badge/Lean%204-Zero%20Sorry-00C04B?style=flat-square)](https://leanprover.github.io)
+[![Ada/SPARK](https://img.shields.io/badge/Ada%2FSPARK-MAGMA%20FSM-brightgreen?style=flat-square)](https://adacore.com/spark)
+[![x86-64](https://img.shields.io/badge/x86--64-AVX512%20%2B%20AMX-blueviolet?style=flat-square)](https://en.wikipedia.org/wiki/AVX-512)
+[![Rust](https://img.shields.io/badge/Rust-CATN%20%2B%20GDR-orange?style=flat-square)](https://rust-lang.org)
+[![Source](https://img.shields.io/badge/Source-89%2C098%20lines-green?style=flat-square)](#source)
+[![License](https://img.shields.io/badge/License-BSL%201.1-yellow?style=flat-square)](LICENSE)
+
+---
+
+> **A sovereign compute stack.** Silicon RTL to formal proofs to native IDE — one repo, one author, zero frameworks.  
+> **20+ languages. 368 source files. 89,098 lines.** Every layer proved, sealed, and verifiable.
+
+---
+
+## Table of Contents
+
+- [What This Is](#what-this-is)
+- [Full Stack Diagram](#full-stack-diagram)
+- [Cobalt — LiquidHaskell Package](#cobalt--liquidhaskell-package)
+- [GDR-9 Kernel Stack](#gdr-9-kernel-stack)
+- [Hardware Layer](#hardware-layer)
+- [Protocol Layer](#protocol-layer)
+- [Engine Layer](#engine-layer)
+- [Formal Layer](#formal-layer)
+- [Desktop Layer](#desktop-layer)
+- [Sparse Latency Router](#sparse-latency-router)
+- [Papers](#papers)
+- [Mathematics](#the-mathematics)
+- [Security](#security)
+- [Continuity](#continuity)
+- [Source](#source)
+- [Quick Start](#quick-start)
 
 ---
 
 ## What This Is
 
-A sovereign compute stack. Silicon RTL to formal proofs to native IDE — in one repo, one author, zero frameworks.
+```
+┌──────────────────────────────────────────────────────────────────────────┐
+│                         SOVEREIGN ENGINE v2                              │
+│                                                                          │
+│  ┌─────────────────────────────────────────────────────────────────┐    │
+│  │  FORMAL LAYER                                                   │    │
+│  │  Lean 4 (entropy + tensor framework + GDR) · Agda · SPARK Ada  │    │
+│  │  TensorFramework.lean — 13 theorems, 2 axioms, 0 circular       │    │
+│  └─────────────────────────────────────────────────────────────────┘    │
+│  ┌──────────────────────────┐  ┌──────────────────────────────────┐    │
+│  │  COBALT HASKELL PACKAGE  │  │  PAPERS (LaTeX)                  │    │
+│  │  23 modules              │  │  LiquidOps · Entropy · GDR-9     │    │
+│  │  LiquidOps · ISA · Math  │  │  PLDI / FM / SC targets          │    │
+│  └──────────────────────────┘  └──────────────────────────────────┘    │
+│  ┌─────────────────────────────────────────────────────────────────┐    │
+│  │  DESKTOP LAYER                                                  │    │
+│  │  C Win32 IDE (Direct2D) · BEAM Process VM (WAT)                 │    │
+│  └─────────────────────────────────────────────────────────────────┘    │
+│  ┌─────────────────────────────────────────────────────────────────┐    │
+│  │  ENGINE LAYER                                                   │    │
+│  │  11-Stage Jordan Routing · 6 Attention Mechanisms               │    │
+│  │  34 Tools · ReAct Agents · WORM Seal · Entropy ≤ 0.20 nats      │    │
+│  └─────────────────────────────────────────────────────────────────┘    │
+│  ┌─────────────────────────────────────────────────────────────────┐    │
+│  │  PROTOCOL LAYER                                                 │    │
+│  │  MAGMA (SPARK Ada FSM) · NARM (MLIR+AVX-512)                    │    │
+│  │  CATN (CubeCL Rust) · ISA-8/16 · Q-Regex (QASM)                │    │
+│  │  Sparse Latency Router (Dijkstra + Jacobian rank + WORM)        │    │
+│  └─────────────────────────────────────────────────────────────────┘    │
+│  ┌─────────────────────────────────────────────────────────────────┐    │
+│  │  HARDWARE LAYER — GDR-9 KERNEL STACK                            │    │
+│  │  Rust · CUDA · SystemVerilog · Chisel · P4                      │    │
+│  │  TileLang · MLIR · CUDA-Q · x86-64 NASM (AVX2/AVX-512/AMX)     │    │
+│  └─────────────────────────────────────────────────────────────────┘    │
+└──────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Full Stack Diagram
 
 ```
-┌─────────────────────────────────────────────────────────┐
-│                    FORMAL LAYER                         │
-│   Lean 4 entropy proof · Agda mirror · OpenQASM         │
-├─────────────────────────────────────────────────────────┤
-│                  DESKTOP LAYER                          │
-│   C Win32 IDE (Direct2D) · BEAM process VM (WASM)       │
-├─────────────────────────────────────────────────────────┤
-│                  ENGINE LAYER                           │
-│   Jordan routing · ReAct agents · 34 tools · WORM seal  │
-├─────────────────────────────────────────────────────────┤
-│                 PROTOCOL LAYER                          │
-│   MAGMA (SPARK Ada FSM) · NARM (MLIR + AVX-512)        │
-│   CATN (CubeCL Rust) · ISA-8/16 · Q-Regex (QASM)       │
-├─────────────────────────────────────────────────────────┤
-│                 HARDWARE LAYER                          │
-│   CUDA · SystemVerilog RTL · P4 data plane · x86-64 ASM │
-│   Chisel3 · TVM · MLIR · CUDA-Q quantum kernels         │
-└─────────────────────────────────────────────────────────┘
+                      ╔══════════════════════════╗
+                      ║    USER / IDE / API       ║
+                      ╚══════════════╦═══════════╝
+                                     │
+                    ╔════════════════▼═══════════════╗
+                    ║        11-STAGE ROUTING         ║
+                    ║  ┌─────────────────────────┐   ║
+                    ║  │ 1  Regex Parser          │   ║
+                    ║  │ 2  Inverted AST Builder  │   ║
+                    ║  │ 3  Symbolic Signal Graph │   ║
+                    ║  │ 4  Jordan SpinFactor     │◄──╫── φ = 0x9E3779B97F4A7C15
+                    ║  │ 5  Jacobian Lens ∂f/∂x  │   ║
+                    ║  │ 6  Constraint Eval       │◄──╫── H ≤ 0.20 nats (proved)
+                    ║  │ 7  Sparse Activation     │   ║
+                    ║  │ 8  NAND Filter           │◄──╫── NAND complete
+                    ║  │ 9  Agent Dispatch        │   ║
+                    ║  │ 10 Merge Output          │   ║
+                    ║  │ 11 WORM Seal Blake2b     │◄──╫── Ed25519, immutable
+                    ║  └─────────────────────────┘   ║
+                    ╚════════════════╦═══════════════╝
+                                     │
+           ╔═════════════════════════╬═══════════════════════════╗
+           ║                         │                           ║
+    ╔══════▼══════╗          ╔═══════▼══════╗          ╔════════▼═════╗
+    ║  ATTENTION  ║          ║    AGENTS    ║          ║   RESONANCE  ║
+    ║  6 mechs    ║          ║ ReAct/Shadow ║          ║  Tensor Net  ║
+    ║  No softmax ║          ║ MCTS / QRA   ║          ║  Plugboard   ║
+    ╚══════╦══════╝          ╚═══════╦══════╝          ╚════════╦═════╝
+           └─────────────────────────┘                          │
+                             │                                  │
+                    ╔════════▼════════╗                ╔════════▼═════╗
+                    ║  ENTROPY GOV    ║                ║  SENTENCE    ║
+                    ║  H < 0.20 nats  ║                ║  GENERATOR   ║
+                    ║  WORM chain     ║                ╚══════════════╝
+                    ╚════════╦════════╝
+                             │
+           ╔═════════════════╬═════════════════════╗
+           ║                 │                     ║
+    ╔══════▼══════╗  ╔═══════▼══════╗   ╔══════════▼══════╗
+    ║   COBALT    ║  ║   MAGMA      ║   ║   GDR-9 STACK   ║
+    ║  Haskell    ║  ║  SPARK Ada   ║   ║  9 ISA targets  ║
+    ║  23 modules ║  ║  FSM 666 L   ║   ║  Lean 4 proofs  ║
+    ╚══════╦══════╝  ╚═══════╦══════╝   ╚══════════╦══════╝
+           │                 │                      │
+    ╔══════▼══════╗  ╔═══════▼══════╗   ╔══════════▼══════╗
+    ║ LiquidOps   ║  ║  BEAM VM     ║   ║ Rust / CUDA     ║
+    ║ NandTree    ║  ║  WAT 8 agents║   ║ SV / Chisel     ║
+    ║ ISA GADT    ║  ║  Priority RR ║   ║ P4 / MLIR       ║
+    ╚═════════════╝  ╚══════════════╝   ║ CUDA-Q / x86    ║
+                                        ╚═════════════════╝
 ```
 
-**312 source files. 79,935 lines. 20+ languages.**
+---
+
+## Cobalt — LiquidHaskell Package
+
+`cobalt/` is a standalone Haskell package with 23 exposed modules covering a verified ISA compiler, LiquidHaskell mathematical library, and Lean 4 runtime proofs.
+
+### LiquidOps Pipeline
+
+```
+  FExpr (Fixpoint-style source logic)
+    │
+    │  normalizeExpr          ← structural recursion, exprSize measure
+    ▼
+  FExpr (normalized)           ← constant folding, absorption, IMP/IFF reduction
+    │
+    │  toLogic
+    ▼
+  Logic FExpr                  ← LTrue/LFalse/LAtom/LNot/LAnd/LOr/LImp/LIff
+    │
+    │  nandify                 ← ELIMINATES all AND/OR/NOT/IMP/IFF
+    ▼
+  NandTree FExpr               ← only NTrue/NFalse/NAtom/NNand exist here
+    │
+    │  nandReduce              ← NAND(False,_)=True, NAND(True,True)=False
+    ▼
+  NandTree FExpr (reduced)
+    │
+    │  compileNand             ← monotone register allocation, freshReg
+    ▼
+  [Instr]                      ← GADT: MovImm/Add/Sub/Mul/Nand/Load/Store/Jump
+    │
+    │  assembleProgram         ← all registers ∈ [0,32), instrValid
+    ▼
+  Program (validated)          ← ready for MachineState execution
+
+  INVARIANT: No AND/OR/NOT opcode ever appears in the output.
+             Only Nand is the boolean primitive at ISA level.
+```
+
+### NAND Boolean Completeness
+
+```
+  NOT(a)     =  NAND(a, a)
+  AND(a,b)   =  NAND(NAND(a,b), NAND(a,b))
+  OR(a,b)    =  NAND(NAND(a,a), NAND(b,b))
+  IMP(a,b)   =  OR(NOT(a), b)
+  IFF(a,b)   =  AND(IMP(a,b), IMP(b,a))
+
+  Proved: Theorem 1 (NAND Canonicality)  — structural induction on Logic a
+          Theorem 2 (ISA NAND Invariant) — structural induction on NandTree a
+```
+
+### ISA Machine State
+
+```
+  MachineState
+  ├── regs  : Map Int Word64      32 × 64-bit general registers
+  ├── mem   : Map Word64 Word8    byte-addressable sparse memory
+  ├── pc    : Word64              program counter
+  └── flags : Flags               zero | sign | carry | overflow
+
+  Instruction GADT (selected):
+  ├── MovImm  rd imm              rd = imm
+  ├── Add/Sub/Mul/Div rd rs1 rs2  rd = rs1 OP rs2  (+ carry/borrow flag)
+  ├── Nand    rd rs1 rs2          rd = ~(rs1 & rs2)  ← ONLY boolean opcode
+  ├── Load    rd ra off           rd = mem[ra+off]
+  ├── Store   rs ra off           mem[ra+off] = rs
+  ├── Jump    target              pc = target
+  └── JumpZero target             if ZF: pc = target
+```
+
+### Module Map
+
+| Module | Track | Purpose |
+|--------|-------|---------|
+| `LiquidOps.Kernel` | Educational | Simple `HExpr → P4 → [LiquidOp]` pipeline |
+| `LiquidOps.KernelFull` | Production | `FExpr → Logic → NandTree → ISA → Program` |
+| `LiquidOps.NAND` | Standalone | NAND kernel with full LH refinements |
+| `Language.Fixpoint.LiquidOps.Kernel` | Integration | Connects to real liquid-fixpoint library |
+| `ISA.Core` | ISA | MachineState, Flags, Instr GADT, exec |
+| `ISA.Macro` | ISA | macroCopy/Clear/Not/And/Or/CountLoop |
+| `ISA.Program` | ISA | assembleProgram, runProgram, traceProgram |
+| `ISA.Examples` | ISA | Sum, factorial, bitwise, NAND demo |
+| `Core.Nat` | Math | `{v:Int \| v≥0}`, powNat, sumNat, 9 lemmas |
+| `Core.Group` | Math | Z₂ + Z₇ groups, all 5 group axioms |
+| `Physics.Godel` | Math | `GTime {timeIndex, timePeriod}`, cyclic step, closed curves |
+| `Physics.WormholeBH` | Math | E-R bridge, `RegionBH{bhMass}`, no-escape monotone |
+| `Calculus.Limit` | Math | ε-δ, uniqueness, squeeze theorem |
+| `Calculus.Derivative` | Math | constant/power/product/quotient/chain rules |
+| `Calculus.Integral` | Math | Riemann, FTC Part 1 + 2 |
+| `Language.Fixpoint.Solver.Simplify` | Solver | `simplifyRecursive`, const+bool+set folding |
+| `Language.Fixpoint.Solver.Eliminate` | Solver | KVar scopes, substitution, elimination |
+| `Language.Fixpoint.Smt.Theories.Recurse` | Solver | `truncateAndRecurseFunc`, SMT2 bridge |
+| `Language.Haskell.Liquid.Transforms.DenseDex` | Transform | `dexFold / [dexSize d]`, map/filter/merge |
+| `Language.Haskell.Liquid.Transforms.CoreToLogic` | Transform | GHC Core → Fixpoint translation |
+| `Cobalt.Dense` | Compiler | Prolog→functor crystal expansion→x86-64 |
+| `Cobalt.Trilock` | Compiler | φ64 Fibonacci hash, 192-bit Trilock "AAAA-BBBB-CCCC" |
+| `MagicCobalt` | Compiler | `compile :: CobaltConfig → String → Either String CompileResult` |
+
+---
+
+## GDR-9 Kernel Stack
+
+Nine co-verified implementations of `δw = η·(t−y)·x` — fused forward-backward in one kernel pass.
+
+```
+  Mathematical specification (Lean 4):
+  ─────────────────────────────────────
+  gdrSpec W x t η = W + η • outer(t − W·x, x)
+
+  ┌─────────────────────────────────────────────────────────────┐
+  │  1  Rust         drain kernel, complexity_frac × entropy_frac│
+  │  2  CUDA         shared-memory tiling, 32×32 blocks          │
+  │  3  SystemVerilog MAC pipeline, RTL stages                   │
+  │  4  Chisel HDL   high-level RTL generation                   │
+  │  5  P4           match-action data plane (finite, no recurse) │
+  │  6  TileLang     NPU/TPU tile decomposition                  │
+  │  7  MLIR         gdr.fused_update → linalg.generic → LLVM   │
+  │  8  CUDA-Q       variational quantum-classical kernel         │
+  │  9  x86-64 NASM  YMM AVX2 super-scalar GEMM                  │
+  └─────────────────────────────────────────────────────────────┘
+           │
+           ▼ Lean 4 cross-ISA equivalence
+  ∀ target_t: target_t W x t η = gdrSpec W x t (η · drainScale inv)
+
+  Drain Invariants (Rust):
+  ────────────────────────
+  complexity_frac ∈ [0,1]        weight update bounded by complexity
+  entropy_frac    ∈ [0,1]        update suppressed in high-entropy regime
+  scale = η · F_c · (1 − F_e)   → 0 when entropy approaches H_MAX
+
+  WORM Audit Chain (every chunk):
+  ────────────────────────────────
+  seal_k = SHA-256( chunk_id ‖ delta_norm ‖ seal_{k-1} )
+  append-only log — break one seal → break all downstream
+```
+
+---
+
+## Hardware Layer
+
+### Kernel Stack — `kernels/`
+
+| Directory | Language | What It Does |
+|-----------|----------|-------------|
+| `x86/` | NASM | AVX2 GEMM, AMX Hopper kickdown, FP8 SM90, AC VM (Σ1..10=55), 8K framebuffer AVX-512 |
+| `hardware/rtl/` | SystemVerilog | MAC lateral array, dual-core top, P3 SHA accumulator |
+| `p4/` | P4-16 | TNA in-network forwarding, STRP ingress, sovereign data plane |
+| `tvm/` | Python+PTX | TileLang flash QKT kernel, TensorIR L3, PTX fused level 2 |
+| `cuda/` | CUDA C | GPU drain pipeline, 1M tensor parallel filter, binary checkpoint |
+| `rust/` | Rust | Fixed-point drain pipeline + Kani formal verification harness |
+| `cudaq/` | CUDA-Q | Quantum kernels (C++ + Python + holographic wormhole) |
+| `hardware/chisel/` | Scala | Chisel3 dual-core GDR |
+| `hardware/analog/` | Verilog-A | Analog MAC leaf cell |
+| `mlir/` | MLIR | TensorIR sovereign P3 lowering |
+
+### Synthesis Pipeline — `src/hardware/`
+
+```
+  microcode.json / add_instruction()
+        │  SovereignSynth
+        ▼
+  case-statement Verilog           single-cycle, ~150ps combinatorial
+
+  opcode_sequences.json / add_sequence()
+        │  SovereignSynthMulti
+        ▼
+  FSM Verilog                      N-cycle, log₂(N) flip-flops, zero ROM
+
+  activity_profile / n_cycles / alpha_target
+        │  EntropyBalancedDMAGen
+        ▼
+  Entropy-balanced DMA Verilog     power H=0 per cycle → DPA-resistant
+        │
+        ▼
+  Ada/SPARK proof: entropy(agent) ≤ 0.20 → active ⇒ trusted ⇒ sovereign
+```
+
+---
+
+## Protocol Layer
+
+### MAGMA — `magma/`
+
+Internal sovereign agent language: **§VERB:AGENT:ACTION{payload}**
+
+12 verbs · 22 agents (clearance 1–5) · 6 modifiers · SLC (Sovereign Logic Core)
+
+```
+  §INVOKE:BERT:EMBED{query}           → 768-dim Nomic embedding (Ollama)
+  §ANCHOR:WORM:SEAL{payload}          → Blake2b + Ed25519 immutable record
+  §ROUTE:JORDAN:TRANSFORM{signal}     → SpinFactor (α,v)∘(β,w) routing
+  §DRAIN:GDR:CHUNK{w,x,t,η}          → fused forward-backward weight update
+```
+
+| Component | Language | What It Does |
+|-----------|----------|-------------|
+| `magma_666.adb` | SPARK Ada | 666-line ferrite state machine — Idle→Flowing→Latched→Persisted→Fault |
+| `format.adb/ads` | Ada | LE decoders, CRC32, element sizes |
+| `parser.adb/ads` | Ada | Dense SPARK state machine for tensor parsing |
+| `apl/wick_rotation.apl` | APL | Hoare-verified Wick rotation operators |
+| `src/lib.rs` | Rust | Biot-Savart field computation + Ed25519 certification |
+| `bindings/rust/ada_ffi.rs` | Rust | CoreState ↔ C ABI |
+| `bindings/rust/magmad_client.rs` | Rust | REST client + CoreTransition::dispatch() |
+
+### NARM Runtime — `narm/`
+
+Non-Autoregressive Reconstruction Machine. NASA systems engineering spec.  
+Reconstructs without backprop: `encode → sparse activate → GDR update → decode`
+
+| File | Language | What It Does |
+|------|----------|-------------|
+| `mlir/reconstruct.td` | MLIR | 20+ op dialect |
+| `runtime/memory.h` | C | LIFO arena allocator |
+| `kernels/narm_kernels_avx512.asm` | x86-64 | AVX-512 CUFF kernels (KERN-001..009) |
+| `kernels/narm_kernels_6502.asm` | MOS 6502 | GEMM / residual / norm |
+| `fortran/qwen3asr_kernels.f90` | Fortran | Subroutine bodies |
+
+### CATN — `catn/`
+
+Cellular Automaton Tensor Network. Erosion → propagate → self-sustaining resonance.
+
+```
+  center seed: nodes[128] = 1
+       │  CatnDispatcher
+       ▼
+  erosion.rs (CubeCL)      SVD truncation χ≤64, ε=0.001
+       │
+       ▼
+  recharge
+       │
+       ▼
+  propagate.rs (CubeCL)    mirror-goto, ‖Ψ‖₂ = 1
+       │
+       └──────────────────► loop (Wolfram rule-16 propagation)
+```
+
+### ISA Layer — `src/isa/`
+
+```
+  ISA-8  (8-bit):   15 instructions × 2 bytes = 30 code bytes
+                    SET·CLEAR·TOGGLE·ROUTE·READ·WRITE·XOR·AND·OR·SHIFT·BRANCH·LOAD·STORE·HALT
+
+  ISA-16 (16-bit):  opcode[15:12] mode[11:10] reg[9:8] operand[7:0]
+                    4 modes: R/R · IMM · DIRECT · INDIRECT/PLUGBOARD
+                    Reference: R0 oscillates 0x10 ↔ 0xFFFFFFEF forever
+```
+
+---
+
+## Engine Layer
+
+### 11-Stage Routing Pipeline
+
+```
+  User Input
+      │
+      ├─ 1  Regex Parser       tokenize · strip dangerous patterns
+      │
+      ├─ 2  AST Builder        INVERTED tree — payloads never propagate up
+      │
+      ├─ 3  Symbolic Graph     adjacency matrix of signal flow
+      │
+      ├─ 4  Jordan Transform   (α,v)∘(β,w) = (αβ+⟨v,w⟩, αw+βv)
+      │                        attractor = idempotent of x↦x∘x
+      │
+      ├─ 5  Jacobian Lens      ∂routing/∂signal via finite differences
+      │
+      ├─ 6  Constraint Eval    spectral_radius < 10 · H ≤ 0.20 nats
+      │
+      ├─ 7  Sparse Activation  top-k expert selection · rest zeroed
+      │
+      ├─ 8  NAND Filter        conflict suppression between experts
+      │
+      ├─ 9  Agent Dispatch     concurrent asyncio execution
+      │
+      ├─ 10 Merge Output       concatenate | vote | weighted_sum | first_success
+      │
+      └─ 11 WORM Seal          Blake2b + Ed25519 · immutable · append-only
+```
+
+### Attention Mechanisms — `src/attention/`
+
+Six non-softmax attention mechanisms. None compute `exp(QKᵀ/√d)`:
+
+```
+  ┌─────────────────────────────────────────────────────────────────┐
+  │  UMTCPI    Boolean-Jordan-Jacobian resonance                    │
+  │            Σwₖ ≠ 1  — inverted Jacobian breaks simplex          │
+  │                                                                 │
+  │  SGAM      Spatial Geometric (inverse-dist/compact/RBF/angular) │
+  │            Deterministic kernel, no softmax                     │
+  │                                                                 │
+  │  SMA       Symplectic Manifold  J²=−I, g=ωJ positive definite   │
+  │            Poisson bracket kernel                               │
+  │                                                                 │
+  │  RMA       Riemannian (Euclidean/Sphere/Hyperbolic)             │
+  │            Geodesic distance + parallel transport               │
+  │                                                                 │
+  │  HeatKernel  ∂u/∂t = Δu  semigroup H(s)∘H(t)=H(s+t)            │
+  │            Spectral Laplacian, closed under composition         │
+  │                                                                 │
+  │  IntegratedBlock  RMSNorm + HyperbolicUMTCPI + CIFG memory      │
+  │            Full transformer block replacement, 60% fewer params │
+  │            C_t = f_t⊙C_{t-1} + (1-f_t)⊙outer(v_t, k_t)        │
+  └─────────────────────────────────────────────────────────────────┘
+```
+
+### QRA Tensor — `src/inference/`
+
+6×6 deterministic routing tensor. Shannon entropy H = 0 nats.
+
+| Glyph | Route | Trigger words |
+|-------|-------|--------------|
+| Π | Reasoning | explain · why · analyze |
+| Γ | Generation | write · create · draft |
+| Δ | Domain | sql · medical · legal |
+| Λ | Code | function · implement · debug |
+| Ω | Orchestration | plan · coordinate · multi-step |
+| Ψ | Verification | prove · verify · test |
+
+### Machine Code Layer — `src/runtime/machine/`
+
+```
+  bytecode_assembler.py   real CPython opcodes → executable code objects
+  marshal_codec.py        .pyc binary: magic + flags + code objects + consts
+  binary_ir.py            SOVEREIGN_IR: 32-byte fixed-width node records
+  vm_executor.py          40+ opcodes: NAND · JORDAN_MUL · ENTROPY_CHECK
+  machine_code_gen.py     raw x86-64 bytes: REX · ModR/M · mmap+mprotect
+  dsl_validator.py        H≤0.20 · trust axiom · DAG acyclic · Blake2b proof
+```
+
+---
+
+## Formal Layer
+
+```
+  formal/
+  ├── sovereign_entropy/EntropyBound.lean
+  │     H(softmax_ratio(d, T(F))) < 0.20 nats  ·  ZERO sorry
+  │     T(F) ≤ 0.2218 → s = exp(d/T) ≥ 90.75 → H(s) < H(19) < 0.20
+  │
+  ├── enochian_root.lean
+  │     ERE Pass 5 root opcode: input ≠ undefined → ∃ v, input = some v
+  │
+  ├── VA_243.lean
+  │     Cylinder seal VA 243 specification
+  │
+  ├── gdr_drain.lean
+  │     GDR drain invariant proof
+  │
+  ├── IronicMirror/XInvariant.agda
+  │     X-invariant of the ironic mirror (Agda)
+  │
+  └── tensor_framework/TensorFramework.lean
+        11-phase Lean 4 formalization
+        ├── Phase 1   FiniteIndex · ComputationalWork · Latency · Distance
+        ├── Phase 2   TensorNetwork · ContractionEdge · well-typed tensors
+        ├── Phase 3   Work ≠ Latency separation (explicit axiom)
+        ├── Phase 4   JacobianMatrix · Matrix.rank · IsInvertible
+        ├── Phase 5   rank→invertibility · rank-nullity
+        ├── Phase 6   MitosisState abstract division (analogy, NOT biology)
+        ├── Phase 7   MetricStateSpace · LatencyGapModel
+        ├── Phase 8   ConstitutionalRule · Constitution · is_constitutional
+        ├── Phase 9   refine_constitution · iterative_refinement (monotone)
+        ├── Phase 10  IntegratedSystem · system_is_valid
+        └── Phase 11  AssumptionsRegistry (theorems vs axioms vs analogies)
+
+        13 theorems proved · 2 axioms declared · 0 circular reasoning
+```
+
+---
+
+## Desktop Layer
+
+### C Win32 IDE — `ide/native/`
+
+Native Win32. Direct2D GPU rendering, ConPTY terminal, Win32 message loop. No Electron. No web view.
+
+```
+  ide/native/
+  ├── core/        memory arena · event system · strings · threading
+  ├── editor/      gap buffer · code reference parser
+  ├── terminal/    ConPTY + fallback gate
+  ├── ui/          layout · status bar · project tree · output panel
+  ├── bridge/      HTTP client → Python :19000
+  ├── chat/        named pipe agent interaction
+  ├── lsp/         Language Server Protocol client
+  ├── graphics/    Direct2D hardware-accelerated rendering
+  ├── fcl/         Formal Command Language interpreter
+  ├── git/         status · diff · commit
+  └── platform/windows/  application · window · shell
+```
+
+### BEAM Process VM — `ide/beam/`
+
+Erlang-model process VM in WebAssembly. 8 sovereign agent processes. No browser runtime.
+
+```
+  beam_vm.wat (552 lines)
+  ├── spawn(module, func, priority)   create process → 256-slot PCB table
+  ├── send(dst_pid, tag, val)          Erlang ! — ring buffer mailbox
+  ├── receive(out_ptr)                 pattern-match pop, block if empty
+  ├── schedule()                       priority round-robin, 256 slots
+  ├── reduce()                         burn reduction, reschedule at 0
+  ├── kill(pid, reason)                EXIT signal → linked trap handler
+  └── link(pid_a, pid_b)               bidirectional process link
+
+  8 Agent Processes:
+  ┌──────────────────────────────────────────────────────────┐
+  │  0  chat       BOB reasoning → 11-stage pipeline          │
+  │  1  tool       34-tool dispatch by msg_tag                │
+  │  2  model      inference (local/ollama/anthropic/openrouter)│
+  │  3  audit      WORM append-only log, no mutation          │
+  │  4  workspace  project state, file trees, git             │
+  │  5  sandbox    code execution in agent scratch            │
+  │  6  routing    11-stage pipeline as BEAM process          │
+  │  7  entropy    governor: blocks H > 0.20, max priority    │
+  └──────────────────────────────────────────────────────────┘
+
+  Memory: 512KB (8 pages)
+  Process table 256×256B · Mailbox rings 256×512B · Per-process heap 256×512B
+```
+
+---
+
+## Sparse Latency Router
+
+`src/routing/sparse-latency-routing/` — Directed sparse graph with deterministic Jacobian-rank–driven topology adaptation, WORM hash chain, and 12 invariants.
+
+```
+  bin/sparse_router.sh run <network.xml>
+      │
+      ├── 1  xmllint schema validation (network.xsd)
+      ├── 2  parse_nodes / parse_edges → sparse adjacency list
+      ├── 3  recurse_tensor → nested tensor model
+      ├── 4  parse_jacobian → matrix or structural proxy
+      ├── 5  calculate_rank → numpy (computed) or structural heuristic
+      ├── 6  calculate_latency → Dijkstra on nonneg edge weights
+      ├── 7  adapt_network → 5 rules: latency_exceeds_threshold /
+      │                       rank_decreases / rank_increases /
+      │                       tensor_dimension_changes / sparsity_maximum
+      ├── 8  verify_invariants → I1-I12 checked inline
+      ├── 9  emit_state → write-to-temp then mv (atomic, I12)
+      └── 10 WORM seal → SHA-256( topology ‖ prev_hash )
+
+  Exit codes: 0=success · 64=usage · 65=xml · 66=invariant
+              67=adaptation_failed · 68=hash_mismatch · 69=missing_tool
+
+  Test fixtures (17):
+  tests/valid/          1 schema-valid baseline
+  tests/invalid/        9 fixtures, one invariant violated each
+  tests/adaptation/     7 two-step adaptation + tamper scenarios
+```
+
+---
+
+## Audio & Message Bridge
+
+### Video-to-Text Training — `src/asr/`
+
+Qwen3-ASR fine-tuning on custom audio data. Async transcription pipeline (OpenAI Whisper + local models).
+
+```
+src/asr/finetune.py
+├── Qwen3-ASR-1.7B fine-tuning
+├── Prefix-only training (system prompt + target)
+├── Auto-checkpoint resumption
+├── HuggingFace Trainer (bfloat16/float16)
+└── CLI: python -m src.asr.finetune --train_file train.jsonl --output_dir ./out
+
+src/tools/audio/transcribe.py
+├── AudioTranscriber (OpenAI + local)
+├── Multi-provider fallback
+└── WORM ledger logging (audit trail)
+```
+
+**Usage:** See [docs/ASR_AND_BRIDGE.md](docs/ASR_AND_BRIDGE.md)
+
+### Message Bridge — `src/bridge/http_server.py`
+
+HTTP REST API (:19000) for Ahmad (or external systems) to send messages. Parses intent via 11-stage Jordan routing, dispatches to ReAct agent, executes tools, seals in WORM ledger.
+
+```
+POST /chat
+  {"message": "write a fibonacci function"}
+  ↓ 11-stage routing (Regex → AST → Jordan → Jacobian → Sparse → NAND → Dispatch)
+  ↓ ReActAgent (think → act → observe loop)
+  ↓ Tool execution (34 tools across 9 namespaces)
+  ↓ WORM seal (Blake2b + Ed25519 hash chain)
+  ← JSON response + trace data
+```
+
+**Endpoints:**
+- `POST /chat` — send message
+- `POST /agent/run` — ReAct task
+- `POST /tool/execute` — single tool
+- `GET /tools` — list 34 tools
+- `GET /routing/traces` — trace collection
+- `POST /keys/set` — API key mgmt (OpenAI, Anthropic, Bedrock)
+
+**Start server:**
+```bash
+python -m src.bridge.http_server --host 127.0.0.1 --port 19000
+```
+
+---
+
+## Papers
+
+### New (this repo, `papers/`)
+
+| File | Target venue | Contribution |
+|------|-------------|-------------|
+| `papers/liquidops_kernel.tex` | PLDI/ICFP | LiquidOps: NAND-canonical verified compiler, LH termination proofs, P4 compatibility |
+| `papers/sovereign_entropy.tex` | FM/CAV | H≤0.20 nats Lean 4 proof, SPARK Ada contract, UMTCPI connection, ERE gate |
+| `papers/gdr_kernels.tex` | SC/MLSys | GDR-9 nine-ISA stack, drain invariants, cross-ISA Lean 4 equivalence, WORM chain |
+
+Compile: `pdflatex papers/liquidops_kernel.tex`
+
+### Published (Zenodo DOI)
+
+| DOI | Title |
+|-----|-------|
+| [10.5281/zenodo.20678420](https://doi.org/10.5281/zenodo.20678420) | Attention Exhaustion Attacks — 0% detection rate |
+| [10.5281/zenodo.21144425](https://doi.org/10.5281/zenodo.21144425) | Resonance Block Trust Deeds |
+| [10.5281/zenodo.21132094](https://doi.org/10.5281/zenodo.21132094) | Sovereign Compute Architecture |
+| [10.5281/zenodo.21349277](https://doi.org/10.5281/zenodo.21349277) | Gates Normalization Constraint — simplex is structural |
+| [10.5281/zenodo.21351461](https://doi.org/10.5281/zenodo.21351461) | NAND Decomposition — attention is NAND-complete |
+| [10.5281/zenodo.21443609](https://doi.org/10.5281/zenodo.21443609) | Jordan Spectral Transformer — φ-weighted routing |
+| [10.5281/zenodo.21727363](https://doi.org/10.5281/zenodo.21727363) | PAR-011 Jacobian via Jordan Algebras |
+| [10.5281/zenodo.21268911](https://doi.org/10.5281/zenodo.21268911) | GKN I4 Quartic Invariant and E7 Symmetry |
+
+Unified: [The Sovereign Stack](https://snapkittywest.github.io/hyperkitty/papers/sovereign-stack-unified.pdf) — 26 pages, Lean 4.
+
+---
+
+## The Mathematics
+
+### Entropy Bound — Formally Proved in Lean 4
+
+```
+  For all F ≥ 1, d ≥ 1:
+    H(softmax_ratio(d, T(F))) < 0.20 nats
+
+  Proof chain:
+    T(F) = T₀ + (1−T₀)·exp(−αF)  ≤  0.2218
+    s    = exp(d / T(F))           ≥  90.75
+    H(s) < H(19)                   < 0.20   ✓
+
+  Architectural enforcement:
+    θ = 89/2462  (Jordan eigenvalue bound on UMTCPI)
+    dominant token probability ≥ 1 − θ
+    H(p) ≤ h(1−θ) + θ·ln(n−1)    < 0.20 for n ≤ 32
+```
+
+### Jordan Algebra — SpinFactor J(n)
+
+```
+  Product:  (α,v) ∘ (β,w) = (αβ + ⟨v,w⟩,  αw + βv)
+
+  Properties used in routing:
+  ├── Non-associative      different agent groupings → different outcomes
+  ├── Fixed-point          x↦x∘x converges to idempotents = routing attractors
+  ├── Spectral decomp      x = λ₊c₊ + λ₋c₋  (provably unique expert assignment)
+  └── Spectral gap         2‖v‖  = separation between top-2 experts
+```
+
+### Cobalt Trilock Hash
+
+```
+  φ64  = 0x9E3779B97F4A7C15  (64-bit Fibonacci/golden-ratio constant)
+  A    = φ64 × (structural_identity_hash)   mod 2⁶⁴
+  B    = φ64 × (connectivity_hash)          mod 2⁶⁴
+  C    = φ64 × (emission_constraint_hash)   mod 2⁶⁴
+  Trilock = hex(A)[0:8] ++ "-" ++ hex(B)[0:8] ++ "-" ++ hex(C)[0:8]
+```
+
+---
+
+## Security
+
+```
+  ┌─────────────────────────────────────────────────────────────────┐
+  │  PathJail          resolve → check allowed roots → reject outside│
+  │  SSRFGuard         block private IPs, link-local, metadata       │
+  │  Inverted AST      payload leaves weight=0, NEVER propagate up   │
+  │  NAND Filter       suppress lower-weight expert on conflict       │
+  │  Binary WORM       152-byte struct headers, no text, append-only │
+  │  ERE P1–P5         no secrets · no eval · no loops · SHA-256 seal│
+  │  Entropy Governor  H < 0.20 nats — proved Lean 4, enforced SPARK │
+  │  WORM Chain        every record hashes prior — break one = break all│
+  │  Drain Invariants  F_c·(1−F_e) scale factor bounds weight updates│
+  │  Hash Seal         sparse router: SHA-256(topology ‖ prev_hash)  │
+  └─────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Continuity
+
+Four independent persistence mechanisms sync on every state transition:
+
+| # | Paradigm | Storage | Survives |
+|---|----------|---------|----------|
+| 1 | Env bitmask | `os.environ` (64-bit packed) | `os.execv` hot restart |
+| 2 | Seed chain | Blake2b derivation (24 bytes) | Full history → one hash |
+| 3 | Inode flags | Zero-byte files + `stat()` | OOM kill (kernel dcache) |
+| 4 | Shared memory | ctypes struct (4KB mmap) | Cross-process, no serialization |
+
+---
+
+## Source
+
+| Component | Language | Files | Lines |
+|-----------|----------|------:|------:|
+| Engine core | Python 3.11 | 170 | 49,517 |
+| **Cobalt — LiquidHaskell pkg** | **Haskell** | **28** | **6,841** |
+| C Win32 IDE | C / C++ | 59 | 7,481 |
+| Hardware kernels | NASM + CUDA + SV + P4 | 32 | 5,670 |
+| MAGMA protocol | Ada/SPARK + Rust | 14 | 2,331 |
+| NARM runtime | C + ASM + Fortran | 9 | 2,322 |
+| Hardware RTL | SystemVerilog + Scala | 19 | 1,917 |
+| **Formal proofs** | **Lean 4 + Agda** | **6** | **2,789** |
+| BEAM VM | WebAssembly (WAT) | 3 | 1,225 |
+| **Sparse Latency Router (Python)** | **Python** | **36** | **4,136** |
+| **ASR + Bridge** | **Python** | **6** | **1,200** |
+| Tests | Python + Bash | 5 | 1,203 |
+| CATN tensor network | Rust | 9 | 1,051 |
+| **Papers** | **LaTeX** | **3** | **1,580** |
+| AToKio | Haskell | 1 | 299 |
+| **Total** | **20+ languages** | **395** | **93,334** |
 
 ---
 
@@ -67,464 +797,34 @@ asyncio.run(main())
 "
 
 # Build the C IDE (Windows — requires CMake + MSVC)
-cd ide/native && cmake -B build -G "Visual Studio 17 2022"
+cd ide/native
+cmake -B build -G "Visual Studio 17 2022"
 cmake --build build --config Release
+
+# Run the Cobalt Haskell package (requires GHC + cabal-install)
+cd cobalt
+cabal build
+cabal test
+
+# Run the sparse latency router
+src/routing/sparse-latency-routing/bin/sparse_router.sh \
+  run src/routing/sparse-latency-routing/spec/network.xml
+src/routing/sparse-latency-routing/tests/run_tests.sh
+
+# Compile a paper
+pdflatex papers/liquidops_kernel.tex
+pdflatex papers/sovereign_entropy.tex
+pdflatex papers/gdr_kernels.tex
+
+# Check Lean 4 proofs (requires lake)
+lake build formal/sovereign_entropy/EntropyBound.lean
+lake build formal/tensor_framework/TensorFramework.lean
 ```
 
 ---
 
-## Architecture
-
-```mermaid
-graph TB
-    subgraph "Formal Proofs"
-        LEAN[Lean 4 — entropy bound]
-        AGDA[Agda — ironic mirror]
-        QASM[OpenQASM 3 — Q-Regex]
-    end
-
-    subgraph "Desktop"
-        IDE_C[C Win32 IDE]
-        BEAM[BEAM Process VM — WASM]
-    end
-
-    subgraph "Engine"
-        ROUTE[11-Stage Routing]
-        AGENT[ReAct + Shadow + MCTS]
-        TOOLS[34 Tools × 9 Namespaces]
-        WORM[Binary WORM Storage]
-        ATTN[6 Attention Mechanisms]
-        RES[Resonance Fabric]
-        ENT[Entropy Governor ≤ 0.20]
-    end
-
-    subgraph "Protocols"
-        MAGMA[MAGMA — SPARK Ada FSM]
-        NARM[NARM — MLIR + AVX-512]
-        CATN[CATN — CubeCL Tensor Net]
-        ISA[ISA-8 / ISA-16]
-    end
-
-    subgraph "Hardware"
-        CUDA[CUDA Pipeline]
-        RTL[SystemVerilog RTL]
-        P4[P4 Data Planes]
-        ASM[x86-64 AVX-512 / AMX]
-        CUDAQ[CUDA-Q Quantum]
-    end
-
-    IDE_C --> ROUTE
-    BEAM --> ROUTE
-    BEAM --> MAGMA
-    ROUTE --> AGENT
-    AGENT --> TOOLS
-    AGENT --> ATTN
-    ATTN --> ENT
-    ENT --> WORM
-    MAGMA --> WORM
-    NARM --> ASM
-    CATN --> CUDA
-    ISA --> ASM
-    LEAN -.->|proves| ENT
 ```
-
----
-
-## Hardware Layer
-
-### Kernel Stack — `kernels/`
-
-| Directory | Language | What It Does |
-|-----------|----------|-------------|
-| `x86/` | NASM | AVX2 GEMM, AMX Hopper kickdown, FP8 SM90, AC VM (Σ1..10=55), 8K framebuffer AVX-512 |
-| `hardware/rtl/` | SystemVerilog | MAC lateral array, dual-core top, P3 SHA accumulator, P4 tensor core |
-| `p4/` | P4-16 | TNA in-network forwarding, STRP ingress, sovereign data plane |
-| `tvm/` | Python+PTX | TileLang flash QKT kernel, TensorIR L3, PTX fused level 2 |
-| `cuda/` | CUDA C | GPU drain pipeline (1M tensor parallel filter), binary checkpoint loader |
-| `rust/` | Rust | Fixed-point drain pipeline + Kani formal verification harness |
-| `cudaq/` | CUDA-Q | Quantum kernels (C++ + Python + holographic wormhole) |
-| `hardware/chisel/` | Scala | Chisel3 dual-core GDR |
-| `hardware/analog/` | Verilog-A | Analog MAC leaf cell |
-| `hardware/layout/` | SKILL | Cadence layout + GDSII sign-off |
-| `mlir/` | MLIR | TensorIR sovereign P3 lowering |
-| `p3/` | Python+Lean | P3 Merkle, state engine, Lean 4 verification |
-
-### Synthesis Pipeline
-
+  SnapKitty / SNAPKITTYWEST / Ahmad Ali Parr — Bel Esprit D'Accord Irrevocable Trust
+  BSL 1.1 → MIT 2029-01-01
+  89,098 lines · 20+ languages · one sovereign stack
 ```
-microcode.json / add_instruction()
-      ↓  SovereignSynth
-case-statement Verilog (single-cycle, ~150ps combinatorial)
-
-opcode_sequences.json / add_sequence()
-      ↓  SovereignSynthMulti
-FSM Verilog (N-cycle, only log₂(N) flip-flops, zero ROM)
-
-activity_profile / n_cycles / alpha_target
-      ↓  EntropyBalancedDMAGen
-Entropy-balanced DMA Verilog (power H=0 per cycle → DPA-resistant)
-      ↓
-Ada/SPARK proof: entropy(agent) ≤ 0.20 → active ⇒ trusted → sovereign eligible
-```
-
----
-
-## Protocol Layer
-
-### MAGMA — `magma/`
-
-Internal sovereign agent language: **§VERB:AGENT:ACTION{payload}**
-
-12 verbs, 22 agents (clearance 1–5), 6 modifiers. SLC (Sovereign Logic Core) — 6 immutable axioms, adversarial pattern detection, SACM mesh self-organizing execution.
-
-| Component | Language | What It Does |
-|-----------|----------|-------------|
-| `magma_666.adb` | SPARK Ada | 666-line ferrite state machine — the core |
-| `format.adb/ads` | Ada | LE decoders, CRC32, element sizes |
-| `parser.adb/ads` | Ada | Dense SPARK state machine for tensor parsing |
-| `apl/wick_rotation.apl` | APL | Hoare-verified Wick rotation operators |
-| `src/lib.rs` | Rust | Biot-Savart field computation + Ed25519 certification |
-| `bindings/rust/ada_ffi.rs` | Rust | CoreState ↔ C ABI, imaginary()/fold_i()/ectot() |
-| `bindings/rust/magmad_client.rs` | Rust | REST client (health/verify/anchor/forge) + CoreTransition::dispatch() |
-| `node/lib/node.js` | JavaScript | Orphan-node graph (functor isolated from RBG) |
-
-### NARM Runtime — `narm/`
-
-Non-Autoregressive Reconstruction Machine. NASA systems engineering spec.
-
-| File | Language | What It Does |
-|------|----------|-------------|
-| `mlir/reconstruct.td` | MLIR TableGen | 20+ op dialect definition |
-| `runtime/memory.h` | C | LIFO arena allocator |
-| `runtime/tensor.h` | C | Tensor descriptor + multi-dim indexing |
-| `runtime/ops.h` | C | Op registry + graph executor |
-| `kernels/narm_kernels_avx512.asm` | x86-64 | AVX-512 CUFF kernels (KERN-001..009) |
-| `kernels/narm_kernels_6502.asm` | MOS 6502 | GEMM / residual / norm |
-| `kernels/gelu_6502.asm` | MOS 6502 | GELU cubic approximation |
-| `fortran/qwen3asr_kernels.f90` | Fortran | Subroutine bodies |
-| `tests/acceptance_test.sh` | Bash | 8-stage acceptance gate |
-
-### CATN — Cellular Automaton Tensor Network — `catn/`
-
-| File | Language | What It Does |
-|------|----------|-------------|
-| `src/kernels/erosion.rs` | Rust/CubeCL | SVD truncation kernel (χ ≤ 64, ε = 0.001) |
-| `src/kernels/propagate.rs` | Rust/CubeCL | Propagate + mirror-goto + ‖Ψ‖₂ = 1 normalization |
-| `src/dispatcher.rs` | Rust | CatnDispatcher (erosion → recharge → propagate loop) |
-| `src/state.rs` | Rust | CellularState with tensor network |
-| `microrom/ca_vm.py` | Python | VM executor + 256-node bytecode generator |
-| `microrom/decode_microrom.py` | Python | Disassembler |
-| `microrom/virtual_circuit_board.py` | Python | Self-sustaining resonance loop |
-
-Center-seeded `vm.state.nodes[128] = 1` → classic Wolfram rule-16 propagation.
-
-### ISA Layer — `src/isa/`
-
-**ISA-8** — 8-bit sovereign instruction set. 15 instructions × 2 bytes = 30 code bytes.
-SET → CLEAR → TOGGLE → ROUTE → READ/WRITE → XOR/AND/OR → SHIFT → BRANCH → LOAD/STORE → HALT
-
-**ISA-16** — 16-bit big-endian. 4 fields: opcode[15:12] mode[11:10] reg[9:8] operand[7:0].
-4 addressing modes: R/R, IMM, DIRECT, INDIRECT/PLUGBOARD.
-Reference program: infinite oscillator R0 toggling 0x00000010 ↔ 0xFFFFFFEF.
-
-### Q-Regex Engine — `src/qregex/`
-
-| File | What It Does |
-|------|-------------|
-| `qregex.qasm` | OpenQASM 3 circuit: U_∨ ∘ U_∘ ∘ U_* (3 qubits, 10 Kleene Star iterations) |
-| `qregex_sim.py` | NumPy simulator: Bloch-sphere interference, match probability → Kalman z_t |
-| `kalman.py` | L3 Kalman filter: x_t = [Φ, Φ̇, f]^T, includes FPGA Q16.15 fixed-point variant |
-
-Integration chain: Q-Regex match probability → Kalman filter → Δω_pump → pump-laser dispersion controller.
-
----
-
-## Engine Layer
-
-### Routing Pipeline — `src/routing/`
-
-11 stages. Every stage has a mathematical role.
-
-```
-User Input
-    │
-    ├── 1  Regex Parser ────── Tokenize. Strip dangerous patterns.
-    ├── 2  AST Builder ─────── INVERTED syntax tree. Payloads can't propagate up.
-    ├── 3  Symbolic Graph ──── Adjacency matrix of signal flow.
-    ├── 4  Jordan Transform ── SpinFactor: (α,v)∘(β,w) = (αβ+⟨v,w⟩, αw+βv)
-    ├── 5  Jacobian Lens ───── ∂routing/∂signal via finite differences.
-    ├── 6  Constraint Eval ─── Spectral radius < 10. Entropy ≤ 0.20 nats.
-    ├── 7  Sparse Activation ─ Top-k expert selection. Rest zeroed.
-    ├── 8  NAND Filter ─────── Conflict suppression between experts.
-    ├── 9  Agent Dispatch ──── Concurrent asyncio execution.
-    ├── 10 Merge Output ────── concatenate | vote | weighted_sum | first_success
-    └── 11 WORM Seal ───────── Blake2b + Ed25519. Decision is immutable.
-```
-
-### Attention Mechanisms — `src/attention/`
-
-Six non-softmax attention replacements. None use `exp(QK^T/√d)`:
-
-| Module | Mechanism | Key Property |
-|--------|-----------|-------------|
-| `umtcpi.py` | Boolean-Jordan-Jacobian Resonance | Σwₖ ≠ 1 — inverted Jacobian breaks simplex |
-| `sgam.py` | Spatial Geometric (inverse-dist / compact / RBF / angular) | Deterministic kernel, no softmax |
-| `sma.py` | Symplectic Manifold (ω, J, g=ωJ) | J²=−I, g positive definite, Poisson bracket kernel |
-| `rma.py` | Riemannian (Euclidean / Sphere / Hyperbolic) | Geodesic distance + parallel transport |
-| `heat_kernel.py` | Heat diffusion (∂u/∂t = Δu) | Semigroup H(s)∘H(t)=H(s+t), spectral Laplacian |
-| `integrated_block.py` | RMSNorm + Hyperbolic UMTCPI + CIFG Memory | Full transformer block replacement, 60% fewer params |
-
-The integrated block (`HyperbolicCIFGUMTCPI`) replaces the entire attention + FFN stack:
-- RMSNorm drops mean subtraction — 50% fewer norm params
-- HyperbolicUMTCPI uses Poincare distance — richer hierarchical separation
-- CIFGMemory replaces static FFN with gated memory `C_t = f_t ⊙ C_{t-1} + (1-f_t) ⊙ z_t`
-
-### Resonance Fabric — `src/resonance/`
-
-| Module | What It Does |
-|--------|-------------|
-| `tensor_net.py` | Waveform → weight tensors → ResonanceNet |
-| `plugboard.py` | 6×22 routing crossbar (frequency bands → operations) |
-| `fabric.py` | run_fabric() / render_fabric() — the complete execution |
-| `sentence.py` | render_sentence(inv) — DrainInvariants → natural language |
-| `umo.py` | Python port of the SnapKitty Universal Monad Operator |
-| `bridge.py` | Drain invariants → τ/ε/ρ mapping |
-| `words.py` | Sovereign vocabulary ("SYSTEM COHERENT", "DEED SEALED") |
-
-### Machine Code — `src/runtime/machine/`
-
-| Module | What It Does |
-|--------|-------------|
-| `bytecode_assembler.py` | Emits real CPython opcodes. Produces executable code objects. |
-| `marshal_codec.py` | .pyc binary format — magic number, flags, code objects, consts table. |
-| `ctypes_bridge.py` | C struct definitions from Python, MemoryArena for native allocations. |
-| `binary_ir.py` | SOVEREIGN_IR: 32-byte fixed-width node records. Opcode + flags + operands + type tag. |
-| `vm_executor.py` | 40+ opcodes including NAND, JORDAN_MUL, ENTROPY_CHECK. Runs SOVEREIGN_IR bytecode. |
-| `machine_code_gen.py` | Raw x86-64 bytes. REX prefixes, ModR/M, register allocation. Executable via mmap+mprotect. |
-| `dsl_validator.py` | Boolean kernel, entropy ≤ 0.20, trust axiom, glyph injectivity, DAG acyclicity. Blake2b proof. |
-
-### Engine Packages — `src/`
-
-170 modules. Pure Python 3.11+ stdlib. Zero pip dependencies.
-
-| Package | What It Does |
-|---------|-------------|
-| `runtime/` | CPython bytecode assembler, .pyc marshal, ctypes bridge, SOVEREIGN_IR, stack VM, x86-64 codegen |
-| `tools/` | 34 tools (fs, code, git, db, docs, web, embeddings, audio, pytorch), opcode registry, approval engine |
-| `routing/` | 11-stage MoE: regex → AST → symbolic → Jordan → Jacobian → constraints → sparse → NAND → dispatch → merge → WORM |
-| `continuity/` | Env bitmask, seed chain, inode flags, shared memory, unified manager |
-| `retrieval/` | Semantic chunker, vector store, RAG pipeline, parallel ingest |
-| `core/` | Binary WORM, evidence ledger, Ed25519 crypto, path jail, SSRF guard |
-| `models/` | Pydantic entities, state machines, BURT-IMMA, text output pipeline |
-| `attention/` | 6 non-softmax attention mechanisms |
-| `agents/` | ReAct loop, shadow observer, MCTS search |
-| `asr/` | Qwen3 forced aligner, fine-tuning, compiler DAG meta-engine |
-| `resonance/` | Tensor net, plugboard, fabric, sentence gen, UMO, bridge |
-| `bridge/` | HTTP server :19000, stdio JSON-RPC, routing trace, key manager |
-| `wasm/` | M5 WAT (4KB buffer, 7 registers, AC VM), tunnel_matrix (256KB, 4-core memcpy), tunnel_borehole (0xDEADBEEF apertures), MacroWASM decoder |
-| `magma/` | Macro MAGMA + springboard |
-| `scanner/` | AST analyzer, dependency graph |
-| `daemon/` | Asyncio TCP :19002, swarm (fan_out, map_reduce, race) |
-| `mcp/` | Model Context Protocol server |
-| `hardware/` | Sovereign Synth → Verilog, Ada/SPARK agent spec |
-| `exgracy/` | Fused parser regex network propagation automaton |
-| `bert/` | BertAgentAdapter + Nomic embedder |
-| `qregex/` | Q-Regex simulator + Kalman filter |
-| `isa/` | ISA-8 (15 instructions) + ISA-16 (4 addressing modes) |
-| `inference/` | Quantum MoE (SpinFactor composition) |
-| `entropy/` | FrustrationCoolingScheduler, governor, WORM seal |
-| `ui/` | Sovereign OS dashboard |
-| `mum/` | Atom, ModalityEncoder, SemanticGradientBoundary |
-| `kernel/` | KID8B8K — SAT boot verifier, PII scrubber, topic policy |
-| `cli/` | Command-line interface |
-| `zk/` | Recursive Lattice-Based ZK (no_std, Q=65537, N=16) |
-| `compositor/` | VBLANK-interlocked BAR1 dual buffer |
-| `hypervisor/` | ARMv8-A EL2 trap loop + VirtIO-GPU stub |
-
----
-
-## Desktop Layer
-
-### C Win32 IDE — `ide/native/`
-
-Native Win32 application. Direct2D GPU rendering, ConPTY terminal, Win32 message loop. No web view.
-
-| Directory | Purpose |
-|-----------|---------|
-| `core/` | Memory arena, event system, strings, threading |
-| `editor/` | Gap buffer text editor, code reference parser |
-| `terminal/` | ConPTY + fallback gate |
-| `ui/` | Layout, status bar, project tree, output panel |
-| `bridge/` | HTTP client to Python :19000 |
-| `chat/` | Named pipe agent interaction |
-| `lsp/` | Language Server Protocol client |
-| `graphics/` | Direct2D hardware-accelerated rendering |
-| `fcl/` | Formal Command Language interpreter |
-| `git/` | Status, diff, commit |
-| `platform/windows/` | Application, window, shell |
-
-### BEAM Process VM — `ide/beam/`
-
-Erlang-model process VM running inside WebAssembly. Lightweight processes communicate via direct memory mailboxes on the same linear memory substrate as M5 and the tunnel matrix. No browser runtime. No package manager. No serialization layer.
-
-**`beam_vm.wat`** — Core virtual machine (552 lines)
-
-| Export | What It Does |
-|--------|-------------|
-| `spawn(module, func, priority)` | Create lightweight process — scans 256-slot table, initializes PCB (pid, status, heap_ptr, mailbox head/tail, reductions), returns pid |
-| `send(dst_pid, tag, val)` | Erlang `!` operator — writes 32-byte message (sender, tag, payload, tick) into per-process ring buffer, wakes blocked receivers |
-| `receive(out_ptr)` | Pattern-match pop — reads next message from current process mailbox, sets process to `waiting` if empty |
-| `schedule()` | Priority round-robin — sweeps 256 slots, selects highest-priority ready process, context-switches (demote running → ready, promote selected → running), refills reduction counter |
-| `reduce()` | Burn one reduction — returns remaining. 0 = timeslice exhausted, reschedule |
-| `kill(pid, reason)` | Terminate process — sets status to dead, sends EXIT to linked trap handler |
-| `link(pid_a, pid_b)` | Bidirectional process link — either dies, the other gets `{EXIT, pid, reason}` |
-| `gc_dead()` | Sweep dead slots — zeroes reclaimed PCBs, returns count freed |
-
-Memory: 512KB (8 pages). Process table (256 slots × 256B), mailbox rings (256 × 512B), per-process heap (256 × 512B), atom table, module table, stack frames.
-
-**`beam_bridge.wat`** — M5 ↔ Tunnel ↔ Agent Memory Bridge (324 lines)
-
-| Export | What It Does |
-|--------|-------------|
-| `register_agent(slot, pid, type)` | Bind BEAM process as agent in 256-entry dispatch table |
-| `dispatch_to_agent(type)` | Route request to correct BEAM process by agent type, mark busy |
-| `m5_read/m5_write` | Direct byte access to 4KB M5 mirror — no HTTP, no JSON |
-| `write_response/read_response` | 64KB model response buffer — inference results land here |
-| `audit_append(tick, type, action, payload)` | Append-only 32-byte WORM records — no text, no parse |
-| `history_push(role, ts, ptr, len)` | 256-slot chat history ring (256B/slot) — overwrites oldest on full |
-| `route_to_pipeline(ptr, len)` | Write raw bytes into 48KB routing scratch — Stage 1 of 11-stage pipeline reads from here via mmap |
-| `seal_worm(ptr, len)` | DJB2 hash → seal staging area — chained with previous seal |
-
-**`beam_agents.wat`** — Sovereign Agent Processes (349 lines)
-
-8 agent types, each a BEAM process:
-
-| Agent | What It Does |
-|-------|-------------|
-| 0: chat | BOB reasoning — accepts prompt via mailbox, routes through pipeline, returns response via result buffer |
-| 1: tool | Tool dispatch — msg_tag = tool_id, msg_val = arg pointer, executes, writes result to scratch |
-| 2: model | Inference — selects provider (local/ollama/anthropic/openrouter) from msg_tag, forwards prompt |
-| 3: audit | WORM append — every agent action sealed into append-only log, no mutation |
-| 4: workspace | Project state — file trees, git status, workspace config |
-| 5: sandbox | Code execution — msg_val points to code in agent scratch memory |
-| 6: routing | 11-stage pipeline as a BEAM process — reductions map to pipeline stages |
-| 7: entropy | Governor — sweeps all agents every tick, blocks any with H > 0.20 (Q16.16 fixed-point), unblocks when entropy drops |
-
-Every agent checks entropy before processing. Agent 7 (entropy governor) runs at max priority every scheduler tick. Trust scores are milli-units (0–1000). Blocked agents resume automatically when the governor clears them.
-
----
-
-## Formal Layer
-
-| File | Language | What It Proves |
-|------|----------|---------------|
-| `sovereign_entropy/EntropyBound.lean` | Lean 4 | H(softmax_ratio(d, T(F))) < 0.20 nats for F ≥ 1, d ≥ 1. **Zero sorry.** |
-| `VA_243.lean` | Lean 4 | Cylinder seal VA 243 specification |
-| `enochian_root.lean` | Lean 4 | ERE root — void input blocks all instructions |
-| `gdr_drain.lean` | Lean 4 | GDR drain invariant |
-| `IronicMirror/XInvariant.agda` | Agda | X-invariant of the ironic mirror |
-
----
-
-## Continuity
-
-Four independent persistence mechanisms sync on every state transition:
-
-| # | Paradigm | Storage | What Survives |
-|---|----------|---------|---------------|
-| 1 | Env bitmask | `os.environ` (64-bit packed) | `os.execv` hot restart |
-| 2 | Seed chain | Blake2b derivation (24 bytes) | Full history → one hash |
-| 3 | Inode flags | Zero-byte files + `stat()` | OOM kill (kernel dcache) |
-| 4 | Shared memory | ctypes struct (4KB mmap) | Cross-process, no serialization |
-
----
-
-## Security
-
-| Layer | Defense |
-|-------|---------|
-| PathJail | Resolve → check against allowed roots → reject if outside |
-| SSRFGuard | Block private IPs, link-local, metadata endpoints |
-| Inverted AST | Payload leaves (weight=0) can NEVER propagate upward |
-| NAND Filter | Suppress lower-weight expert when both claim same input |
-| Binary WORM | 152-byte struct headers. No text parsing. Append-only. |
-| ERE Gates | P1–P5: no secrets, no eval, no infinite loops, no analytics, SHA-256 seal |
-| Entropy Governor | H < 0.20 nats — formally proved in Lean 4 |
-| SPARK Proof | Ada ghost invariant: entropy ≤ 0.20 → active ⇒ trusted |
-| Chain Verification | Every WORM record hashes the previous. Break one → break all downstream. |
-
----
-
-## The Mathematics
-
-### Jordan Algebra — SpinFactor J(n)
-
-**Product:** `(α,v) ∘ (β,w) = (αβ + ⟨v,w⟩, αw + βv)`
-
-1. **Non-associative**: Different agent grouping topologies produce different routing outcomes.
-2. **Fixed-point convergence**: `x ↦ x∘x` converges to idempotents. These ARE the routing attractors.
-3. **Spectral decomposition**: `x = λ₊c₊ + λ₋c₋`. Provably unique expert assignment.
-4. **Spectral gap** = `2‖v‖` = separation between top experts.
-
-### Entropy Bound — Formally Proved
-
-For any F ≥ 1 and d ≥ 1: **H(softmax_ratio(d, T(F))) < 0.20 nats**
-
-Proof chain: T(F) ≤ 0.2218 → s = exp(d/T) ≥ 90.75 → H(s) < H(19) < 0.20. Done. Zero sorry.
-
-### QRA Tensor — Quantum Routing Algebra
-
-6×6 deterministic tensor. Shannon entropy H = 0 nats.
-
-| Glyph | Maps To | Signal |
-|-------|---------|--------|
-| Π | Reasoning | "explain", "why", "analyze" |
-| Γ | Generation | "write", "create", "draft" |
-| Δ | Domain | "sql", "medical", "legal" |
-| Λ | Code | "function", "implement", "debug" |
-| Ω | Orchestration | "plan", "coordinate", "multi-step" |
-| Ψ | Verification | "prove", "verify", "test" |
-
----
-
-## Papers
-
-| DOI | Title |
-|-----|-------|
-| [10.5281/zenodo.20678420](https://doi.org/10.5281/zenodo.20678420) | Attention Exhaustion Attacks — 0% detection rate |
-| [10.5281/zenodo.21144425](https://doi.org/10.5281/zenodo.21144425) | Resonance Block Trust Deeds |
-| [10.5281/zenodo.21132094](https://doi.org/10.5281/zenodo.21132094) | Sovereign Compute Architecture |
-| [10.5281/zenodo.21349277](https://doi.org/10.5281/zenodo.21349277) | Gates Normalization Constraint — simplex is structural |
-| [10.5281/zenodo.21351461](https://doi.org/10.5281/zenodo.21351461) | NAND Decomposition — attention is NAND-complete |
-| [10.5281/zenodo.21443609](https://doi.org/10.5281/zenodo.21443609) | Jordan Spectral Transformer — phi-weighted routing |
-| [10.5281/zenodo.21727363](https://doi.org/10.5281/zenodo.21727363) | PAR-011 Jacobian via Jordan Algebras |
-| [10.5281/zenodo.21268911](https://doi.org/10.5281/zenodo.21268911) | GKN I4 Quartic Invariant and E7 Symmetry |
-
-Unified: [The Sovereign Stack](https://snapkittywest.github.io/hyperkitty/papers/sovereign-stack-unified.pdf) — 26 pages, Lean 4.
-
----
-
-## Source
-
-| Component | Language | Files | Lines |
-|-----------|----------|-------|-------|
-| Engine core | Python 3.11 | 170 | 49,517 |
-| C Win32 IDE | C | 59 | 7,481 |
-| Hardware kernels | NASM + CUDA + SV + P4 | 32 | 5,670 |
-| MAGMA protocol | Ada/SPARK + Rust | 14 | 2,331 |
-| NARM runtime | C + ASM + Fortran | 9 | 2,322 |
-| Hardware RTL | SystemVerilog + Scala | 19 | 1,917 |
-| Formal proofs | Lean 4 + Agda | 5 | 1,447 |
-| BEAM VM | WebAssembly (WAT) | 3 | 1,225 |
-| Tests | Python | 5 | 1,203 |
-| CATN tensor network | Rust | 9 | 1,051 |
-| AToKio | Haskell | 1 | 299 |
-| **Total** | **20+ languages** | **312** | **79,935** |
-
----
-
-## License
-
-BSL 1.1 → MIT 2029-01-01
-
-SnapKitty / SNAPKITTYWEST / 2026
