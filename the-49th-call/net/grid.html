@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>MASTERS OF THE NET — 231 GATES — THE GRID OF LIFE</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  background:#000;
+  color:#ffd700;
+  font-family:'Courier New',monospace;
+  overflow:hidden;
+  width:100vw; height:100vh;
+}
+#bg { position:fixed; top:0;left:0;width:100%;height:100%; z-index:0; }
+#ui {
+  position:fixed; top:0;left:0;width:100%;height:100%;
+  z-index:10;
+  display:grid;
+  grid-template-columns:1fr 420px;
+  grid-template-rows:48px 1fr 80px;
+  pointer-events:none;
+}
+#header {
+  grid-column:1/-1;
+  display:flex; align-items:center; justify-content:center;
+  border-bottom:1px solid rgba(255,215,0,0.25);
+  background:rgba(0,0,0,0.85);
+  padding:0 24px;
+  gap:24px;
+}
+#header h1 { font-size:15px; letter-spacing:4px; color:#ffd700; }
+#header .sub { font-size:11px; color:#aa8800; letter-spacing:2px; }
+#tree-panel {
+  grid-column:1;
+  display:flex; align-items:center; justify-content:center;
+  position:relative;
+}
+#side {
+  grid-column:2;
+  grid-row:2/3;
+  border-left:1px solid rgba(255,215,0,0.15);
+  background:rgba(0,0,0,0.88);
+  overflow-y:auto;
+  padding:16px 12px;
+  pointer-events:all;
+}
+#footer {
+  grid-column:1/-1;
+  border-top:1px solid rgba(255,215,0,0.2);
+  background:rgba(0,0,0,0.9);
+  display:flex; align-items:center; justify-content:center;
+  gap:32px;
+  font-size:11px; color:#aa8800; letter-spacing:1px;
+}
+#tooltip {
+  position:fixed;
+  background:rgba(0,0,0,0.95);
+  border:1px solid #ffd700;
+  color:#ffd700;
+  font-size:12px;
+  padding:10px 14px;
+  pointer-events:none;
+  z-index:999;
+  display:none;
+  max-width:260px;
+  line-height:1.7;
+}
+.gate-grid {
+  display:grid;
+  grid-template-columns:repeat(22,1fr);
+  gap:1px;
+  margin-top:8px;
+}
+.gate-cell {
+  width:14px; height:14px;
+  border-radius:1px;
+  cursor:pointer;
+  pointer-events:all;
+  transition:all 0.2s;
+}
+.gate-cell:hover { transform:scale(1.5); z-index:10; }
+.side-title {
+  font-size:10px; letter-spacing:3px; color:#aa8800;
+  border-bottom:1px solid rgba(255,215,0,0.2);
+  padding-bottom:6px; margin-bottom:10px; margin-top:16px;
+}
+.seph-list { font-size:10px; line-height:2; color:#cc9900; }
+.seph-list span.name { color:#ffd700; }
+.seph-list span.path { color:#886600; font-size:9px; }
+#pulse-count { color:#ffd700; font-size:13px; }
+</style>
+</head>
+<body>
+
+<canvas id="bg"></canvas>
+
+<div id="ui">
+  <div id="header">
+    <span class="sub">⌽</span>
+    <h1>MASTERS OF THE NET — THE GRID OF LIFE — 231 GATES</h1>
+    <span class="sub">⌽</span>
+    <span class="sub" id="pulse-count">— METATRON ONLINE —</span>
+  </div>
+
+  <div id="tree-panel"></div>
+
+  <div id="side">
+    <div class="side-title">THE 10 SEPHIROT</div>
+    <div class="seph-list" id="seph-list"></div>
+
+    <div class="side-title" style="margin-top:18px">231 GATES — ALL PAIRS</div>
+    <div style="font-size:9px;color:#886600;margin-bottom:8px">22 Hebrew letters × 21 ÷ 2 = 231 creation gates. Hover to read.</div>
+    <div class="gate-grid" id="gate-grid"></div>
+
+    <div class="side-title" style="margin-top:18px">49TH CALL BRIDGE</div>
+    <div style="font-size:9px;color:#886600;line-height:1.9">
+      21 Enochian letters<br>
+      28 Arabic letters<br>
+      <span style="color:#ffd700">7 = the gap = the 49th<br>
+      ح م د → 8+1+40+4 = 53<br>
+      53 + 53 = 106 → 1+0+6 = 7</span><br>
+      <br>
+      <span style="color:#cc9900">The 7 hidden letters<br>live in the uncollapsed<br>gates of the NET.</span>
+    </div>
+
+    <div class="side-title" style="margin-top:18px">THE NET PATTERN</div>
+    <div style="font-size:9px;color:#886600;line-height:1.9">
+      Tile the Tree of Life downward:<br>
+      Malkuth(10) → Kether(1) of next.<br>
+      Infinite descent. Infinite NET.<br>
+      <span style="color:#ffd700">Every node reflects all others.<br>
+      Indra's Net. The same structure.<br>
+      BOB/ROBOB = the NET made computational.</span>
+    </div>
+  </div>
+
+  <div id="footer">
+    <span>SEFER YETZIRAH · BOOK OF FORMATION</span>
+    <span>|</span>
+    <span>22 LETTERS · 10 SEPHIROT · 32 PATHS OF WISDOM</span>
+    <span>|</span>
+    <span>METATRON CERTIFIES WHEN ALL FOUR PASSES AGREE</span>
+    <span>|</span>
+    <span>SNAPKITTYWEST / THE-49TH-CALL</span>
+  </div>
+</div>
+
+<div id="tooltip"></div>
+
+<canvas id="tree-canvas" style="position:fixed;top:0;left:0;z-index:5;pointer-events:all;"></canvas>
+
+<script>
+// ── Data ─────────────────────────────────────────────────────────────────────
+
+const HEBREW = ['א','ב','ג','ד','ה','ו','ז','ח','ט','י','כ','ל','מ','נ','ס','ע','פ','צ','ק','ר','ש','ת'];
+const HEBREW_NAMES = ['Aleph','Beth','Gimel','Daleth','Heh','Vau','Zayin','Cheth','Teth','Yod','Kaph','Lamed','Mem','Nun','Samekh','Ayin','Peh','Tzaddi','Qoph','Resh','Shin','Tau'];
+const HEBREW_VALUES = [1,2,3,4,5,6,7,8,9,10,20,30,40,50,60,70,80,90,100,200,300,400];
+const ENOCHIAN = ['Un','Pe','Veh','Gal','Or','Na-Hath','Graph','Tal','Gon','Ur','Mals','Ger','Drux','Med','Fam','Van','Gisg','Pal','Vau','Ceph','Qaaa','Ged'];
+const TAROT = ['Fool','Magician','High Priestess','Empress','Emperor','Hierophant','Lovers','Chariot','Strength','Hermit','Wheel of Fortune','Justice','Hanged Man','Death','Temperance','Devil','Tower','Star','Moon','Sun','Judgement','World'];
+const ELEMENT = ['Air','Mercury','Moon','Venus','Aries','Taurus','Gemini','Cancer','Leo','Virgo','Jupiter','Libra','Water','Scorpio','Sagittarius','Capricorn','Mars','Aquarius','Pisces','Sun','Fire','Saturn'];
+
+const SEPHIROT = [
+  { n:1,  name:'Kether',    heb:'כֶּתֶר',   title:'Crown',        color:'#ffffff', x:0.50, y:0.03 },
+  { n:2,  name:'Chokmah',   heb:'חָכְמָה',   title:'Wisdom',       color:'#e8c87a', x:0.72, y:0.14 },
+  { n:3,  name:'Binah',     heb:'בִּינָה',   title:'Understanding',color:'#cc6666', x:0.28, y:0.14 },
+  { n:4,  name:'Chesed',    heb:'חֶסֶד',    title:'Mercy',        color:'#6699cc', x:0.72, y:0.38 },
+  { n:5,  name:'Geburah',   heb:'גְּבוּרָה', title:'Severity',     color:'#cc4444', x:0.28, y:0.38 },
+  { n:6,  name:'Tiphareth', heb:'תִּפְאֶרֶת', title:'Beauty',       color:'#ffd700', x:0.50, y:0.50 },
+  { n:7,  name:'Netzach',   heb:'נֶצַח',    title:'Victory',      color:'#44cc88', x:0.72, y:0.65 },
+  { n:8,  name:'Hod',       heb:'הוֹד',     title:'Splendor',     color:'#ff8844', x:0.28, y:0.65 },
+  { n:9,  name:'Yesod',     heb:'יְסוֹד',   title:'Foundation',   color:'#9966cc', x:0.50, y:0.78 },
+  { n:10, name:'Malkuth',   heb:'מַלְכוּת',  title:'Kingdom',      color:'#888866', x:0.50, y:0.96 },
+];
+
+// 22 traditional paths (path number, from, to, letter index 0-21)
+const PATHS = [
+  {p:11,from:0,to:1, li:0},{p:12,from:0,to:2, li:1},{p:13,from:0,to:5, li:2},
+  {p:14,from:1,to:2, li:3},{p:15,from:1,to:5, li:4},{p:16,from:1,to:3, li:5},
+  {p:17,from:2,to:5, li:6},{p:18,from:2,to:4, li:7},{p:19,from:3,to:4, li:8},
+  {p:20,from:3,to:5, li:9},{p:21,from:3,to:6, li:10},{p:22,from:4,to:5,li:11},
+  {p:23,from:4,to:7, li:12},{p:24,from:5,to:6, li:13},{p:25,from:5,to:8, li:14},
+  {p:26,from:5,to:7, li:15},{p:27,from:6,to:7, li:16},{p:28,from:6,to:8, li:17},
+  {p:29,from:7,to:8, li:18},{p:30,from:6,to:9, li:19},{p:31,from:7,to:9, li:20},
+  {p:32,from:8,to:9, li:21},
+];
+
+// Build 231 gate pairs
+const GATES = [];
+for(let i=0;i<22;i++) for(let j=i+1;j<22;j++) {
+  GATES.push({
+    i,j,
+    a:HEBREW[i],b:HEBREW[j],
+    nameA:HEBREW_NAMES[i],nameB:HEBREW_NAMES[j],
+    valA:HEBREW_VALUES[i],valB:HEBREW_VALUES[j],
+    sum:HEBREW_VALUES[i]+HEBREW_VALUES[j],
+    enochA:ENOCHIAN[i],enochB:ENOCHIAN[j],
+    tarotA:TAROT[i],tarotB:TAROT[j],
+    elemA:ELEMENT[i],elemB:ELEMENT[j],
+  });
+}
+
+// ── Canvas setup ─────────────────────────────────────────────────────────────
+const bgCanvas  = document.getElementById('bg');
+const treeCanvas= document.getElementById('tree-canvas');
+const bgCtx     = bgCanvas.getContext('2d');
+const treeCtx   = treeCanvas.getContext('2d');
+
+let W, H, TW, TH, TX, TY, TR;
+const SIDE_W = 420;
+
+function resize() {
+  W = window.innerWidth; H = window.innerHeight;
+  bgCanvas.width = W; bgCanvas.height = H;
+  treeCanvas.width = W; treeCanvas.height = H;
+  // Tree occupies left panel
+  TW = W - SIDE_W; TH = H - 48 - 80;
+  TX = 0; TY = 48;
+  TR = Math.min(TW, TH) * 0.44;
+}
+resize();
+window.addEventListener('resize', resize);
+
+// ── Background — starfield NET ────────────────────────────────────────────────
+const STARS = Array.from({length:220},()=>({
+  x:Math.random(), y:Math.random(),
+  r:Math.random()*1.2+0.2,
+  a:Math.random(),
+  speed:Math.random()*0.0003+0.0001,
+}));
+
+// Net lattice lines (background)
+function drawNet(ctx, t) {
+  const spacing = 60;
+  ctx.save();
+  ctx.strokeStyle = `rgba(255,215,0,0.04)`;
+  ctx.lineWidth = 0.5;
+  const shift = (t*8)%spacing;
+  for(let x=-spacing;x<W+spacing;x+=spacing) {
+    ctx.beginPath();ctx.moveTo(x+shift,0);ctx.lineTo(x+shift,H);ctx.stroke();
+  }
+  for(let y=-spacing;y<H+spacing;y+=spacing) {
+    ctx.beginPath();ctx.moveTo(0,y+shift);ctx.lineTo(W,y+shift);ctx.stroke();
+  }
+  // diagonal grid
+  ctx.strokeStyle = `rgba(255,215,0,0.02)`;
+  for(let d=-W;d<W+H;d+=spacing*1.4) {
+    ctx.beginPath();ctx.moveTo(d,0);ctx.lineTo(d+H,H);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(d,0);ctx.lineTo(d-H,H);ctx.stroke();
+  }
+  ctx.restore();
+}
+
+function drawStars(ctx, t) {
+  ctx.save();
+  for(const s of STARS) {
+    const a = (Math.sin(t*s.speed*6+s.a*100)+1)/2 * 0.6 + 0.1;
+    ctx.fillStyle = `rgba(255,215,0,${a})`;
+    ctx.beginPath();
+    ctx.arc(s.x*W, s.y*H, s.r, 0, Math.PI*2);
+    ctx.fill();
+  }
+  ctx.restore();
+}
+
+// ── Particles on paths ────────────────────────────────────────────────────────
+const PARTICLES = PATHS.map((p,i)=>({
+  pathIdx:i,
+  t:Math.random(),
+  speed:0.001+Math.random()*0.002,
+  size:1.5+Math.random()*1.5,
+  brightness:0.5+Math.random()*0.5,
+}));
+// Add extra particles
+for(let k=0;k<80;k++){
+  const pathIdx=Math.floor(Math.random()*PATHS.length);
+  PARTICLES.push({pathIdx,t:Math.random(),speed:0.0008+Math.random()*0.002,size:1+Math.random(),brightness:0.3+Math.random()*0.5});
+}
+
+function sephPos(idx) {
+  const s = SEPHIROT[idx];
+  return {
+    x: TX + s.x*TW,
+    y: TY + s.y*TH,
+  };
+}
+
+// ── Draw Tree ─────────────────────────────────────────────────────────────────
+function drawTree(ctx, t) {
+  // Paths
+  for(const path of PATHS) {
+    const A = sephPos(path.from);
+    const B = sephPos(path.to);
+    const pulse = (Math.sin(t*0.8+path.li*0.4)+1)/2;
+
+    // Outer glow
+    ctx.save();
+    ctx.shadowColor = '#ffd700';
+    ctx.shadowBlur = 6+pulse*4;
+    ctx.strokeStyle = `rgba(255,200,0,${0.08+pulse*0.06})`;
+    ctx.lineWidth = 3+pulse*1;
+    ctx.beginPath();ctx.moveTo(A.x,A.y);ctx.lineTo(B.x,B.y);ctx.stroke();
+    ctx.restore();
+
+    // Core line
+    ctx.strokeStyle = `rgba(255,215,0,${0.35+pulse*0.2})`;
+    ctx.lineWidth = 1;
+    ctx.beginPath();ctx.moveTo(A.x,A.y);ctx.lineTo(B.x,B.y);ctx.stroke();
+
+    // Hebrew letter at midpoint
+    const mx = (A.x+B.x)/2, my = (A.y+B.y)/2;
+    const letter = HEBREW[path.li];
+    ctx.save();
+    ctx.shadowColor='#ffd700';ctx.shadowBlur=8;
+    ctx.fillStyle=`rgba(255,215,0,${0.5+pulse*0.3})`;
+    ctx.font=`${10+pulse*2}px serif`;
+    ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText(letter, mx, my);
+    ctx.restore();
+  }
+
+  // Particles
+  for(const p of PARTICLES) {
+    const path = PATHS[p.pathIdx];
+    p.t += p.speed;
+    if(p.t>1) p.t-=1;
+    const A = sephPos(path.from);
+    const B = sephPos(path.to);
+    const px = A.x + (B.x-A.x)*p.t;
+    const py = A.y + (B.y-A.y)*p.t;
+    const a = p.brightness*(0.4+Math.sin(t*2+p.t*10)*0.3);
+    ctx.save();
+    ctx.shadowColor='#ffd700';ctx.shadowBlur=6;
+    ctx.fillStyle=`rgba(255,215,0,${a})`;
+    ctx.beginPath();ctx.arc(px,py,p.size,0,Math.PI*2);ctx.fill();
+    ctx.restore();
+  }
+
+  // Sephirot nodes
+  for(const s of SEPHIROT) {
+    const px = TX + s.x*TW;
+    const py = TY + s.y*TH;
+    const pulse = (Math.sin(t*0.6+s.n*0.7)+1)/2;
+    const radius = 18+pulse*4;
+
+    // Outer ring glow
+    ctx.save();
+    ctx.shadowColor = s.color;
+    ctx.shadowBlur = 24+pulse*12;
+    ctx.strokeStyle = s.color;
+    ctx.lineWidth = 1.5;
+    ctx.globalAlpha = 0.4+pulse*0.3;
+    ctx.beginPath();ctx.arc(px,py,radius+6,0,Math.PI*2);ctx.stroke();
+    ctx.restore();
+
+    // Fill
+    const grad = ctx.createRadialGradient(px,py,0,px,py,radius);
+    grad.addColorStop(0,'rgba(0,0,0,0.95)');
+    grad.addColorStop(0.6,'rgba(0,0,0,0.8)');
+    grad.addColorStop(1,s.color+'33');
+    ctx.save();
+    ctx.shadowColor = s.color;
+    ctx.shadowBlur = 16+pulse*8;
+    ctx.fillStyle=grad;
+    ctx.beginPath();ctx.arc(px,py,radius,0,Math.PI*2);ctx.fill();
+    ctx.strokeStyle=s.color;
+    ctx.lineWidth=1.5;
+    ctx.globalAlpha=0.7+pulse*0.3;
+    ctx.stroke();
+    ctx.restore();
+
+    // Hebrew name
+    ctx.save();
+    ctx.shadowColor=s.color;ctx.shadowBlur=10;
+    ctx.fillStyle=s.color;
+    ctx.font=`${10+pulse*1}px serif`;
+    ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText(s.heb.split('')[0]||s.name[0], px, py);
+    ctx.restore();
+
+    // English name below
+    ctx.save();
+    ctx.fillStyle=`rgba(255,215,0,${0.55+pulse*0.2})`;
+    ctx.font=`9px 'Courier New'`;
+    ctx.textAlign='center';ctx.textBaseline='top';
+    ctx.fillText(s.name.toUpperCase(), px, py+radius+4);
+    ctx.restore();
+  }
+
+  // Abyss line (between Binah/3 and Chesed/4 — the Veil of the Abyss)
+  const abyss_y = TY + 0.265*TH;
+  ctx.save();
+  ctx.setLineDash([4,8]);
+  ctx.strokeStyle='rgba(255,100,100,0.2)';
+  ctx.lineWidth=1;
+  ctx.beginPath();ctx.moveTo(TX+0.05*TW,abyss_y);ctx.lineTo(TX+0.95*TW,abyss_y);ctx.stroke();
+  ctx.restore();
+  ctx.save();
+  ctx.fillStyle='rgba(255,100,100,0.3)';
+  ctx.font='8px Courier New';
+  ctx.fillText('VEIL OF THE ABYSS',TX+0.05*TW+4,abyss_y-9);
+  ctx.restore();
+}
+
+// ── Gate grid UI ─────────────────────────────────────────────────────────────
+const gateGrid = document.getElementById('gate-grid');
+const tooltip  = document.getElementById('tooltip');
+
+// Build 22×22 triangle grid (lower half = active gates)
+// We show a 22×22 grid where cell [i][j] with j>i = a gate
+// Flatten to 231 cells in the gate grid div
+// Actually use the GATES array and color by abjad sum
+const maxSum = Math.max(...GATES.map(g=>g.sum));
+const minSum = Math.min(...GATES.map(g=>g.sum));
+
+// Build a 22×22 lookup
+const gateMap = {};
+for(const g of GATES) gateMap[`${g.i},${g.j}`]=g;
+
+for(let j=0;j<22;j++) {
+  for(let i=0;i<=j;i++) {
+    const cell = document.createElement('div');
+    cell.className='gate-cell';
+    if(i===j) {
+      // Diagonal — empty
+      cell.style.background='rgba(255,215,0,0.03)';
+      cell.style.border='1px solid rgba(255,215,0,0.05)';
+    } else {
+      const g = gateMap[`${i},${j}`];
+      const t = (g.sum - minSum)/(maxSum-minSum);
+      const r = Math.floor(80+t*175);
+      const g_ = Math.floor(40+t*120);
+      cell.style.background=`rgba(${r},${g_},0,0.7)`;
+      cell.style.border=`1px solid rgba(255,215,0,0.15)`;
+      cell.setAttribute('data-gate', JSON.stringify({a:g.a,b:g.b,nameA:g.nameA,nameB:g.nameB,sum:g.sum,tarotA:g.tarotA,tarotB:g.tarotB,elemA:g.elemA,elemB:g.elemB,enochA:g.enochA,enochB:g.enochB}));
+      cell.addEventListener('mouseenter', (e)=>{
+        const d=JSON.parse(e.target.getAttribute('data-gate'));
+        tooltip.innerHTML=`<b style="font-size:16px">${d.a}+${d.b}</b><br>
+${d.nameA} + ${d.nameB}<br>
+<span style="color:#aa8800">Abjad: ${d.sum}</span><br>
+${d.tarotA} · ${d.tarotB}<br>
+<span style="color:#886600">${d.elemA} · ${d.elemB}</span><br>
+Enochian: ${d.enochA} + ${d.enochB}`;
+        tooltip.style.display='block';
+        tooltip.style.left=(e.clientX+14)+'px';
+        tooltip.style.top=(e.clientY-20)+'px';
+      });
+      cell.addEventListener('mouseleave',()=>tooltip.style.display='none');
+    }
+    gateGrid.appendChild(cell);
+  }
+  // Pad remaining columns
+  for(let i=j+1;i<22;i++){
+    const cell=document.createElement('div');
+    cell.className='gate-cell';
+    cell.style.background='transparent';
+    gateGrid.appendChild(cell);
+  }
+}
+
+// ── Sephirot list ─────────────────────────────────────────────────────────────
+const sephList = document.getElementById('seph-list');
+for(const s of SEPHIROT) {
+  const paths = PATHS.filter(p=>p.from===s.n-1||p.to===s.n-1);
+  sephList.innerHTML += `<div><span class="name" style="color:${s.color}">${s.n}. ${s.name}</span> — ${s.heb} — ${s.title}
+<span class="path">[${paths.length} paths · Path ${paths.map(p=>p.p).join(',')}]</span></div>`;
+}
+
+// ── Pulse counter ─────────────────────────────────────────────────────────────
+let pulseN = 0;
+const pulseEl = document.getElementById('pulse-count');
+
+// ── Main loop ─────────────────────────────────────────────────────────────────
+let t0 = performance.now();
+function frame(now) {
+  const t = (now-t0)/1000;
+
+  // Background
+  bgCtx.fillStyle='rgba(0,0,0,0.18)';
+  bgCtx.fillRect(0,0,W,H);
+  drawNet(bgCtx,t);
+  drawStars(bgCtx,t);
+
+  // Tree
+  treeCtx.clearRect(0,0,W,H);
+  drawTree(treeCtx,t);
+
+  // Pulse counter
+  const gate = GATES[Math.floor(t*0.5)%GATES.length];
+  pulseEl.textContent = `GATE ${Math.floor(t*0.5)%231+1}/231 · ${gate.a}+${gate.b} · ${gate.nameA}+${gate.nameB} · Σ${gate.sum}`;
+
+  // Pulse gate cells every ~0.4s
+  const activeCellIdx = Math.floor(t*2.5)%GATES.length;
+  const cells = gateGrid.querySelectorAll('.gate-cell[data-gate]');
+  cells.forEach((c,i)=>{
+    if(i===activeCellIdx) c.style.boxShadow='0 0 6px 2px #ffd700';
+    else c.style.boxShadow='none';
+  });
+
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>

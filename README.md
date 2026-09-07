@@ -14,13 +14,14 @@
 [![Ada/SPARK](https://img.shields.io/badge/Ada%2FSPARK-MAGMA%20FSM-brightgreen?style=flat-square)](https://adacore.com/spark)
 [![x86-64](https://img.shields.io/badge/x86--64-AVX512%20%2B%20AMX-blueviolet?style=flat-square)](https://en.wikipedia.org/wiki/AVX-512)
 [![Rust](https://img.shields.io/badge/Rust-CATN%20%2B%20GDR-orange?style=flat-square)](https://rust-lang.org)
-[![Source](https://img.shields.io/badge/Source-89%2C098%20lines-green?style=flat-square)](#source)
+[![Swift](https://img.shields.io/badge/Swift-AgentFishTank-F05138?style=flat-square)](https://swift.org)
+[![Source](https://img.shields.io/badge/Source-99%2C010%20lines-green?style=flat-square)](#source)
 [![License](https://img.shields.io/badge/License-BSL%201.1-yellow?style=flat-square)](LICENSE)
 
 ---
 
 > **A sovereign compute stack.** Silicon RTL to formal proofs to native IDE — one repo, one author, zero frameworks.  
-> **20+ languages. 368 source files. 89,098 lines.** Every layer proved, sealed, and verifiable.
+> **20+ languages. 427 source files. 99,010 lines.** Every layer proved, sealed, and verifiable.
 
 ---
 
@@ -36,6 +37,9 @@
 - [Formal Layer](#formal-layer)
 - [Desktop Layer](#desktop-layer)
 - [Sparse Latency Router](#sparse-latency-router)
+- [Federated Training — AgentFishTank](#federated-training--agentfishtank)
+- [The 49th Call](#the-49th-call)
+- [BRICK Protocol](#brick-protocol)
 - [Papers](#papers)
 - [Mathematics](#the-mathematics)
 - [Security](#security)
@@ -60,6 +64,11 @@
 │  │  COBALT HASKELL PACKAGE  │  │  PAPERS (LaTeX)                  │    │
 │  │  23 modules              │  │  LiquidOps · Entropy · GDR-9     │    │
 │  │  LiquidOps · ISA · Math  │  │  PLDI / FM / SC targets          │    │
+│  └──────────────────────────┘  └──────────────────────────────────┘    │
+│  ┌──────────────────────────┐  ┌──────────────────────────────────┐    │
+│  │  AGENTFISHTANK (Swift)   │  │  BRICK PROTOCOL                  │    │
+│  │  36-agent swarm training │  │  SHA3 + AES-GCM + SAML 2.0       │    │
+│  │  SceneKit 3D glass tank  │  │  Federated repo integrity seals  │    │
 │  └──────────────────────────┘  └──────────────────────────────────┘    │
 │  ┌─────────────────────────────────────────────────────────────────┐    │
 │  │  DESKTOP LAYER                                                  │    │
@@ -495,6 +504,16 @@ Six non-softmax attention mechanisms. None compute `exp(QKᵀ/√d)`:
   ├── IronicMirror/XInvariant.agda
   │     X-invariant of the ironic mirror (Agda)
   │
+  ├── gnostic/GnosticArithmetic.lean
+  │     Abjad 28-letter matrix · Jamal/Jalal polarity · digit root
+  │     Wafq magic squares (3×3, constant=33) · 360° cipher
+  │     Sethian cosmology (kenoma→pleroma at t=49)
+  │
+  ├── gnostic/AlHamidMatrix.lean
+  │     Al-Hamid(93)+Ahmad(53)+Ali(110) = 256 = 16² = root 4
+  │     Four-pillar architecture · Jamal-Jalal equilibrium
+  │     16×16 Wafq seed (magic constant 2056) · hieroglyphic cipher
+  │
   └── tensor_framework/TensorFramework.lean
         11-phase Lean 4 formalization
         ├── Phase 1   FiniteIndex · ComputationalWork · Latency · Distance
@@ -649,6 +668,119 @@ python -m src.bridge.http_server --host 127.0.0.1 --port 19000
 
 ---
 
+## Federated Training — AgentFishTank
+
+`training-frontend/` — Swift/SceneKit federated swarm training frontend. 36 agents inside a 3D glass tank processing training corpora from GitHub forks.
+
+```
+  ┌─────────────────────────────────────────────────────────────────────┐
+  │  AgentFishTank — 60fps Deterministic Swarm State Machine            │
+  │                                                                     │
+  │  GitHub Forks (NASA CMR · OpenMetadata · Autoware)                  │
+  │       │ CorpusLoader (async URLSession → TRAINING_CORPUS.json)      │
+  │       ▼                                                             │
+  │  TrainingCorpus ──► TrainingNode tree + RelationshipEdge graph       │
+  │       │              7 classes: DISCOVERY → RECONSTRUCTION           │
+  │       ▼                                                             │
+  │  TaskPool (shuffle all nodes × 7 task types)                        │
+  │       │                                                             │
+  │       ▼                                                             │
+  │  36 Agents ──────────────────────────────────────────────────────── │
+  │  │ IDLE → TRAVERSING → PARSING → EXTRACTING → TRANSFORMING         │
+  │  │      → VERIFYING → COMMUNICATING → COMPLETE → reassign           │
+  │  │                                                                  │
+  │  │  Movement: bounce in [-1,1]³ · cluster pull · separation         │
+  │  │  Pipeline: load tree → extract → transform → verify → WORM seal  │
+  │  │  Messages: agent-to-agent payload exchange (ring buffer)          │
+  │  │  Clusters: ≥3 agents on same node → cluster formation event      │
+  │  └──────────────────────────────────────────────────────────────── │
+  │                                                                     │
+  │  SceneKit 3D View                                                   │
+  │  ├── Glass box (2×2×2, chamfer 0.08, IOR 1.45, 85% transparency)   │
+  │  ├── Agent spheres (r=0.035, color = state, emission = progress)    │
+  │  ├── Volumetric particles (80/sec, 3s lifespan)                     │
+  │  ├── Shockwave pulse on COMPLETE (scale 1→1.015→1)                  │
+  │  ├── Corpus tree sidebar (filter by source)                         │
+  │  ├── Agent inspector (pipeline steps, progress, reasoning)          │
+  │  └── Event timeline (scrolling, color-coded by type)                │
+  └─────────────────────────────────────────────────────────────────────┘
+```
+
+**7 Task Types:**
+| Task | Pipeline Steps |
+|------|---------------|
+| TRAVERSE_TREE | Load tree → Traverse hierarchy → Index children → Send to extractor |
+| EXTRACT_METADATA | Read evidence → Parse → Extract facts → Tag confidence → Append |
+| BUILD_REL_GRAPH | Load components → Detect imports → Classify → Build edge |
+| RECONSTRUCT_ARCH | Gather edges → Cluster subsystem → Derive data flow → Validate |
+| GENERATE_TRAINING | Select class → Form question → Derive answer → Serialize |
+| VALIDATE_OUTPUT | Load spec → Compare behavior → Classify MATCH/PARTIAL/MISMATCH → WORM seal |
+| SEND_TO_AGENT | Pack payload → Route to target → Await ACK |
+
+**Build:**
+```bash
+cd training-frontend
+swift build    # macOS 14+ / iOS 17+
+```
+
+---
+
+## The 49th Call
+
+`the-49th-call/` — Multi-language substrate implementing Call49 esoteric computation: Enochian keys, soul specification, gnostic arithmetic, and the 49th invocation.
+
+```
+  the-49th-call/
+  ├── src/lib.rs              Rust core library (Cargo)
+  ├── ere.pl                  Prolog ERE (Enochian Root Engine)
+  ├── substrate/
+  │   ├── soul_spec.hs        Haskell soul specification
+  │   ├── substrate.apl       APL substrate computation
+  │   ├── subleq.asm          SUBLEQ one-instruction set computer
+  │   ├── mamari.cbl          COBOL mamari module
+  │   └── comefrom.i          INTERCAL COMEFROM control flow
+  ├── invert/
+  │   ├── call49_rtl.pl       Prolog RTL inversion
+  │   ├── soul_inverted.hs    Haskell inverted soul
+  │   └── substrate_rtl.apl   APL RTL substrate
+  ├── net/
+  │   ├── gates_231.mjs       ES module — 231 gate network
+  │   ├── grid.html           Grid visualization
+  │   └── masters.pl          Prolog master registry
+  ├── decode/                 Arabic + Aramaic + Hebrew root tables
+  └── ENOCH_BOB_PATTERN_MATCH.py  Pattern matching engine
+
+  Gnostic Arithmetic (proofs/ + runtime/):
+  ├── proofs/GnosticArithmetic.lean    Abjad matrix, Wafq magic squares, 360° cipher
+  ├── proofs/AlHamidMatrix.lean        Master constant 256=16², four-pillar architecture
+  └── runtime/src/gnostic_arithmetic.rs  #![no_std] Rust runtime, 12 tests
+```
+
+**Key invariant:** Al-Hamid(93) + Ahmad(53) + Ali(110) = 256 = 16² → root 4 (four pillars). Lean 4 proved.
+
+---
+
+## BRICK Protocol
+
+`docs/BRICK_PROTOCOL_SPECIFICATION.md` — **Bound Repository Integrity & Cryptographic Kernel.** Federated repository sealing: SHA3-256 content hashing → AES-256-GCM authenticated encryption → SAML 2.0 identity binding.
+
+```
+  Repository Tree
+        ↓ canonicalize
+  Manifest(repo_id, commit, paths, file_hashes, policy)
+        ↓ SHA3-256
+  ROOT_HASH
+        ↓ AES-256-GCM encrypt (HKDF-derived key, random 96-bit nonce)
+  SEALED_BRICK
+        ↓ SAML bind (federation issuer + subject + assertion)
+  FEDERATED_BRICK_RECEIPT
+
+  Verification: recompute H_tree → verify SAML → recompute BRICK_ID
+                → verify AES-GCM tag → decrypt manifest → VALID/INVALID
+```
+
+---
+
 ## Papers
 
 ### New (this repo, `papers/`)
@@ -764,15 +896,18 @@ Four independent persistence mechanisms sync on every state transition:
 | MAGMA protocol | Ada/SPARK + Rust | 14 | 2,331 |
 | NARM runtime | C + ASM + Fortran | 9 | 2,322 |
 | Hardware RTL | SystemVerilog + Scala | 19 | 1,917 |
-| **Formal proofs** | **Lean 4 + Agda** | **6** | **2,789** |
+| **Formal proofs** | **Lean 4 + Agda** | **8** | **3,121** |
 | BEAM VM | WebAssembly (WAT) | 3 | 1,225 |
 | **Sparse Latency Router (Python)** | **Python** | **36** | **4,136** |
 | **ASR + Bridge** | **Python** | **6** | **1,200** |
+| **AgentFishTank** | **Swift / SceneKit** | **7** | **1,331** |
+| **The 49th Call** | **Rust + Haskell + APL + Prolog + COBOL** | **22** | **3,341** |
+| **Gnostic Arithmetic Runtime** | **Rust (#![no_std])** | **1** | **346** |
 | Tests | Python + Bash | 5 | 1,203 |
 | CATN tensor network | Rust | 9 | 1,051 |
 | **Papers** | **LaTeX** | **3** | **1,580** |
 | AToKio | Haskell | 1 | 299 |
-| **Total** | **20+ languages** | **395** | **93,334** |
+| **Total** | **20+ languages** | **427** | **99,010** |
 
 ---
 
@@ -826,5 +961,5 @@ lake build formal/tensor_framework/TensorFramework.lean
 ```
   SnapKitty / SNAPKITTYWEST / Ahmad Ali Parr — Bel Esprit D'Accord Irrevocable Trust
   BSL 1.1 → MIT 2029-01-01
-  89,098 lines · 20+ languages · one sovereign stack
+  99,010 lines · 20+ languages · one sovereign stack
 ```
