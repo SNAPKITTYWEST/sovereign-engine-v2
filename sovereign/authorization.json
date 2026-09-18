@@ -1,0 +1,8 @@
+{
+  "authorization_id": "auth-9858d27d",
+  "node_id": "sovereign-main-4d94069a",
+  "authorization_status": "ACTIVE",
+  "authorization_scope": "protected-execution",
+  "expires_at_utc": "2026-09-18T07:50:21Z",
+  "revocation_status": "ACTIVE"
+}

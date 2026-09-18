@@ -43,7 +43,7 @@ from .tools.loader import load_all_tools
 from .tools.ipc_router import NativeToolRouter
 
 # ── Routing pipeline ────────────────────────────────────────────────────────
-from .routing.pipeline import RoutingPipeline
+from .routing.pipeline import RoutingPipeline, build_default_routing_nodes
 
 # ── Continuity + State ──────────────────────────────────────────────────────
 from .continuity.manager import ContinuityManager
@@ -56,6 +56,9 @@ from .core.path_jail import PathJail, SSRFGuard
 # ── Agents ─────────────────────────────────────────────────────────────────
 from .agents.react import ReActAgent, ReActConfig
 from .agents.shadow import ShadowAgent
+
+# ── Inference backend (temporary — Ahmad's sovereign SDK replaces this) ─────
+from .inference.bedrock_backend import BedrockBackend
 
 logger = logging.getLogger("sovereign.engine")
 
@@ -105,7 +108,7 @@ class SovereignEngine:
         self.signing_key = generate_signing_key()
 
         # Evidence ledger
-        self.ledger = WORMLedger(str(self.config.ledger_path), self.signing_key)
+        self.ledger = WORMLedger(Path(self.config.ledger_path), self.signing_key)
 
         # Tools
         self.registry = ToolRegistry()
@@ -113,20 +116,29 @@ class SovereignEngine:
         self.ipc = NativeToolRouter(self.registry) if self.config.enable_ipc else None
 
         # State + continuity
-        self.continuity = ContinuityManager(str(self.config.continuity_dir))
+        self.continuity = ContinuityManager(Path(self.config.continuity_dir), self.config.agent_id)
 
-        # Routing
-        self.routing = RoutingPipeline(registry=self.registry)
+        # Routing — build experts from tool namespaces
+        expert_names = ["coder", "reasoner", "query", "constraint", "general"]
+        routing_nodes = build_default_routing_nodes(expert_names)
+        self.routing = RoutingPipeline(
+            experts={name: lambda t, n=name: {"expert": n, "result": t} for name in expert_names},
+            routing_nodes=routing_nodes,
+        )
+
+        # Model backend — Bedrock until Ahmad's sovereign SDK ships
+        self.model = BedrockBackend()
 
         # Agents
         react_config = ReActConfig(max_steps=self.config.max_steps)
         self.agent = ReActAgent(
-            agent_id=self.config.agent_id,
+            model=self.model,
+            tool_registry=self.registry,
+            worm_ledger=self.ledger,
             config=react_config,
-            registry=self.registry,
-            ledger=self.ledger,
+            agent_id=self.config.agent_id,
         )
-        self.shadow = ShadowAgent() if self.config.enable_shadow else None
+        self.shadow = ShadowAgent(agent_id=f"{self.config.agent_id}_shadow") if self.config.enable_shadow else None
 
         self._logger.info("SovereignEngine initialized")
 
