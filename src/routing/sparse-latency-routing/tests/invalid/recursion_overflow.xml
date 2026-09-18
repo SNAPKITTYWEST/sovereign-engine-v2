@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  I8 violation: execution/max_recursion_depth is 1, but the tensor
+  nests three levels deep (t1 at depth 0 -> t1.1 at depth 1 -> t1.1.1
+  at depth 2). recurse_tensor() is called with depth=0 for top-level
+  tensors and depth+1 for each nested <recursion><tensor>, so t1.1.1's
+  depth (2) exceeds max_recursion_depth (1).
+  Expected: "I8 violation: tensor 't1.1.1' nesting exceeds
+  max_recursion_depth=1" -> exit 66.
+-->
+<network name="recursion_overflow_network" version="1.0">
+
+  <execution>
+    <max_recursion_depth>1</max_recursion_depth>
+    <hash_algorithm>sha256</hash_algorithm>
+    <rank_backend>computed</rank_backend>
+  </execution>
+
+  <nodes>
+    <node id="n1" priority="10"/>
+    <node id="n2" priority="8"/>
+    <node id="n3" priority="8"/>
+    <node id="n4" priority="5"/>
+    <node id="n5" priority="3"/>
+  </nodes>
+
+  <edges>
+    <edge id="e1" source="n1" destination="n2"
+          computation_latency="0.10" communication_latency="0.05" synchronization_latency="0.02"
+          weight="1.0" activation_state="active" tensor_dependency="t1"
+          routing_priority="9" sparsity_class="low"/>
+    <edge id="e2" source="n1" destination="n3"
+          computation_latency="0.12" communication_latency="0.04" synchronization_latency="0.01"
+          weight="1.0" activation_state="active" tensor_dependency="t1"
+          routing_priority="9" sparsity_class="low"/>
+    <edge id="e3" source="n2" destination="n4"
+          computation_latency="0.20" communication_latency="0.05" synchronization_latency="0.02"
+          weight="0.8" activation_state="active" tensor_dependency="t1.1"
+          routing_priority="5" sparsity_class="low"/>
+    <edge id="e4" source="n3" destination="n4"
+          computation_latency="0.15" communication_latency="0.03" synchronization_latency="0.01"
+          weight="0.8" activation_state="active" tensor_dependency="t1.1"
+          routing_priority="6" sparsity_class="low"/>
+    <edge id="e5" source="n4" destination="n5"
+          computation_latency="0.18" communication_latency="0.02" synchronization_latency="0.01"
+          weight="1.0" activation_state="active" tensor_dependency="t1"
+          routing_priority="4" sparsity_class="medium"/>
+  </edges>
+
+  <tensors>
+    <tensor id="t1" shape="3,3" dtype="float32" rank_hint="2" sparse="false">
+      <recursion max_depth="2">
+        <tensor id="t1.1" shape="3" dtype="float32" rank_hint="1" sparse="true">
+          <recursion max_depth="1">
+            <tensor id="t1.1.1" shape="1" dtype="float32" rank_hint="1" sparse="true"/>
+          </recursion>
+        </tensor>
+      </recursion>
+    </tensor>
+  </tensors>
+
+  <routing>
+    <hierarchy root="n1" forbid_cycles="true"/>
+    <latency objective="minimize" threshold="0.90"/>
+    <sparsity max_ratio="0.35" allow_expansion="false"/>
+  </routing>
+
+  <jacobian>
+    <function name="f" input_dim="3" output_dim="3"/>
+    <matrix rows="3" cols="3">
+      1,0,1;
+      0,1,1;
+      1,1,2
+    </matrix>
+    <rank thresholds_min="1" thresholds_max="3" slack="1"/>
+  </jacobian>
+
+  <parser>
+    <regex name="IDENTIFIER"      pattern="^[A-Za-z_][A-Za-z0-9_]*$"/>
+    <regex name="INTEGER_DIM"     pattern="^[1-9][0-9]*$"/>
+    <regex name="FLOAT_LATENCY"   pattern="^[0-9]+\.[0-9]+$"/>
+    <regex name="NODE_ID"         pattern="^n[1-9][0-9]*$"/>
+    <regex name="EDGE_ID"         pattern="^e[1-9][0-9]*$"/>
+    <regex name="TENSOR_EXPR"     pattern="^t[1-9][0-9]*(\.[1-9][0-9]*)*$"/>
+    <regex name="ROUTE_EXPR"      pattern="^(e[1-9][0-9]*)(-&gt;e[1-9][0-9]*)*$"/>
+  </parser>
+
+  <adaptation>
+    <rules>
+      <rule id="r1" condition="latency_exceeds_threshold" action="evaluate_alternate_route"/>
+      <rule id="r2" condition="rank_decreases" action="evaluate_redundant_edge_removal"/>
+      <rule id="r3" condition="rank_increases" action="evaluate_capacity_expansion"/>
+      <rule id="r4" condition="tensor_dimension_changes" action="recompute_dependent_routing_metadata"/>
+      <rule id="r5" condition="sparsity_exceeds_maximum" action="reject_topology_expansion"/>
+    </rules>
+  </adaptation>
+
+  <verification>
+    <invariants>
+      <invariant id="I1"  description="All referenced nodes exist"/>
+      <invariant id="I2"  description="All referenced tensors exist"/>
+      <invariant id="I3"  description="All edges reference valid source and destination nodes"/>
+      <invariant id="I4"  description="No forbidden cycles exist where cycles are prohibited"/>
+      <invariant id="I5"  description="Sparsity remains within configured bounds"/>
+      <invariant id="I6"  description="Latency values remain nonnegative"/>
+      <invariant id="I7"  description="Tensor dimensions remain valid"/>
+      <invariant id="I8"  description="Recursion depth remains bounded"/>
+      <invariant id="I9"  description="Rank values remain mathematically valid"/>
+      <invariant id="I10" description="Every adaptation has a deterministic triggering condition"/>
+      <invariant id="I11" description="Every generated state can be reconstructed from the canonical XML and previous state"/>
+      <invariant id="I12" description="Failed verification prevents state publication"/>
+    </invariants>
+  </verification>
+
+</network>

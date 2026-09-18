@@ -1,0 +1,21 @@
+[package]
+name        = "the-49th-call"
+version     = "1.0.0"
+edition     = "2021"
+description = "Enochian Reconstruction Engine — four-pass constraint solver for the 49th Call"
+license     = "MIT"
+repository  = "https://github.com/SNAPKITTYWEST/the-49th-call"
+homepage    = "https://github.com/SNAPKITTYWEST/the-49th-call"
+documentation = "https://github.com/SNAPKITTYWEST/the-49th-call#architecture"
+readme      = "../README.md"
+keywords    = ["enochian", "constraint-solving", "linguistics", "ancient-scripts", "formal-methods"]
+categories  = ["science", "algorithms", "parser-implementations"]
+
+[lib]
+name = "call49"
+path = "lib.rs"
+
+[profile.release]
+lto           = true
+codegen-units = 1
+strip         = true

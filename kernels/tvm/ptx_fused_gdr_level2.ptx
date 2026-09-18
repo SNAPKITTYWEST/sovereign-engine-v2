@@ -1,0 +1,99 @@
+// Parallel Thread Execution (PTX) Level 2 Assembly
+// Target:  sm_86 (Ampere GA102)
+// Anchor:  0x2A1C_B4D0_F9E2_11C8-P2
+//
+// Decompilation summary (SASS → PTX):
+//   HMMA.16816.F32   → mma.sync.aligned.m16n8k16.row.col.f32.f16.f16.f32
+//   LDSM / LDSM.TRANS → ldmatrix.sync.aligned.m8n8.x4[.trans].shared.b16
+//   LDGSTS.E.128.CG   → cp.async.cg.shared.global
+//   DEPBAR.LE SB0,1   → cp.async.wait_group 0
+//   BAR.SYNC 0x0      → bar.sync 0
+//   FFMA.F32          → fma.rn.f32
+
+.version 8.0
+.target sm_86
+.address_size 64
+
+// ── Kernel 1: raw fragment loop ───────────────────────────────────────────────
+.visible .entry ptx_fused_gdr_level2(
+    .param .u64 __parm_p_q,
+    .param .u64 __parm_p_k,
+    .param .u64 __parm_p_o
+) {
+    .reg .pred %p<2>;
+    .reg .b32  %r<16>;
+    .reg .b64  %rd<8>;
+    .reg .f16  %rs<32>;
+    .reg .f32  %f<32>;
+
+    ld.param.u64 %rd1, [__parm_p_q];
+    ld.param.u64 %rd2, [__parm_p_k];
+
+    bar.sync 0;
+
+    mov.u32 %r1, 0;
+
+    $L__BB0_1:
+        ldmatrix.sync.aligned.m8n8.x4.shared.b16       {%rs0, %rs1, %rs2, %rs3},      [%r1+0];
+        ldmatrix.sync.aligned.m8n8.x4.trans.shared.b16 {%rs4, %rs5, %rs6, %rs7},      [%r1+64];
+
+        mma.sync.aligned.m16n8k16.row.col.f32.f16.f16.f32
+            {%f0, %f1, %f2, %f3},
+            {%rs0, %rs1, %rs2, %rs3},
+            {%rs4, %rs5, %rs6, %rs7},
+            {%f0, %f1, %f2, %f3};
+
+        add.s32 %r1, %r1, 16;
+        setp.ne.s32 %p0, %r1, 128;
+        @%p0 bra $L__BB0_1;
+
+    ret;
+}
+
+// ── Kernel 2: full GDR kernel with cp.async pipeline ─────────────────────────
+.version 8.0
+.target sm_86
+.address_size 64
+
+.visible .entry ptx_fused_gdr_kernel(
+    .param .u64 __parm_q,
+    .param .u64 __parm_k,
+    .param .u64 __parm_v,
+    .param .u64 __parm_o
+) {
+    .reg .b32  %r<32>;
+    .reg .b64  %rd<16>;
+    .reg .f32  %f<16>;
+    .reg .pred %p<4>;
+
+    .shared .align 16 .b8 smem_q[2048];
+    .shared .align 16 .b8 smem_k[2048];
+
+    ld.param.u64 %rd1, [__parm_q];
+    ld.param.u64 %rd2, [__parm_k];
+    ld.param.u64 %rd3, [__parm_v];
+    ld.param.u64 %rd4, [__parm_o];
+
+    mov.u32 %r1, %ctaid.x;
+    mov.u32 %r2, %tid.x;
+
+    // Async global→shared (bypasses L1 for direct staging)
+    @%p0 cp.async.cg.shared.global [smem_q], [%rd1+0], 16;
+    @%p0 cp.async.cg.shared.global [smem_k], [%rd2+0], 16;
+    cp.async.commit_group;
+    cp.async.wait_group 0;
+
+    bar.sync 0;
+
+    ldmatrix.sync.aligned.m8n8.x4.shared.b16       {%r16, %r17, %r18, %r19}, [smem_q];
+    ldmatrix.sync.aligned.m8n8.x4.trans.shared.b16 {%r20, %r21, %r22, %r23}, [smem_k];
+
+    mma.sync.aligned.m16n8k16.row.col.f32.f16.f16.f32
+        {%f0, %f1, %f2, %f3},
+        {%r16, %r17, %r18, %r19},
+        {%r20, %r21, %r22, %r23},
+        {%f0, %f1, %f2, %f3};
+
+    membar.cta;
+    ret;
+}

@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sovereign OS - iPhone 17 Pro Dashboard</title>
+    <!--
+        Sovereign OS Dashboard — Springboard UI Layer
+        Author: Ahmad Ali Parr — SnapKitty Collective
+
+        This HTML is the visual output of the MACROEASM 8K pipeline.
+        Color palette extracted from iPhone 17 Pro orange titanium chassis:
+          Chassis warm: #DE7C34  Chassis mid: #CA6C27  Shadow: #8C3B10
+          Lens black:   #080808  Specular:    #F5F5F5  Card BG: #F5F5F7
+
+        MacroWASM control vector embedded as CSS custom property:
+          --ctrl-vector: 0x6A01200020400236 (= 36 02 40 20 00 20 01 6A LE)
+    -->
+    <style>
+        * { box-sizing:border-box; margin:0; padding:0;
+            font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Helvetica Neue",sans-serif;
+            -webkit-font-smoothing:antialiased; }
+
+        :root {
+            --ctrl-vector: #6A012000;  /* MacroWASM u32 low bytes as color */
+            --chassis-warm: #DE7C34;
+            --chassis-mid:  #CA6C27;
+            --lens-black:   #080808;
+        }
+
+        body { width:100vw; height:100vh; overflow:hidden;
+            background:linear-gradient(135deg,#2b1207 0%,#4a1d0c 35%,#8c3b10 70%,#2a0802 100%);
+            color:#fff; display:flex; flex-direction:column; }
+
+        .menu-bar { height:28px; background:rgba(20,10,5,.35); backdrop-filter:blur(20px);
+            -webkit-backdrop-filter:blur(20px); display:flex; justify-content:space-between;
+            align-items:center; padding:0 16px; font-size:13px; font-weight:400;
+            border-bottom:1px solid rgba(255,255,255,.08); z-index:1000; }
+        .menu-left,.menu-right { display:flex; align-items:center; gap:16px; }
+        .menu-left span:hover { opacity:1; } .menu-left span:first-child { font-weight:600; }
+        .menu-right { gap:14px; opacity:.9; }
+
+        .main-container { flex:1; display:flex; padding:16px; gap:16px; overflow:hidden; position:relative; }
+
+        .glass-panel { background:rgba(255,255,255,.07); backdrop-filter:blur(30px);
+            -webkit-backdrop-filter:blur(30px); border:1px solid rgba(255,255,255,.12);
+            border-radius:20px; box-shadow:0 20px 40px rgba(0,0,0,.3); }
+
+        .sidebar { width:230px; display:flex; flex-direction:column; justify-content:space-between; padding:20px 12px; }
+        .nav-links { display:flex; flex-direction:column; gap:6px; }
+        .nav-item { display:flex; align-items:center; gap:12px; padding:10px 14px; border-radius:12px;
+            font-size:14px; color:rgba(255,255,255,.8); cursor:pointer; transition:all .2s ease; }
+        .nav-item:hover { background:rgba(255,255,255,.08); color:#fff; }
+        .nav-item.active { background:linear-gradient(135deg,#f97316,#ea580c); color:#fff;
+            box-shadow:0 4px 15px rgba(234,88,12,.4); font-weight:500; }
+        .user-profile { display:flex; align-items:center; gap:12px; padding:10px;
+            background:rgba(0,0,0,.2); border-radius:14px; border:1px solid rgba(255,255,255,.06); }
+        .user-avatar { width:36px; height:36px; border-radius:50%; background:#C47820; }
+        .user-info .name { font-size:13px; font-weight:600; }
+        .user-info .role { font-size:11px; color:rgba(255,255,255,.5); }
+
+        .dashboard-grid { flex:1; display:grid;
+            grid-template-columns:2fr 1fr; grid-template-rows:1.2fr 1fr; gap:16px; overflow:hidden; }
+
+        .hero-card { grid-column:1/2; grid-row:1/2; padding:36px;
+            display:flex; justify-content:space-between; position:relative; overflow:hidden; }
+        .hero-content { max-width:50%; display:flex; flex-direction:column; justify-content:center; }
+        .hero-content h1 { font-size:44px; font-weight:700; letter-spacing:-.5px; line-height:1.05; margin-bottom:8px; }
+        .hero-content h2 { font-size:24px; font-weight:500; color:rgba(255,255,255,.9); margin-bottom:16px; }
+        .hero-content p  { font-size:14px; color:rgba(255,255,255,.65); line-height:1.4; margin-bottom:24px; }
+        .hero-buttons { display:flex; gap:12px; }
+        .btn { padding:10px 22px; border-radius:30px; font-size:13px; font-weight:500;
+            cursor:pointer; border:none; transition:transform .1s ease; }
+        .btn:active { transform:scale(.96); }
+        .btn-primary { background:linear-gradient(135deg,#f97316,#ea580c); color:#fff;
+            box-shadow:0 4px 15px rgba(234,88,12,.4); }
+        .btn-secondary { background:rgba(255,255,255,.1); color:#fff;
+            border:1px solid rgba(255,255,255,.2); backdrop-filter:blur(10px); }
+
+        .hero-image-container { position:absolute; right:-20px; top:0; height:100%; width:55%;
+            display:flex; align-items:center; justify-content:center; }
+        .iphone-mockup { width:100%; height:100%; background:linear-gradient(135deg,#e06d2d,#a84210);
+            border-radius:30px 0 0 30px; position:relative; box-shadow:-20px 20px 50px rgba(0,0,0,.5);
+            display:flex; align-items:center; justify-content:center;
+            border-left:2px solid rgba(255,255,255,.3); overflow:hidden; }
+        .iphone-camera-bump { position:absolute; right:40px; top:35px; width:180px; height:180px;
+            background:rgba(50,20,5,.85); border-radius:40px; border:1px solid rgba(255,255,255,.15);
+            box-shadow:inset 0 2px 10px rgba(255,255,255,.1),0 10px 25px rgba(0,0,0,.4);
+            display:grid; grid-template-columns:1fr 1fr; padding:18px; gap:12px; }
+        .lens { width:54px; height:54px; border-radius:50%; background:#080808;
+            border:3px solid #2a2a2a; box-shadow:inset 0 0 10px rgba(0,255,255,.2),0 4px 10px rgba(0,0,0,.8); position:relative; }
+        .lens::after { content:''; position:absolute; inset:6px; border-radius:50%;
+            background:radial-gradient(circle at 30% 30%,#1a365d 0%,#050505 70%); }
+
+        .widgets-column { grid-column:2/3; grid-row:1/3; display:flex; flex-direction:column; gap:16px; }
+
+        .widget-clock { padding:24px; display:flex; flex-direction:column; justify-content:center; }
+        .widget-clock .time { font-size:52px; font-weight:300; letter-spacing:-1px; line-height:1; margin-bottom:4px; }
+        .widget-clock .date { font-size:15px; font-weight:500; margin-bottom:16px; color:rgba(255,255,255,.9); }
+        .widget-clock .quote { font-size:13px; color:rgba(255,255,255,.6); line-height:1.35;
+            border-left:2px solid rgba(249,115,22,.8); padding-left:10px; }
+
+        .widget-sovereign { padding:24px; display:flex; flex-direction:column; justify-content:space-between;
+            background:linear-gradient(135deg,rgba(140,59,16,.25),rgba(42,8,2,.4)),rgba(255,255,255,.05);
+            position:relative; overflow:hidden; flex:1; }
+        .sovereign-text { font-size:22px; font-weight:600; line-height:1.25; letter-spacing:-.3px; }
+        .sovereign-footer { display:flex; justify-content:space-between; align-items:center;
+            padding:10px 16px; background:rgba(255,255,255,.1); border-radius:30px; font-size:13px;
+            font-weight:500; backdrop-filter:blur(10px); border:1px solid rgba(255,255,255,.15); }
+
+        .bottom-grid-row { grid-column:1/2; grid-row:2/3; display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+        .feature-card { padding:24px; display:flex; flex-direction:column; justify-content:space-between;
+            position:relative; overflow:hidden; }
+        .feature-card h3 { font-size:20px; font-weight:600; line-height:1.2; margin-bottom:4px; }
+        .feature-card p  { font-size:13px; color:rgba(255,255,255,.65); margin-bottom:12px; }
+
+        .color-grid { display:grid; grid-template-columns:repeat(5,1fr); gap:8px; margin-top:10px; }
+        .color-swatch-wrapper { display:flex; flex-direction:column; align-items:center; gap:4px; }
+        .swatch { width:32px; height:32px; border-radius:50%; box-shadow:0 4px 10px rgba(0,0,0,.3);
+            border:2px solid rgba(255,255,255,.15); }
+        .color-hex { font-size:9px; font-family:monospace; color:rgba(255,255,255,.7); }
+
+        /* MacroWASM pipeline status badge */
+        .macrowasm-badge { position:absolute; bottom:10px; right:10px; font-size:9px;
+            font-family:monospace; background:rgba(0,0,0,.6); color:#0F0; padding:4px 8px;
+            border-radius:6px; border:1px solid rgba(0,255,0,.3); }
+
+        .dock-container { position:absolute; bottom:12px; left:50%; transform:translateX(-50%);
+            background:rgba(30,20,15,.45); backdrop-filter:blur(25px); -webkit-backdrop-filter:blur(25px);
+            border:1px solid rgba(255,255,255,.15); border-radius:24px; padding:8px 12px;
+            display:flex; gap:10px; align-items:center; box-shadow:0 20px 50px rgba(0,0,0,.5); z-index:1000; }
+        .dock-icon { width:48px; height:48px; border-radius:12px; display:flex; align-items:center;
+            justify-content:center; font-size:22px; cursor:pointer;
+            transition:transform .2s cubic-bezier(.175,.885,.32,1.275); }
+        .dock-icon:hover { transform:scale(1.3) translateY(-8px); }
+        .ic-finder   { background:linear-gradient(135deg,#38bdf8,#0284c7); }
+        .ic-launchpad{ background:linear-gradient(135deg,#f43f5e,#be123c); }
+        .ic-safari   { background:linear-gradient(135deg,#0ea5e9,#0369a1); }
+        .ic-mail     { background:linear-gradient(135deg,#60a5fa,#2563eb); }
+        .ic-messages { background:linear-gradient(135deg,#4ade80,#16a34a); }
+        .ic-photos   { background:linear-gradient(135deg,#facc15,#ca8a04); }
+        .ic-cal      { background:linear-gradient(135deg,#fff,#e2e8f0); color:#ef4444; font-weight:bold; font-size:16px; }
+        .ic-notes    { background:linear-gradient(135deg,#fb923c,#c2410c); }
+        .ic-ai       { background:linear-gradient(135deg,#a855f7,#6b21a8); font-weight:bold; }
+        .ic-dev      { background:linear-gradient(135deg,#3b82f6,#1d4ed8); }
+        .ic-settings { background:linear-gradient(135deg,#94a3b8,#475569); }
+        .ic-folder   { background:linear-gradient(135deg,#60a5fa,#1e40af); }
+        .ic-trash    { background:linear-gradient(135deg,#cbd5e1,#64748b); }
+    </style>
+</head>
+<body>
+
+<div class="menu-bar">
+    <div class="menu-left">
+        <span>&#xF8FF;</span>
+        <span><b>Finder</b></span>
+        <span>File</span><span>Edit</span><span>View</span><span>Go</span>
+        <span>Window</span><span>Help</span>
+    </div>
+    <div class="menu-right">
+        <span>&#x1F4F6;</span><span>&#x1F50D;</span><span>&#x1F50B;</span>
+        <span>Mon Sep 6 10:43 AM</span>
+    </div>
+</div>
+
+<div class="main-container">
+
+    <div class="glass-panel sidebar">
+        <div class="nav-links">
+            <div class="nav-item active">&#x1F3E0; Home</div>
+            <div class="nav-item">&#x1F4F1; Apps</div>
+            <div class="nav-item">&#x1F4C1; Files</div>
+            <div class="nav-item">&#x2728; AI</div>
+            <div class="nav-item">&#x1F4BB; Devices</div>
+            <div class="nav-item">&#x2601;&#xFE0F; Cloud</div>
+            <div class="nav-item">&#x2699;&#xFE0F; Settings</div>
+        </div>
+        <div class="user-profile">
+            <div class="user-avatar"></div>
+            <div class="user-info">
+                <div class="name">Ahmad Ali Parr</div>
+                <div class="role">SnapKitty Collective</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="dashboard-grid">
+
+        <div class="glass-panel hero-card">
+            <div class="hero-content">
+                <h1>iPhone 17 Pro</h1>
+                <h2>Built Different.</h2>
+                <p>More Power.<br>More Clarity.<br>More Possibility.</p>
+                <div class="hero-buttons">
+                    <button class="btn btn-primary">Explore</button>
+                    <button class="btn btn-secondary">Learn More</button>
+                </div>
+            </div>
+            <div class="hero-image-container">
+                <div class="iphone-mockup">
+                    <div class="iphone-camera-bump">
+                        <div class="lens"></div>
+                        <div class="lens"></div>
+                        <div class="lens"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="macrowasm-badge">
+                &lt;X 36 02 40 20 00 20 01 6A&gt;MACROWASM
+            </div>
+        </div>
+
+        <div class="widgets-column">
+            <div class="glass-panel widget-clock">
+                <div class="time" id="clock">10:43</div>
+                <div class="date">Mon, Sep 6, 2026</div>
+                <div class="quote">Sovereign Compute<br>A More Open Tomorrow.</div>
+            </div>
+            <div class="glass-panel" style="padding:20px 24px;">
+                <div style="font-size:14px;font-weight:500;">San Francisco</div>
+                <div style="font-size:40px;font-weight:300;line-height:1;">68&deg;</div>
+                <div style="font-size:24px;">&#x2600;&#xFE0F;</div>
+                <div style="font-size:13px;color:rgba(255,255,255,.65);">Mostly Clear &bull; H:72 L:54</div>
+            </div>
+            <div class="glass-panel widget-sovereign">
+                <div class="sovereign-text">Create<br>Build<br>Automate<br>Sovereign</div>
+                <div class="sovereign-footer"><span>SnapKitty Collective</span><span>&#x2192;</span></div>
+            </div>
+        </div>
+
+        <div class="bottom-grid-row">
+            <div class="glass-panel feature-card">
+                <div>
+                    <h3>In Your Hand.<br>In Your Flow.</h3>
+                    <p>A more personal pro experience.</p>
+                </div>
+                <div style="width:100%;height:140px;background:rgba(0,0,0,.3);border-radius:14px;
+                    display:flex;align-items:center;justify-content:center;border:1px solid rgba(255,255,255,.08);">
+                    <div style="width:90px;height:120px;background:#111;border-radius:14px;
+                        border:2px solid #333;display:flex;flex-direction:column;align-items:center;padding:4px;">
+                        <div style="width:100%;height:100%;background:#1e1e2f;border-radius:10px;
+                            display:flex;align-items:center;justify-content:center;font-size:8px;color:#aaa;">
+                            &#x1F464; Video Feed
+                        </div>
+                    </div>
+                </div>
+                <button class="btn btn-primary" style="margin-top:12px;width:100%;">&#x25B6; Watch the video</button>
+            </div>
+
+            <div class="glass-panel feature-card">
+                <div>
+                    <h3>Pro Color System</h3>
+                    <p>iPhone 17 Pro Titanium palette.</p>
+                </div>
+                <div class="color-grid">
+                    <div class="color-swatch-wrapper"><div class="swatch" style="background:#DE7C34"></div><span class="color-hex">#DE7C34</span></div>
+                    <div class="color-swatch-wrapper"><div class="swatch" style="background:#EFA572"></div><span class="color-hex">#EFA572</span></div>
+                    <div class="color-swatch-wrapper"><div class="swatch" style="background:#BD5E1E"></div><span class="color-hex">#BD5E1E</span></div>
+                    <div class="color-swatch-wrapper"><div class="swatch" style="background:#CA6C27"></div><span class="color-hex">#CA6C27</span></div>
+                    <div class="color-swatch-wrapper"><div class="swatch" style="background:#D88346"></div><span class="color-hex">#D88346</span></div>
+                </div>
+                <div class="color-grid" style="margin-top:6px;">
+                    <div class="color-swatch-wrapper"><div class="swatch" style="background:#A64F14"></div><span class="color-hex">#A64F14</span></div>
+                    <div class="color-swatch-wrapper"><div class="swatch" style="background:#161618"></div><span class="color-hex">#161618</span></div>
+                    <div class="color-swatch-wrapper"><div class="swatch" style="background:#303034"></div><span class="color-hex">#303034</span></div>
+                    <div class="color-swatch-wrapper"><div class="swatch" style="background:#080808"></div><span class="color-hex">#080808</span></div>
+                    <div class="color-swatch-wrapper"><div class="swatch" style="background:#FCECD3"></div><span class="color-hex">#FCECD3</span></div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<div class="dock-container">
+    <div class="dock-icon ic-finder">&#x1F60A;</div>
+    <div class="dock-icon ic-launchpad">&#x1F532;</div>
+    <div class="dock-icon ic-safari">&#x1F9ED;</div>
+    <div class="dock-icon ic-mail">&#x2709;&#xFE0F;</div>
+    <div class="dock-icon ic-messages">&#x1F4AC;</div>
+    <div class="dock-icon ic-photos">&#x1F33B;</div>
+    <div class="dock-icon ic-cal" style="font-size:16px;">6</div>
+    <div class="dock-icon ic-notes">&#x1F4DD;</div>
+    <div class="dock-icon ic-ai" style="font-weight:bold;">AI</div>
+    <div class="dock-icon ic-dev">&#x2699;&#xFE0F;</div>
+    <div class="dock-icon ic-settings">&#x1F6E0;&#xFE0F;</div>
+    <div class="dock-icon ic-folder">&#x1F4C2;</div>
+    <div class="dock-icon ic-trash">&#x1F5D1;&#xFE0F;</div>
+</div>
+
+<script>
+    function updateClock() {
+        const n = new Date();
+        document.getElementById('clock').textContent =
+            n.getHours().toString().padStart(2,'0') + ':' +
+            n.getMinutes().toString().padStart(2,'0');
+    }
+    updateClock();
+    setInterval(updateClock, 1000);
+</script>
+</body>
+</html>

@@ -1,0 +1,10 @@
+{
+  "name": "@snapkitty/magma-core",
+  "version": "1.0.0",
+  "description": "MAGMA deterministic safety and certificate library",
+  "type": "module",
+  "main": "./index.js",
+  "exports": { ".": "./index.js" },
+  "engines": { "node": ">=20" },
+  "dependencies": { "@noble/ed25519": "^2.1.0" }
+}

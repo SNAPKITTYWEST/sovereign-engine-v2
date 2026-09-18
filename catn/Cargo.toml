@@ -1,0 +1,18 @@
+[package]
+name = "catn"
+version = "0.1.0"
+edition = "2021"
+description = "Cellular Automaton Tensor Network — CubeCL/CUDA backed, tenferro-rs tensors"
+
+[[bin]]
+name = "catn"
+path = "src/main.rs"
+
+[dependencies]
+tenferro-tensor = { version = "0.3", features = ["cubecl", "cuda"] }
+tenferro-gpu    = { version = "0.3", features = ["cuda"] }
+cubecl          = { version = "0.10", features = ["cuda"] }
+cubecl-cuda     = "0.10"
+num-complex     = "0.4"
+num-traits      = "0.2"
+thiserror       = "2"

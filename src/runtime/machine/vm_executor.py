@@ -617,7 +617,6 @@ class SovereignVM:
         elif op == VMOpcode.PUSH:
             # Push arg as integer, or symbol as string if symbol is set
             self._stack.push(sym if sym else arg)
-            self._update_entropy()
 
         elif op == VMOpcode.POP:
             self._stack.pop()

@@ -1,0 +1,1666 @@
+# Makefile
+CC = gcc
+NVCC = nvcc
+CFLAGS = -O3 -std=c11 -Wall
+AVX2_FLAGS = -mavx2
+AVX512_FLAGS = -mavx512f -mavx512bw
+
+all: ca_run avx2_test bytecode.bin
+
+avx2_test: avx_ca.c
+    $(CC) $(CFLAGS) $(AVX2_FLAGS) -c avx_ca.c -o avx_ca_avx2.o
+
+avx512_test: avx_ca.c
+    $(CC) $(CFLAGS) $(AVX512_FLAGS) -c avx_ca.c -o avx_ca_avx512.o
+
+ca_kernel.o: ca_kernel.cu
+    $(NVCC) -O3 -c ca_kernel.cu -o ca_kernel.o
+
+ca_host: ca_host.c ca_kernel.o
+    $(CC) $(CFLAGS) ca_host.c ca_kernel.o -lcudart -L/usr/local/cuda/lib64 -I/usr/local/cuda/include -o ca_host
+
+ca_run: ca_host
+    @echo "Built ca_host (CUDA host)."
+
+vm_gen: vm_bytecode_gen.c
+    $(CC) $(CFLAGS) vm_bytecode_gen.c -o vm_gen
+    ./vm_gen
+
+bytecode.bin: vm_gen
+    ./vm_gen
+
+clean:
+    rm -f *.o ca_host ca_run vm_gen bytecode.bin avx_ca_avx2.o avx_ca_avx512.o
+; Conceptual x86_64 assembly stub (AT&T or Intel syntax depending on assembler)
+; Exports ca_step_entry that calls host_ca_launch
+; Do not use this to bypass OS protections; compile and link normally.
+
+.global ca_step_entry
+ca_step_entry:
+    push rbp
+    mov rbp, rsp
+    ; arguments already in rdi, rsi, rdx per SysV ABI
+    call host_ca_launch
+    pop rbp
+    ret
+/* host_wrapper.c - C90 wrapper */
+#include <stdint.h>
+typedef uint64_t u64;
+
+/* forward declaration of CUDA launcher */
+void cuda_launch_step(const u64 *d_cur, u64 *d_next, size_t words);
+
+void host_ca_launch(const u64 *d_cur, u64 *d_next, size_t words) {
+    cuda_launch_step(d_cur, d_next, words);
+}
+// vm_bytecode_gen.c
+// Generates bytecode for 256-node Boolean network and writes hex dump to stdout or file.
+#include <stdio.h>
+#include <stdint.h>
+
+int main(void) {
+    FILE *f = fopen("bytecode.bin", "wb");
+    if (!f) return 1;
+
+    /* Opcode bytes */
+    const unsigned char A0 = 0xA0; /* LOAD_MEM */
+    const unsigned char A1 = 0xA1; /* XOR_MEM */
+    const unsigned char ST = 0x61; /* STORE */
+    const unsigned char HALT = 0xFF;
+
+    int i;
+    for (i = 0; i < 256; ++i) {
+        unsigned char a = (unsigned char)((i + 1) & 0xFF);
+        unsigned char b = (unsigned char)((i * 3 + 7) & 0xFF);
+        unsigned char c = (unsigned char)((i ^ 0x5A) & 0xFF);
+        fwrite(&A0, 1, 1, f); fwrite(&a, 1, 1, f);
+        fwrite(&A1, 1, 1, f); fwrite(&b, 1, 1, f);
+        fwrite(&A1, 1, 1, f); fwrite(&c, 1, 1, f);
+        fwrite(&ST, 1, 1, f); fwrite((unsigned char[]){(unsigned char)i}, 1, 1, f);
+    }
+    fwrite(&HALT, 1, 1, f); fwrite((unsigned char[]){0x00}, 1, 1, f);
+    fclose(f);
+    printf("bytecode.bin written (size approx %d bytes)\n", 256 * 8 + 2);
+    return 0;
+}
+/* ca_host.c - C90 host */
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdint.h>
+#include <string.h>
+#include <cuda_runtime.h>
+
+typedef uint64_t u64;
+extern void ca_step_kernel(const u64*, u64*, size_t); /* linked from .cu */
+
+void cuda_launch_step(const u64 *d_cur, u64 *d_next, size_t words) {
+    int threads = 256;
+    int blocks = (int)((words + threads - 1) / threads);
+    ca_step_kernel<<<blocks, threads>>>(d_cur, d_next, words);
+    cudaDeviceSynchronize();
+}
+
+int main(int argc, char **argv) {
+    size_t cells = 1000000;
+    size_t words = (cells + 63) / 64;
+    size_t bytes = words * sizeof(u64);
+
+    u64 *h_cur = (u64*)malloc(bytes);
+    u64 *h_next = (u64*)malloc(bytes);
+    if (!h_cur || !h_next) { fprintf(stderr, "alloc fail\n"); return 1; }
+    memset(h_cur, 0, bytes);
+    h_cur[0] = 1ULL;
+
+    u64 *d_cur = NULL, *d_next = NULL;
+    cudaMalloc((void**)&d_cur, bytes);
+    cudaMalloc((void**)&d_next, bytes);
+    cudaMemcpy(d_cur, h_cur, bytes, cudaMemcpyHostToDevice);
+
+    int steps = 1000;
+    int s;
+    for (s = 0; s < steps; ++s) {
+        cuda_launch_step(d_cur, d_next, words);
+        /* swap */
+        u64 *tmp = d_cur; d_cur = d_next; d_next = tmp;
+    }
+
+    cudaMemcpy(h_cur, d_cur, bytes, cudaMemcpyDeviceToHost);
+
+    unsigned long long total = 0;
+    size_t i;
+    for (i = 0; i < words; ++i) total += __builtin_popcountll(h_cur[i]);
+    printf("active bits: %llu\n", total);
+
+    cudaFree(d_cur);
+    cudaFree(d_next);
+    free(h_cur);
+    free(h_next);
+    return 0;// ca_kernel.cu
+#include <stdint.h>
+typedef uint64_t u64;
+
+extern "C" __global__ void ca_step_kernel(const u64 *cur, u64 *next, size_t words) {
+    size_t j = blockIdx.x * blockDim.x + threadIdx.x;
+    if (j >= words) return;
+
+    size_t left_idx = (j == 0) ? (words - 1) : (j - 1);
+    size_t right_idx = (j + 1 == words) ? 0 : (j + 1);
+
+    u64 left = cur[left_idx];
+    u64 w = cur[j];
+    u64 right = cur[right_idx];
+
+    u64 L = (w << 1) | (left >> 63);
+    u64 R = (w >> 1) | (right & 1ULL);
+    next[j] = L ^ R;
+}
+// avx_ca.c
+// Build: gcc -O3 -mavx2 -std=c11 -c avx_ca.c -o avx_ca_avx2.o
+// For AVX512: gcc -O3 -mavx512f -mavx512bw -std=c11 -c avx_ca.c -o avx_ca_avx512.o
+
+#include <stdint.h>
+#include <stddef.h>
+#include <immintrin.h>
+
+typedef uint64_t u64;
+
+/* Simple wraparound helper */
+static inline size_t wrap_idx(size_t i, size_t words) {
+    return (i + words) % words;
+}
+
+/* AVX2: process 4 x 64-bit lanes per vector */
+void ca_step_avx2(const u64 *cur, u64 *next, size_t words) {
+    size_t i = 0;
+    const size_t stride = 4;
+    for (; i + stride <= words; i += stride) {
+        /* load scalar neighbor words for carry computation */
+        u64 lane_vals[6];
+        for (int k = -1; k <= 4; ++k) lane_vals[k+1] = cur[wrap_idx(i + k, words)];
+
+        u64 Lvals[4], Rvals[4];
+        for (int lane = 0; lane < 4; ++lane) {
+            u64 curv = lane_vals[lane+1];
+            u64 left_neighbor = lane_vals[lane];
+            u64 right_neighbor = lane_vals[lane+2];
+            Lvals[lane] = (curv << 1) | (left_neighbor >> 63);
+            Rvals[lane] = (curv >> 1) | (right_neighbor & 1ULL);
+        }
+
+        __m256i L = _mm256_set_epi64x(Lvals[3], Lvals[2], Lvals[1], Lvals[0]);
+        __m256i R = _mm256_set_epi64x(Rvals[3], Rvals[2], Rvals[1], Rvals[0]);
+        __m256i out = _mm256_xor_si256(L, R);
+        _mm256_storeu_si256((__m256i*)(next + i), out);
+    }
+
+    for (; i < words; ++i) {
+        u64 left = cur[wrap_idx(i - 1, words)];
+        u64 right = cur[wrap_idx(i + 1, words)];
+        u64 w = cur[i];
+        u64 L = (w << 1) | (left >> 63);
+        u64 R = (w >> 1) | (right & 1ULL);
+        next[i] = L ^ R;
+    }
+}
+
+/* AVX512: process 8 x 64-bit lanes per vector */
+void ca_step_avx512(const u64 *cur, u64 *next, size_t words) {
+    size_t i = 0;
+    const size_t stride = 8;
+    for (; i + stride <= words; i += stride) {
+        u64 lane_vals[10];
+        for (int k = -1; k <= 8; ++k) lane_vals[k+1] = cur[wrap_idx(i + k, words)];
+
+        u64 Lvals[8], Rvals[8];
+        for (int lane = 0; lane < 8; ++lane) {
+            u64 curv = lane_vals[lane+1];
+            u64 left_neighbor = lane_vals[lane];
+            u64 right_neighbor = lane_vals[lane+2];
+            Lvals[lane] = (curv << 1) | (left_neighbor >> 63);
+            Rvals[lane] = (curv >> 1) | (right_neighbor & 1ULL);
+        }
+
+        __m512i L = _mm512_set_epi64(Lvals[7],Lvals[6],Lvals[5],Lvals[4],Lvals[3],Lvals[2],Lvals[1],Lvals[0]);
+        __m512i R = _mm512_set_epi64(Rvals[7],Rvals[6],Rvals[5],Rvals[4],Rvals[3],Rvals[2],Rvals[1],Rvals[0]);
+        __m512i out = _mm512_xor_si512(L, R);
+        _mm512_storeu_si512((void*)(next + i), out);
+    }
+
+    for (; i < words; ++i) {
+        u64 left = cur[wrap_idx(i - 1, words)];
+        u64 right = cur[wrap_idx(i + 1, words)];
+        u64 w = cur[i];
+        u64 L = (w << 1) | (left >> 63);
+        u64 R = (w >> 1) | (right & 1ULL);
+        next[i] = L ^ R;
+    }
+}
+
+}
+action op_load_immediate(bit<8> arg) {
+    meta.R0 = arg;
+}
+
+action op_xor_immediate(bit<8> arg) {
+    meta.R0 = meta.R0 ^ arg;
+}
+
+action op_load_mem(bit<8> idx) {
+    reg_cells.read(meta.R0, idx); // R0 = MEM[idx]
+}
+
+action op_xor_mem(bit<8> idx) {
+    bit<64> tmp;
+    reg_cells.read(tmp, idx);
+    meta.R0 = meta.R0 ^ tmp;
+}
+
+action op_store(bit<8> idx) {
+    reg_cells.write(idx, meta.R0);
+}
+
+action op_halt() {
+    meta.halt = 1;
+}table isa_table {
+    key = {
+        meta.opcode : exact;
+    }
+    actions = {
+        op_load_immediate;
+        op_xor_immediate;
+        op_load_mem;
+        op_xor_mem;
+        op_store;
+        op_halt;
+        NoAction;
+    }
+    size = 256;
+}
+
+control ingress(...) {
+    apply {
+        meta.PC = 0;
+        meta.halt = 0;
+        // loop unrolled or bounded
+        for (bit<16> i = 0; i < MAX_STEPS; i = i + 1) {
+            if (meta.halt == 1) {
+                break;
+            }
+            // fetch
+            meta.opcode = code[meta.PC];
+            meta.arg    = code[meta.PC + 1];
+            isa_table.apply();
+            meta.PC = meta.PC + 2;
+        }
+    }
+}
+// p4_vm_interpreter.p4
+// P4_16, target: bmv2 simple_switch
+#include <core.p4>
+
+const bit<8> OPC_LOAD_IMM = 0xB1;
+const bit<8> OPC_XOR_IMM  = 0x32;
+const bit<8> OPC_STORE    = 0x61;
+const bit<8> OPC_LOAD_MEM = 0xA0;
+const bit<8> OPC_XOR_MEM  = 0xA1;
+const bit<8> OPC_HALT     = 0xFF;
+
+header ethernet_t { bit<48> dst; bit<48> src; bit<16> ethertype; }
+header vm_payload_t { bit<8> opcode; bit<8> arg; bit<16> reserved; }
+
+struct metadata {
+    bit<32> pc;
+    bit<32> step_count;
+    bit<1>  halted;
+    bit<1>  recirc_flag;
+}
+
+struct headers {
+    ethernet_t eth;
+    vm_payload_t vm;
+    // other headers if needed
+}
+
+parser MyParser(packet_in packet, out headers hdr, inout metadata meta, inout standard_metadata_t stdmeta) {
+    state start {
+        packet.extract(hdr.eth);
+        transition parse_vm;
+    }
+    state parse_vm {
+        packet.extract(hdr.vm);
+        transition accept;
+    }
+}
+
+control MyIngress(inout headers hdr, inout metadata meta, inout standard_metadata_t stdmeta) {
+    // VM state stored in registers
+    // MEM_SIZE choose based on target; example 256 entries of 64-bit
+    register<bit<64>>(256) MEM;
+    register<bit<64>>(1) REG_R0;
+    register<bit<32>>(1) REG_PC;
+
+    action do_load_imm(bit<8> arg) {
+        bit<64> val = (bit<64>) arg;
+        REG_R0.write(0, val);
+    }
+    action do_xor_imm(bit<8> arg) {
+        bit<64> cur;
+        REG_R0.read(cur, 0);
+        cur = cur ^ (bit<64>) arg;
+        REG_R0.write(0, cur);
+    }
+    action do_store(bit<8> arg) {
+        bit<64> cur;
+        REG_R0.read(cur, 0);
+        MEM.write((bit<32>) arg, cur);
+    }
+    action do_load_mem(bit<8> arg) {
+        bit<64> val;
+        MEM.read(val, (bit<32>) arg);
+        REG_R0.write(0, val);
+    }
+    action do_xor_mem(bit<8> arg) {
+        bit<64> cur; bit<64> m;
+        REG_R0.read(cur, 0);
+        MEM.read(m, (bit<32>) arg);
+        cur = cur ^ m;
+        REG_R0.write(0, cur);
+    }
+    action do_halt() {
+        meta.halted = 1;
+    }
+    action inc_pc() {
+        bit<32> pcv;
+        REG_PC.read(pcv, 0);
+        pcv = pcv + 1;
+        REG_PC.write(0, pcv);
+    }
+    action set_pc(bit<32> v) {
+        REG_PC.write(0, v);
+    }
+
+    table dispatch {
+        key = {
+            hdr.vm.opcode: exact;
+        }
+        actions = {
+            do_load_imm;
+            do_xor_imm;
+            do_store;
+            do_load_mem;
+            do_xor_mem;
+            do_halt;
+            NoAction;
+        }
+        size = 16;
+        default_action = NoAction();
+    }
+
+    apply {
+        if (meta.halted == 1) {
+            // drop or forward as desired
+            return;
+        }
+        // Execute instruction
+        dispatch.apply();
+
+        // increment step counter and PC
+        meta.step_count = meta.step_count + 1;
+        inc_pc();
+
+        // safety: enforce max steps
+        if (meta.step_count >= 1024) {
+            meta.halted = 1;
+        }
+
+        // recirculate if not halted
+        if (meta.halted == 0) {
+            // mark packet for recirculation
+            stdmeta.egress_spec = 0; // not used on bmv2; use recirculate primitive
+            // recirculate by cloning to ingress or using intrinsic
+            // bmv2: use standard_metadata for recirculation via resubmit
+            // set a flag so parser can re-read next instruction from payload or control plane
+            meta.recirc_flag = 1;
+            // resubmit to ingress
+            // Note: in P4_16, use resubmit or recirculate intrinsic depending on target
+            // Here we call resubmit
+            // (actual call placed in deparser or egress via intrinsic)
+        }
+    }
+}
+
+control MyEgress(inout headers hdr, inout metadata meta, inout standard_metadata_t stdmeta) {
+    apply {
+        if (meta.recirc_flag == 1 && meta.halted == 0) {
+            // clear flag and resubmit to ingress
+            meta.recirc_flag = 0;
+            // target-specific intrinsic:
+            // For BMv2 use resubmit or clone; in P4_16 reference, call resubmit()
+            // This is a placeholder: actual invocation depends on compiler
+            // resubmit(packet);
+        }
+    }
+}
+
+control MyDeparser(packet_out packet, in headers hdr) {
+    apply {
+        packet.emit(hdr.eth);
+        packet.emit(hdr.vm);
+    }
+}
+
+V1Switch(MyParser(), MyIngress(), MyEgress(), MyDeparser()) main;
+
+// vm_core.v - simple bytecode interpreter (synchronous)
+module vm_core (
+    input  wire        clk,
+    input  wire        rstn,
+    input  wire        start,
+    output reg         done,
+    // program memory interface
+    input  wire [15:0] prog_data,
+    output reg  [7:0]  prog_addr,
+    output reg         prog_rd,
+    // MEM interface (read/write word index)
+    output reg  [7:0]  mem_addr,
+    input  wire [63:0] mem_rdata,
+    output reg  [63:0] mem_wdata,
+    output reg         mem_we
+);
+
+    reg [63:0] R0;
+    reg [7:0]  PC;
+    reg        running;
+
+    // opcodes
+    localparam OPC_LOAD_IMM = 8'hB1;
+    localparam OPC_XOR_IMM  = 8'h32;
+    localparam OPC_STORE    = 8'h61;
+    localparam OPC_LOAD_MEM = 8'hA0;
+    localparam OPC_XOR_MEM  = 8'hA1;
+    localparam OPC_HALT     = 8'hFF;
+
+    reg [7:0] opcode;
+    reg [7:0] arg;
+
+    // fetch-decode-execute simple FSM
+    reg [1:0] state;
+    localparam S_IDLE=0, S_FETCH=1, S_EXEC=2, S_DONE=3;
+
+    always @(posedge clk) begin
+        if (!rstn) begin
+            state <= S_IDLE;
+            PC <= 8'd0;
+            prog_addr <= 8'd0;
+            prog_rd <= 1'b0;
+            running <= 1'b0;
+            done <= 1'b0;
+            mem_we <= 1'b0;
+        end else begin
+            case (state)
+            S_IDLE: begin
+                if (start) begin
+                    PC <= 8'd0;
+                    prog_addr <= 8'd0;
+                    prog_rd <= 1'b1;
+                    running <= 1'b1;
+                    done <= 1'b0;
+                    state <= S_FETCH;
+                end
+            end
+            S_FETCH: begin
+                // assume prog_data valid next cycle
+                opcode <= prog_data[15:8];
+                arg <= prog_data[7:0];
+                prog_rd <= 1'b0;
+                state <= S_EXEC;
+            end
+            S_EXEC: begin
+                case (opcode)
+                    OPC_LOAD_IMM: begin
+                        R0 <= {56'd0, arg};
+                    end
+                    OPC_XOR_IMM: begin
+                        R0 <= R0 ^ {56'd0, arg};
+                    end
+                    OPC_STORE: begin
+                        mem_addr <= arg;
+                        mem_wdata <= R0;
+                        mem_we <= 1'b1;
+                    end
+                    OPC_LOAD_MEM: begin
+                        mem_addr <= arg;
+                        // assume mem_rdata available next cycle
+                        R0 <= mem_rdata;
+                    end
+                    OPC_XOR_MEM: begin
+                        mem_addr <= arg;
+                        R0 <= R0 ^ mem_rdata;
+                    end
+                    OPC_HALT: begin
+                        running <= 1'b0;
+                        done <= 1'b1;
+                        state <= S_DONE;
+                    end
+                    default: begin
+                        // NOP
+                    end
+                endcase
+                // prepare next fetch if still running
+                if (running) begin
+                    PC <= PC + 1;
+                    prog_addr <= PC + 1;
+                    prog_rd <= 1'b1;
+                    mem_we <= 1'b0;
+                    state <= S_FETCH;
+                end
+            end
+            S_DONE: begin
+                // wait for start deassert
+                if (!start) begin
+                    state <= S_IDLE;
+                    done <= 1'b0;
+                end
+            end
+            endcase
+        end
+    end
+endmodule
+Sheet: MixedSignal_Proto
+Components:
+- Y1: 16 MHz crystal, 2-pin, footprint: Crystal_SMD_3225
+- Cload1, Cload2: 18pF, 0603
+- U1: Oscillator buffer IC (e.g., SiT1532 or CMOS inverter) footprint: SOIC-8 or SOT-23-5
+- Q1: MOSFET buffer (2N7002 or BSS138) footprint: SOT-23
+- Rbias: 1M, 0603
+- Rbuf: 100 ohm, 0603
+- Rfilter: 1k, 0603
+- Cfilter: 10nF, 0603
+- ADC header: 2x5 2.54mm (Vref, GND, SCLK, MOSI, MISO, CS, DRDY, RESET, VCC, GND)
+- FPGA header: 2x20 2.54mm (power rails, JTAG, SPI, GPIO[0..15], CLK_IN)
+- Test points: TP_VCC, TP_GND, TP_CRYSTAL, TP_BUF_OUT, TP_ADC_IN
+- Power regulators: 3.3V LDO (e.g., MCP1700), 1.2V LDO if FPGA core needed
+- Ferrite bead and decoupling caps: 0.1uF, 10uF
+* pierce_crystal_oscillator_with_buffer.asc
+* Run with ngspice or LTspice
+
+.param VCC=3.3
+.param Rbias=1Meg
+.param Cload=18p
+.param Rseries=10
+.param Rbuf=100
+.param Rfilter=1k
+.param Cfilter=10n
+
+* Power rails
+V1 VCC 0 DC {VCC}
+
+* Pierce oscillator: inverter model (simple CMOS inverter)
+* Use a small-signal inverter model or idealized inverter using E-device
+.subckt INV_INVERT VIN VOUT VDD VSS
+* simple behavioral inverter (for SPICE portability)
+B1 VOUT 0 V=V(VDD) * placeholder; replace with real inverter model for accuracy
+.ends
+
+* Crystal model (series R-L-C) typical values (replace with datasheet)
+Rcrys VIN X {Rseries}
+Lcrys X Y 20u
+Ccrys Y 0 0.5p
+
+* Load capacitors
+C1 VIN 0 {Cload}
+C2 Y 0 {Cload}
+
+* Bias resistor to provide DC bias for inverter input
+Rbias VIN VCC {Rbias}
+
+* Inverter buffer (replace with vendor oscillator IC model for production)
+* For simulation, use a simple CMOS inverter built from transistors
+M1 OUT VIN VCC VCC PMOS W=10u L=1u
+M2 OUT VIN 0 0 NMOS W=5u L=1u
+
+* Isolation buffer: NMOS source follower (protect crystal from load)
+Mbuf1 BUF_OUT OUT VCC VCC PMOS W=20u L=1u
+Mbuf2 BUF_OUT OUT 0 0 NMOS W=40u L=1u
+Rload BUF_OUT 0 {Rbuf}
+
+* RC anti-alias filter to ADC input
+Rf BUF_OUT ADC_IN {Rfilter}
+Cf ADC_IN 0 {Cfilter}
+
+* ADC input modeled as high impedance
+Radc ADC_IN 0 1Meg
+
+* Initial condition and run
+.ic V(VIN)=0 V(OUT)=0 V(BUF_OUT)=0
+.tran 0.1u 2m startup
+.control
+run
+* plot nodes of interest
+plot V(VIN) V(OUT) V(BUF_OUT) V(ADC_IN)
+.endc
+
+.end
+// microseq.v - simple microsequencer and micro-ALU
+module microseq (
+    input  wire         clk,
+    input  wire         rstn,
+    input  wire         start,
+    output reg          halted,
+    // microcode memory interface (synthesizable ROM or dual-port RAM)
+    input  wire [63:0]  micro_instr, // fetched externally by address
+    output reg  [15:0]  micro_addr,
+    // datapath
+    inout  wire [63:0]  mem_data,     // simple shared memory bus (model)
+    output reg  [15:0]  mem_addr,
+    output reg          mem_we
+);
+
+    reg [63:0] R0;
+    reg [63:0] AUXREG;
+    reg [15:0] stack [0:15];
+    reg [3:0]  sp;
+
+    // decode fields
+    wire [7:0]  OPC = micro_instr[63:56];
+    wire [7:0]  FLAGS = micro_instr[55:48];
+    wire [15:0] ARG = micro_instr[47:32];
+    wire [15:0] NEXT = micro_instr[31:16];
+    wire [15:0] AUX = micro_instr[15:0];
+
+    reg running;
+
+    always @(posedge clk) begin
+        if (!rstn) begin
+            micro_addr <= 16'd0;
+            halted <= 1'b0;
+            running <= 1'b0;
+            sp <= 4'd0;
+            mem_we <= 1'b0;
+        end else begin
+            if (start) begin
+                running <= 1'b1;
+                halted <= 1'b0;
+                micro_addr <= 16'd0;
+            end
+            if (running && !halted) begin
+                case (OPC)
+                    8'h01: begin // READ_MEM
+                        mem_addr <= ARG;
+                        // assume mem_data is combinational read
+                        R0 <= mem_data;
+                        micro_addr <= micro_addr + 1;
+                    end
+                    8'h02: begin // WRITE_MEM
+                        mem_addr <= ARG;
+                        mem_we <= 1'b1;
+                        // drive mem_data via tri-state or separate bus in real design
+                        // here we assume mem_data driven by R0 externally
+                        micro_addr <= micro_addr + 1;
+                    end
+                    8'h03: begin // LOAD_IMM
+                        R0 <= {48'd0, ARG};
+                        micro_addr <= micro_addr + 1;
+                    end
+                    8'h04: begin // XOR_IMM
+                        R0 <= R0 ^ {48'd0, ARG};
+                        micro_addr <= micro_addr + 1;
+                    end
+                    8'h05: begin // SHIFT_L
+                        R0 <= (R0 << (ARG[3:0]));
+                        micro_addr <= micro_addr + 1;
+                    end
+                    8'h06: begin // SHIFT_R
+                        R0 <= (R0 >> (ARG[3:0]));
+                        micro_addr <= micro_addr + 1;
+                    end
+                    8'h07: begin // JUMP
+                        micro_addr <= NEXT;
+                    end
+                    8'h08: begin // CJUMP_Z
+                        if (R0 == 64'd0) micro_addr <= NEXT;
+                        else micro_addr <= micro_addr + 1;
+                    end
+                    8'h09: begin // MICALL
+                        stack[sp] <= micro_addr + 1;
+                        sp <= sp + 1;
+                        micro_addr <= AUX;
+                    end
+                    8'h0A: begin // MIRET
+                        sp <= sp - 1;
+                        micro_addr <= stack[sp - 1];
+                    end
+                    8'hFF: begin // HALT
+                        halted <= 1'b1;
+                        running <= 1'b0;
+                    end
+                    default: begin
+                        micro_addr <= micro_addr + 1;
+                    end
+                endcase
+                mem_we <= 1'b0; // default
+            end
+        end
+    end
+endmoduleaddr 0: LOAD_IMM ARG=n         -> OPC=0x03 ARG=n NEXT=1
+addr 1: READ_MEM  ARG=n        -> OPC=0x01 ARG=n NEXT=2
+addr 2: XOR_IMM   ARG=m        -> OPC=0x04 ARG=m NEXT=3
+addr 3: WRITE_MEM ARG=n        -> OPC=0x02 ARG=n NEXT=4
+addr 4: HALT                   -> OPC=0xFF
+addr 0: READ_MEM ARG = i-1     ; left <- MEM[i-1]
+addr 1: STORE_AUX left         ; store left into AUX reg (use AUX field or reserved MEM)
+addr 2: READ_MEM ARG = i       ; cur <- MEM[i]
+addr 3: SHIFT_L ARG=1          ; L = (cur << 1) | (left >> 63)  (requires micro-ALU support)
+addr 4: READ_MEM ARG = i+1     ; right <- MEM[i+1]
+addr 5: SHIFT_R ARG=1          ; R = (cur >> 1) | (right & 1)
+addr 6: XOR_IMM ARG=0          ; XOR L and R (use special flag to XOR two regs)
+addr 7: WRITE_MEM ARG = i      ; MEM[i] <- result
+addr 8: MIRET                  ; return
+#!/usr/bin/env python3
+"""
+microasm.py
+Microassembler for a simple 32-bit microinstruction format.
+Generates microrom.vh (Verilog include) and microrom.bin (binary little-endian).
+Also maps macro opcodes to microprogram entry labels using a mapping file.
+
+Usage:
+  python3 microasm.py microprograms.asm mapping.txt
+
+Output:
+  microrom.vh  - Verilog include with 'localparam MICROROM_WORDS = N; reg [31:0] microrom [0:MICROROM_WORDS-1] = { ... };'
+  microrom.bin - binary file of 32-bit little-endian microinstructions
+  symbols.txt  - label -> address mapping
+"""
+
+import sys
+import struct
+import re
+from collections import OrderedDict
+
+# Microinstruction encoding layout (32 bits)
+# bit 31: NEXT_IS_JUMP (1)
+# bits 30-29: COND_SEL (2)
+# bits 28-26: ALU_OP (3)
+# bits 25-24: ALU_SRC_SEL (2)
+# bits 23-22: ALU_DST_SEL (2)
+# bits 21-20: MEM_RW (2) 0=no,1=read,2=write
+# bits 19-16: REG_FILE_SEL (4) (unused in simple examples)
+# bits 15-2 : MICROADDR (14)
+# bits 1-0  : reserved (not used)
+# For simplicity we pack IMM8 into lower 8 bits of MICROADDR field for immediate usage.
+
+# Helper constants
+ALU_OPS = {
+    'NOP': 0b000,
+    'ADD': 0b001,
+    'XOR': 0b010,
+    'SHL1':0b011,
+    'SHR1':0b100,
+    'AND': 0b101,
+    'OR':  0b110,
+    'PASS':0b111
+}
+
+COND = {
+    'ALWAYS': 0,
+    'ZERO': 1,
+    'CARRY':2,
+    'FLAG': 3
+}
+
+def parse_microasm(lines):
+    labels = {}
+    words = []
+    # First pass: collect labels and strip comments
+    addr = 0
+    cleaned = []
+    for ln in lines:
+        ln = ln.split(';',1)[0].strip()
+        if not ln:
+            continue
+        if ln.endswith(':'):
+            lbl = ln[:-1].strip()
+            if lbl in labels:
+                raise ValueError("Duplicate label: "+lbl)
+            labels[lbl] = addr
+        else:
+            cleaned.append(ln)
+            addr += 1
+    # Second pass: assemble
+    for ln in cleaned:
+        # syntax: fields separated by whitespace or commas
+        # Example directive format (simple):
+        # NEXT JUMP=0 COND=ALWAYS ALU=PASS SRC=IMM DST=R0 MEM=0 ADDR=0 IMM8=5
+        toks = re.split(r'\s+', ln)
+        # default fields
+        NEXT = 0
+        COND_SEL = COND['ALWAYS']
+        ALU = ALU_OPS['NOP']
+        ALU_SRC = 0
+        ALU_DST = 0
+        MEM_RW = 0
+        MICROADDR = 0
+        IMM8 = 0
+        for t in toks:
+            if '=' not in t:
+                continue
+            k,v = t.split('=',1)
+            k = k.upper()
+            v = v.strip()
+            if k == 'NEXT':
+                NEXT = int(v)
+            elif k == 'COND':
+                COND_SEL = COND.get(v.upper(),0)
+            elif k == 'ALU':
+                ALU = ALU_OPS.get(v.upper(),0)
+            elif k == 'SRC':
+                ALU_SRC = int(v,0)
+            elif k == 'DST':
+                ALU_DST = int(v,0)
+            elif k == 'MEM':
+                MEM_RW = int(v,0)
+            elif k == 'ADDR':
+                # allow label
+                if v in labels:
+                    MICROADDR = labels[v]
+                else:
+                    try:
+                        MICROADDR = int(v,0)
+                    except:
+                        raise ValueError("Unknown ADDR: "+v)
+            elif k == 'IMM8':
+                IMM8 = int(v,0) & 0xFF
+            else:
+                # ignore unknown
+                pass
+        # pack fields
+        word = 0
+        word |= (NEXT & 0x1) << 31
+        word |= (COND_SEL & 0x3) << 29
+        word |= (ALU & 0x7) << 26
+        word |= (ALU_SRC & 0x3) << 24
+        word |= (ALU_DST & 0x3) << 22
+        word |= (MEM_RW & 0x3) << 20
+        # microaddr 14 bits placed at bits 6..19 (shifted)
+        word |= (MICROADDR & 0x3FFF) << 6
+        # imm8 in low 6 bits? we place imm8 in low 8 bits for convenience
+        word |= (IMM8 & 0xFF)
+        words.append(word)
+    return words, labels
+
+def emit_verilog_include(words, out_vh):
+    n = len(words)
+    with open(out_vh, 'w') as f:
+        f.write('// microrom.vh - generated by microasm.py\n')
+        f.write('localparam MICROROM_WORDS = %d;\n' % n)
+        f.write('reg [31:0] microrom [0:MICROROM_WORDS-1];\n')
+        f.write('initial begin\n')
+        for i,w in enumerate(words):
+            f.write('  microrom[%d] = 32\'h%08x;\n' % (i, w))
+        f.write('end\n')
+
+def emit_bin(words, out_bin):
+    with open(out_bin, 'wb') as f:
+        for w in words:
+            f.write(struct.pack('<I', w))
+
+def main():
+    if len(sys.argv) < 2:
+        print("Usage: microasm.py microprograms.asm")
+        sys.exit(1)
+    asmfile = sys.argv[1]
+    with open(asmfile,'r') as f:
+        lines = f.readlines()
+    words, labels = parse_microasm(lines)
+    emit_verilog_include(words, 'microrom.vh')
+    emit_bin(words, 'microrom.bin')
+    with open('symbols.txt','w') as f:
+        for k,v in labels.items():
+            f.write('%s %d\n' % (k,v))
+    print("Wrote microrom.vh, microrom.bin, symbols.txt (words=%d)" % len(words))
+
+if __name__ == '__main__':
+    main()
+; microprograms.asm
+; Simple microprograms for macro opcodes:
+; MICRO_LOAD  : load immediate (IMM8) into R0
+; MICRO_XOR_IMM : R0 = R0 XOR IMM8
+; MICRO_STORE : MEM[IMM8] = R0
+; MICRO_LOAD_MEM : R0 = MEM[IMM8]
+; MICRO_XOR_MEM : R0 = R0 XOR MEM[IMM8]
+; MICRO_HALT : set halted flag
+
+; Format per line (simple directive):
+; NEXT=0 COND=ALWAYS ALU=PASS SRC=IMM DST=R0 MEM=0 ADDR=0 IMM8=arg
+
+; MICRO_LOAD: PASS IMM -> R0 ; return
+MICRO_LOAD:
+NEXT=0 COND=ALWAYS ALU=PASS SRC=0 DST=0 MEM=0 ADDR=0 IMM8=0
+; jump to return (we use NEXT=1 with ADDR pointing to MICRO_RET)
+NEXT=1 COND=ALWAYS ALU=NOP SRC=0 DST=0 MEM=0 ADDR=MICRO_RET IMM8=0
+
+MICRO_XOR_IMM:
+NEXT=0 COND=ALWAYS ALU=XOR SRC=1 DST=0 MEM=0 ADDR=0 IMM8=0
+NEXT=1 COND=ALWAYS ALU=NOP SRC=0 DST=0 MEM=0 ADDR=MICRO_RET IMM8=0
+
+MICRO_STORE:
+; write R0 to MEM[arg]
+NEXT=0 COND=ALWAYS ALU=PASS SRC=0 DST=2 MEM=2 ADDR=0 IMM8=0
+NEXT=1 COND=ALWAYS ALU=NOP SRC=0 DST=0 MEM=0 ADDR=MICRO_RET IMM8=0
+
+MICRO_LOAD_MEM:
+NEXT=0 COND=ALWAYS ALU=PASS SRC=2 DST=0 MEM=1 ADDR=0 IMM8=0
+NEXT=1 COND=ALWAYS ALU=NOP SRC=0 DST=0 MEM=0 ADDR=MICRO_RET IMM8=0
+
+MICRO_XOR_MEM:
+NEXT=0 COND=ALWAYS ALU=XOR SRC=2 DST=0 MEM=1 ADDR=0 IMM8=0
+NEXT=1 COND=ALWAYS ALU=NOP SRC=0 DST=0 MEM=0 ADDR=MICRO_RET IMM8=0
+
+MICRO_HALT:
+; set halted flag via a PASS to a special microaddr (we use ADDR=0x3FFE as HALT trap)
+NEXT=0 COND=ALWAYS ALU=PASS SRC=0 DST=0 MEM=0 ADDR=0x3FFE IMM8=0
+NEXT=1 COND=ALWAYS ALU=NOP SRC=0 DST=0 MEM=0 ADDR=MICRO_RET IMM8=0
+
+; MICRO_RET label (return to macro sequencer)
+MICRO_RET:
+NEXT=1 COND=ALWAYS ALU=NOP SRC=0 DST=0 MEM=0 ADDR=0x3FFF IMM8=0
+
+; Example microprogram for CA step (Rule 90) - simplified pseudo microcode
+; This is a compact illustrative microprogram; a real implementation needs loop control and index arithmetic.
+MICRO_CA_STEP:
+; For each index i:
+; 1) LOAD_MEM i -> R0
+; 2) SHIFT_LEFT1 R0 with carry from MEM[i-1] -> TMP (we emulate via ALU SHL1 with SRC=MEM_READ)
+; 3) LOAD_MEM i+1 -> R1
+; 4) SHIFT_RIGHT1 R0 with carry from R1 -> TMP2
+; 5) XOR TMP TMP2 -> R0
+; 6) STORE R0 -> MEM_next[i]
+; (Loop control omitted for brevity)
+NEXT=0 COND=ALWAYS ALU=PASS SRC=2 DST=0 MEM=1 ADDR=0 IMM8=0
+NEXT=0 COND=ALWAYS ALU=SHL1 SRC=0 DST=1 MEM=0 ADDR=0 IMM8=0
+NEXT=0 COND=ALWAYS ALU=PASS SRC=2 DST=2 MEM=1 ADDR=0 IMM8=0
+NEXT=0 COND=ALWAYS ALU=SHR1 SRC=0 DST=1 MEM=0 ADDR=0 IMM8=0
+NEXT=0 COND=ALWAYS ALU=XOR SRC=1 DST=0 MEM=0 ADDR=0 IMM8=0
+NEXT=0 COND=ALWAYS ALU=PASS SRC=0 DST=2 MEM=2 ADDR=0 IMM8=0
+NEXT=1 COND=ALWAYS ALU=NOP SRC=0 DST=0 MEM=0 ADDR=MICRO_RET IMM8=0
+// microrom.vh - example (small)
+localparam MICROROM_WORDS = 32;
+reg [31:0] microrom [0:MICROROM_WORDS-1];
+initial begin
+  // index : 32'hXXXXXXXX
+  microrom[0] = 32'h00000000; // placeholder
+  microrom[1] = 32'h80000001; // jump to MICRO_RET (example)
+  // ... fill by running microasm.py to generate full content
+  // For real use, run: python3 microasm.py microprograms.asm
+end
+// micro_cpu_top.v
+// Top-level microcoded CPU (simple, parameterizable)
+`timescale 1ns/1ps
+module micro_cpu_top #(
+    parameter MEM_WORDS = 256
+)(
+    input  wire clk,
+    input  wire rstn,
+    input  wire start,
+    output wire halted,
+    // simple host loader interface (address/data)
+    input  wire [7:0] host_addr,
+    input  wire [63:0] host_wdata,
+    input  wire host_we,
+    output wire [63:0] host_rdata
+);
+
+    // MicroROM included from microrom.vh
+    // microrom.vh must define microrom array and MICROROM_WORDS
+    `include "microrom.vh"
+
+    // Instruction memory (macro program) - small synchronous RAM
+    reg [15:0] instr_mem [0:255];
+    reg [7:0] instr_addr;
+    wire [15:0] instr_data = instr_mem[instr_addr];
+
+    // Data memory (MEM) - dual bank for double buffering
+    reg [63:0] mem_bank0 [0:MEM_WORDS-1];
+    reg [63:0] mem_bank1 [0:MEM_WORDS-1];
+    reg bank_sel; // 0 = bank0 is current, 1 = bank1 is current
+
+    // Host access (simple)
+    assign host_rdata = (host_addr < MEM_WORDS) ? (bank_sel ? mem_bank1[host_addr] : mem_bank0[host_addr]) : 64'd0;
+
+    always @(posedge clk) begin
+        if (!rstn) begin
+            // init memory to zero
+            integer i;
+            for (i=0;i<MEM_WORDS;i=i+1) begin
+                mem_bank0[i] <= 64'd0;
+                mem_bank1[i] <= 64'd0;
+            end
+            instr_addr <= 8'd0;
+            bank_sel <= 1'b0;
+        end else begin
+            if (host_we) begin
+                if (host_addr < MEM_WORDS) begin
+                    if (bank_sel)
+                        mem_bank1[host_addr] <= host_wdata;
+                    else
+                        mem_bank0[host_addr] <= host_wdata;
+                end else begin
+                    // write to instr_mem if address in range 0..255
+                    instr_mem[host_addr] <= host_wdata[15:0];
+                end
+            end
+        end
+    end
+
+    // Microsequencer and datapath instantiation
+    wire cpu_halted;
+    micro_sequencer #(.MEM_WORDS(MEM_WORDS)) u_seq (
+        .clk(clk),
+        .rstn(rstn),
+        .start(start),
+        .microrom(microrom),
+        .microrom_words(MICROROM_WORDS),
+        .instr_mem(instr_mem),
+        .instr_addr_out(instr_addr),
+        .mem_bank0(mem_bank0),
+        .mem_bank1(mem_bank1),
+        .bank_sel(bank_sel),
+        .halted(cpu_halted)
+    );
+
+    assign halted = cpu_halted;
+
+endmodule
+// micro_sequencer.v
+// Simplified microsequencer that reads microinstructions from microrom and drives a small datapath.
+// For clarity and portability this module uses behavioral constructs.
+
+`timescale 1ns/1ps
+module micro_sequencer #(
+    parameter MEM_WORDS = 256
+)(
+    input  wire clk,
+    input  wire rstn,
+    input  wire start,
+    input  wire [31:0] microrom [0:31], // include microrom.vh in top-level
+    input  wire [15:0] microrom_words,
+    input  wire [15:0] instr_mem [0:255],
+    output reg  [7:0] instr_addr_out,
+    inout  reg  [63:0] mem_bank0 [0:MEM_WORDS-1],
+    inout  reg  [63:0] mem_bank1 [0:MEM_WORDS-1],
+    output reg bank_sel,
+    output reg halted
+);
+
+    // Simple datapath registers
+    reg [63:0] R0;
+    reg [63:0] TMP;
+    reg [7:0] PC_macro;
+    reg [13:0] micro_pc;
+    reg running;
+
+    // flags
+    reg flag_zero;
+    reg flag_carry;
+
+    // microinstruction fields extraction helper
+    function [31:0] fetch_micro;
+        input [13:0] addr;
+        begin
+            fetch_micro = microrom[addr];
+        end
+    endfunction
+
+    // For simplicity, we assume microrom_words small; in real design use parameterized memory
+    always @(posedge clk) begin
+        if (!rstn) begin
+            PC_macro <= 8'd0;
+            micro_pc <= 14'd0;
+            running <= 1'b0;
+            halted <= 1'b0;
+            bank_sel <= 1'b0;
+            instr_addr_out <= 8'd0;
+            R0 <= 64'd0;
+            TMP <= 64'd0;
+        end else begin
+            if (start && !running) begin
+                running <= 1'b1;
+                PC_macro <= 8'd0;
+                instr_addr_out <= 8'd0;
+                micro_pc <= 14'd0;
+                halted <= 1'b0;
+            end
+            if (running && !halted) begin
+                // Fetch macro instruction
+                instr_addr_out <= PC_macro;
+                // fetch macro opcode from instr_mem
+                // Note: instr_mem is synchronous in top; here we read combinatorially for simplicity
+                // In real FPGA, add pipeline stages
+                reg [15:0] macro;
+                macro = instr_mem[PC_macro];
+                reg [7:0] opcode;
+                reg [7:0] arg;
+                opcode = macro[15:8];
+                arg = macro[7:0];
+
+                // Map macro opcode to micro entry (simple mapping)
+                // For demo, we use opcode values:
+                // 0xB1 -> MICRO_LOAD (micro_pc = 0)
+                // 0x32 -> MICRO_XOR_IMM (micro_pc = 2)
+                // 0x61 -> MICRO_STORE (micro_pc = 4)
+                // 0xA0 -> MICRO_LOAD_MEM (micro_pc = 6)
+                // 0xA1 -> MICRO_XOR_MEM (micro_pc = 8)
+                // 0xFF -> MICRO_HALT (micro_pc = 10)
+                case (opcode)
+                    8'hB1: micro_pc <= 14'd0;
+                    8'h32: micro_pc <= 14'd2;
+                    8'h61: micro_pc <= 14'd4;
+                    8'hA0: micro_pc <= 14'd6;
+                    8'hA1: micro_pc <= 14'd8;
+                    8'hFF: micro_pc <= 14'd10;
+                    default: micro_pc <= 14'd0;
+                endcase
+
+                // Execute microprogram: for simplicity execute one microinstruction per cycle
+                reg [31:0] minst;
+                minst = fetch_micro(micro_pc);
+                // decode fields
+                reg NEXT_IS_JUMP;
+                reg [1:0] COND_SEL;
+                reg [2:0] ALU_OP;
+                reg [1:0] ALU_SRC;
+                reg [1:0] ALU_DST;
+                reg [1:0] MEM_RW;
+                reg [13:0] MICROADDR;
+                reg [7:0] IMM8;
+                NEXT_IS_JUMP = minst[31];
+                COND_SEL = minst[30:29];
+                ALU_OP = minst[28:26];
+                ALU_SRC = minst[25:24];
+                ALU_DST = minst[23:22];
+                MEM_RW = minst[21:20];
+                MICROADDR = minst[19:6];
+                IMM8 = minst[7:0];
+
+                // ALU source selection
+                reg [63:0] alu_src;
+                case (ALU_SRC)
+                    2'b00: alu_src = R0;
+                    2'b01: alu_src = {56'd0, IMM8};
+                    2'b10: begin
+                        // MEM read: use arg in IMM8 as index
+                        if (bank_sel)
+                            alu_src = mem_bank1[IMM8];
+                        else
+                            alu_src = mem_bank0[IMM8];
+                    end
+                    2'b11: alu_src = TMP;
+                    default: alu_src = 64'd0;
+                endcase
+
+                // ALU operation
+                reg [63:0] alu_out;
+                reg carry_out;
+                case (ALU_OP)
+                    3'b000: alu_out = alu_src; // NOP/PASS
+                    3'b001: {carry_out, alu_out} = R0 + alu_src;
+                    3'b010: alu_out = R0 ^ alu_src;
+                    3'b011: begin alu_out = (R0 << 1); carry_out = R0[63]; end
+                    3'b100: begin alu_out = (R0 >> 1); carry_out = R0[0]; end
+                    3'b101: alu_out = R0 & alu_src;
+                    3'b110: alu_out = R0 | alu_src;
+                    3'b111: alu_out = alu_src;
+                    default: alu_out = 64'd0;
+                endcase
+
+                // ALU destination
+                case (ALU_DST)
+                    2'b00: R0 <= alu_out;
+                    2'b01: TMP <= alu_out;
+                    2'b10: begin
+                        // MEM write using IMM8 as index
+                        if (bank_sel)
+                            mem_bank1[IMM8] <= alu_out;
+                        else
+                            mem_bank0[IMM8] <= alu_out;
+                    end
+                    default: ;
+                endcase
+
+                // MEM_RW handling (if separate)
+                if (MEM_RW == 2'b01) begin
+                    // read handled via ALU_SRC==MEM
+                end else if (MEM_RW == 2'b10) begin
+                    // write handled above
+                end
+
+                // flags
+                flag_zero <= (alu_out == 64'd0);
+                flag_carry <= carry_out;
+
+                // next micropc
+                if (NEXT_IS_JUMP) begin
+                    micro_pc <= MICROADDR;
+                end else begin
+                    micro_pc <= micro_pc + 1;
+                end
+
+                // After microprogram returns (we detect MICRO_RET address 0x3FFF)
+                if (micro_pc == 14'h3FFF) begin
+                    // advance macro PC
+                    PC_macro <= PC_macro + 1;
+                    // check for HALT trap address 0x3FFE
+                    if (MICROADDR == 14'h3FFE) begin
+                        halted <= 1'b1;
+                        running <= 1'b0;
+                    end
+                end
+            end
+        end
+    end
+
+endmodule// micro_datapath.v
+// Optional separate datapath module for clarity (not used in simplified sequencer above)
+module micro_datapath (
+    input  wire clk,
+    input  wire rstn,
+    input  wire [2:0] alu_op,
+    input  wire [1:0] alu_src,
+    input  wire [1:0] alu_dst,
+    input  wire [7:0] imm8,
+    input  wire [63:0] mem_rdata,
+    output reg  [63:0] R0,
+    output reg  [63:0] TMP,
+    output reg  [63:0] alu_out
+);
+    reg [63:0] alu_src_val;
+    always @(*) begin
+        case (alu_src)
+            2'b00: alu_src_val = R0;
+            2'b01: alu_src_val = {56'd0, imm8};
+            2'b10: alu_src_val = mem_rdata;
+            2'b11: alu_src_val = TMP;
+            default: alu_src_val = 64'd0;
+        endcase
+        case (alu_op)
+            3'b000: alu_out = alu_src_val;
+            3'b001: alu_out = R0 + alu_src_val;
+            3'b010: alu_out = R0 ^ alu_src_val;
+            3'b011: alu_out = (R0 << 1);
+            3'b100: alu_out = (R0 >> 1);
+            3'b101: alu_out = R0 & alu_src_val;
+            3'b110: alu_out = R0 | alu_src_val;
+            3'b111: alu_out = alu_src_val;
+            default: alu_out = 64'd0;
+        endcase
+    end
+
+    always @(posedge clk) begin
+        if (!rstn) begin
+            R0 <= 64'd0;
+            TMP <= 64'd0;
+        end else begin
+            case (alu_dst)
+                2'b00: R0 <= alu_out;
+                2'b01: TMP <= alu_out;
+                default: ;
+            endcase
+        end
+    end
+endmodule/* simulator.c
+   Simple cycle-accurate microcode simulator for the microprogram format.
+   Build: gcc -O2 -o simulator simulator.c
+   Usage: ./simulator microrom.bin instr_mem.hex
+*/
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdint.h>
+#include <string.h>
+
+#define MEM_WORDS 256
+#define MICROROM_MAX 16384
+
+uint32_t microrom[MICROROM_MAX];
+size_t microrom_words = 0;
+
+uint16_t instr_mem[256];
+uint64_t mem_bank0[MEM_WORDS];
+uint64_t mem_bank1[MEM_WORDS];
+
+int load_bin(const char *fn) {
+    FILE *f = fopen(fn,"rb");
+    if (!f) return -1;
+    size_t i=0;
+    while (!feof(f) && i < MICROROM_MAX) {
+        uint32_t w;
+        if (fread(&w,4,1,f) != 1) break;
+        microrom[i++] = w;
+    }
+    microrom_words = i;
+    fclose(f);
+    return 0;
+}
+
+int load_instr_hex(const char *fn) {
+    FILE *f = fopen(fn,"r");
+    if (!f) return -1;
+    char line[256];
+    size_t i=0;
+    while (fgets(line,sizeof(line),f) && i < 256) {
+        unsigned int v;
+        if (sscanf(line,"%x",&v) == 1) {
+            instr_mem[i++] = (uint16_t)(v & 0xFFFF);
+        }
+    }
+    fclose(f);
+    return 0;
+}
+
+int main(int argc, char **argv) {
+    if (argc < 3) {
+        printf("Usage: %s microrom.bin instr_mem.hex\n", argv[0]);
+        return 1;
+    }
+    if (load_bin(argv[1]) != 0) { printf("Failed to load microrom\n"); return 1; }
+    if (load_instr_hex(argv[2]) != 0) { printf("Failed to load instr_mem\n"); return 1; }
+
+    // init memory
+    memset(mem_bank0,0,sizeof(mem_bank0));
+    memset(mem_bank1,0,sizeof(mem_bank1));
+
+    uint8_t bank_sel = 0;
+    uint8_t PC_macro = 0;
+    uint64_t R0 = 0;
+    uint64_t TMP = 0;
+    int halted = 0;
+    uint64_t cycles = 0;
+
+    while (!halted && cycles < 1000000) {
+        uint16_t macro = instr_mem[PC_macro];
+        uint8_t opcode = (macro >> 8) & 0xFF;
+        uint8_t arg = macro & 0xFF;
+        // map macro opcode to micro entry
+        uint16_t micro_pc = 0;
+        if (opcode == 0xB1) micro_pc = 0;
+        else if (opcode == 0x32) micro_pc = 2;
+        else if (opcode == 0x61) micro_pc = 4;
+        else if (opcode == 0xA0) micro_pc = 6;
+        else if (opcode == 0xA1) micro_pc = 8;
+        else if (opcode == 0xFF) micro_pc = 10;
+        else micro_pc = 0;
+
+        // execute microprogram until MICRO_RET (we use 0x3FFF as return sentinel)
+        int micro_running = 1;
+        while (micro_running && cycles < 1000000) {
+            if (micro_pc >= microrom_words) { printf("micro_pc out of range %u\n", micro_pc); return 1; }
+            uint32_t minst = microrom[micro_pc];
+            int NEXT = (minst >> 31) & 1;
+            int COND = (minst >> 29) & 0x3;
+            int ALU = (minst >> 26) & 0x7;
+            int ALU_SRC = (minst >> 24) & 0x3;
+            int ALU_DST = (minst >> 22) & 0x3;
+            int MEM_RW = (minst >> 20) & 0x3;
+            int MICROADDR = (minst >> 6) & 0x3FFF;
+            int IMM8 = minst & 0xFF;
+
+            uint64_t alu_src = 0;
+            if (ALU_SRC == 0) alu_src = R0;
+            else if (ALU_SRC == 1) alu_src = (uint64_t)IMM8;
+            else if (ALU_SRC == 2) {
+                // mem read using IMM8 as index
+                alu_src = bank_sel ? mem_bank1[IMM8] : mem_bank0[IMM8];
+            } else alu_src = TMP;
+
+            uint64_t alu_out = 0;
+            uint8_t carry = 0;
+            switch (ALU) {
+                case 0: alu_out = alu_src; break;
+                case 1: { unsigned __int128 t = (unsigned __int128)R0 + (unsigned __int128)alu_src; alu_out = (uint64_t)t; carry = (t >> 64) & 1; } break;
+                case 2: alu_out = R0 ^ alu_src; break;
+                case 3: alu_out = R0 << 1; carry = (R0 >> 63) & 1; break;
+                case 4: alu_out = R0 >> 1; carry = R0 & 1; break;
+                case 5: alu_out = R0 & alu_src; break;
+                case 6: alu_out = R0 | alu_src; break;
+                case 7: alu_out = alu_src; break;
+            }
+
+            if (ALU_DST == 0) R0 = alu_out;
+            else if (ALU_DST == 1) TMP = alu_out;
+            else if (ALU_DST == 2) {
+                if (bank_sel) mem_bank1[IMM8] = alu_out;
+                else mem_bank0[IMM8] = alu_out;
+            }
+
+            // handle MEM_RW if needed (reads handled via ALU_SRC==2)
+            // flags (not fully used here)
+            int zero = (alu_out == 0);
+
+            // next micropc
+            if (NEXT) micro_pc = MICROADDR;
+            else micro_pc++;
+
+            // detect return sentinel (we use 0x3FFF)
+            if (micro_pc == 0x3FFF) {
+                micro_running = 0;
+                PC_macro++;
+            }
+            // detect HALT trap (0x3FFE)
+            if (MICROADDR == 0x3FFE) {
+                halted = 1;
+                micro_running = 0;
+            }
+            cycles++;
+        }
+    }
+
+    printf("Simulation finished cycles=%llu halted=%d PC=%u R0=%llu\n", (unsigned long long)cycles, halted, (unsigned)0, (unsigned long long)R0);
+    // dump memory
+    FILE *out = fopen("mem_dump.hex","w");
+    for (int i=0;i<MEM_WORDS;i++) {
+        fprintf(out, "%02x %016llx\n", i, (unsigned long long)(mem_bank0[i]));
+    }
+    fclose(out);
+    return 0;
+}B100
+3200
+6100
+FF00
+B101
+3201
+6101
+FF00
+B102
+3202
+6102
+FF00
+B103
+3203
+6103
+FF00
+0000
+0000
+// microrom.vh
+// Generated microROM include (32-bit microinstructions).
+// Fields packed as in microasm.py:
+// bit31 NEXT_IS_JUMP
+// bits30-29 COND_SEL
+// bits28-26 ALU_OP
+// bits25-24 ALU_SRC
+// bits23-22 ALU_DST
+// bits21-20 MEM_RW
+// bits19-6  MICROADDR (14 bits)
+// bits7-0   IMM8
+//
+// Microprograms (addresses):
+//  0: MICRO_LOAD  (PASS IMM -> R0)
+//  1: MICRO_LOAD  (jump to MICRO_RET)
+//  2: MICRO_XOR_IMM
+//  3: MICRO_XOR_IMM (jump to MICRO_RET)
+//  4: MICRO_STORE
+//  5: MICRO_STORE (jump to MICRO_RET)
+//  6: MICRO_LOAD_MEM
+//  7: MICRO_LOAD_MEM (jump to MICRO_RET)
+//  8: MICRO_XOR_MEM
+//  9: MICRO_XOR_MEM (jump to MICRO_RET)
+// 10: MICRO_HALT  (trap to HALT address 0x3FFE)
+// 11: MICRO_HALT  (jump to MICRO_RET)
+// 12: MICRO_RET   (return sentinel -> 0x3FFF)
+// 13..N: reserved for CA microprograms and other microcode
+//
+localparam MICROROM_WORDS = 1024;
+reg [31:0] microrom [0:MICROROM_WORDS-1];
+
+initial begin
+  // Index : 32'hXXXXXXXX
+  // MICRO_LOAD: PASS IMM -> R0
+  microrom[0]  = 32'h1C000000; // NEXT=0 COND=ALWAYS ALU=PASS SRC=IMM(0) DST=R0 MEM=0 ADDR=0 IMM8=0
+  microrom[1]  = 32'h80000300; // NEXT=1 jump to MICRO_RET (addr=12)
+
+  // MICRO_XOR_IMM: R0 = R0 XOR IMM
+  microrom[2]  = 32'h09000000; // NEXT=0 COND=ALWAYS ALU=XOR SRC=IMM DST=R0 MEM=0
+  microrom[3]  = 32'h80000300; // NEXT=1 jump to MICRO_RET
+
+  // MICRO_STORE: MEM[IMM] = R0
+  microrom[4]  = 32'h1CA00000; // NEXT=0 ALU=PASS SRC=R0 DST=MEM_WRITE MEM=WRITE
+  microrom[5]  = 32'h80000300; // NEXT=1 jump to MICRO_RET
+
+  // MICRO_LOAD_MEM: R0 = MEM[IMM]
+  microrom[6]  = 32'h1E100000; // NEXT=0 ALU=PASS SRC=MEM_READ DST=R0 MEM=READ
+  microrom[7]  = 32'h80000300; // NEXT=1 jump to MICRO_RET
+
+  // MICRO_XOR_MEM: R0 = R0 XOR MEM[IMM]
+  microrom[8]  = 32'h0A100000; // NEXT=0 ALU=XOR SRC=MEM_READ DST=R0 MEM=READ
+  microrom[9]  = 32'h80000300; // NEXT=1 jump to MICRO_RET
+
+  // MICRO_HALT: trap to HALT sentinel (ADDR = 0x3FFE)
+  microrom[10] = 32'h1CFFFF80; // NEXT=0 ALU=PASS ADDR=0x3FFE (HALT trap)
+  microrom[11] = 32'h80000300; // NEXT=1 jump to MICRO_RET
+
+  // MICRO_RET: return sentinel (ADDR = 0x3FFF)
+  microrom[12] = 32'h80FFFFC0; // NEXT=1 jump to 0x3FFF (return sentinel)
+
+  // Reserve remaining microROM words for CA microprograms, loops, etc.
+  // Zero-initialize the rest
+  integer i;
+  for (i = 13; i < MICROROM_WORDS; i = i + 1) begin
+    microrom[i] = 32'h00000000;
+  end
+end
+// xilinx_bram_rom.v
+// Simple single-port synchronous ROM (read-only after init) using inferred BRAM.
+// Initialize with $readmemh("microrom.mem", rom);
+
+`timescale 1ns/1ps
+module xilinx_bram_rom #(
+    parameter ADDR_WIDTH = 10, // 2^10 = 1024 words
+    parameter DATA_WIDTH = 32,
+    parameter MEM_INIT_FILE = "microrom.mem"
+)(
+    input  wire                     clk,
+    input  wire [ADDR_WIDTH-1:0]    addr,
+    output reg  [DATA_WIDTH-1:0]    dout
+);
+
+    localparam DEPTH = (1 << ADDR_WIDTH);
+    reg [DATA_WIDTH-1:0] rom [0:DEPTH-1];
+
+    initial begin
+        // microrom.mem should be hex words, one per line, e.g. 1C000000
+        if (MEM_INIT_FILE != "") begin
+            $readmemh(MEM_INIT_FILE, rom);
+        end else begin
+            integer i;
+            for (i=0;i<DEPTH;i=i+1) rom[i] = {DATA_WIDTH{1'b0}};
+        end
+    end
+
+    // synchronous read
+    always @(posedge clk) begin
+        dout <= rom[addr];
+    end
+
+endmodule
+// instantiate with 1024 words
+xilinx_bram_rom #(.ADDR_WIDTH(10), .DATA_WIDTH(32), .MEM_INIT_FILE("microrom.mem")) u_rom (
+    .clk(clk),
+    .addr(micro_pc[9:0]),
+    .dout(micro_inst)
+);
+// intel_bram_rom.v
+`timescale 1ns/1ps
+module intel_bram_rom #(
+    parameter ADDR_WIDTH = 10,
+    parameter DATA_WIDTH = 32,
+    parameter MEM_INIT_FILE = "microrom.mif" // Intel prefers .mif or .hex
+)(
+    input  wire                     clk,
+    input  wire [ADDR_WIDTH-1:0]    addr,
+    output reg  [DATA_WIDTH-1:0]    dout
+);
+
+    localparam DEPTH = (1 << ADDR_WIDTH);
+
+    // Behavioral memory for simulation; Quartus will infer altsyncram if synthesis attributes present.
+    reg [DATA_WIDTH-1:0] rom [0:DEPTH-1];
+
+    initial begin
+        integer i;
+        for (i=0;i<DEPTH;i=i+1) rom[i] = {DATA_WIDTH{1'b0}};
+        // For simulation, read hex file if present
+        if (MEM_INIT_FILE != "") begin
+            $readmemh(MEM_INIT_FILE, rom);
+        end
+    end
+
+    always @(posedge clk) begin
+        dout <= rom[addr];
+    end
+
+    // Synthesis directive for Quartus to infer ROM/BRAM:
+    // synthesis translate_off
+    // synthesis translate_on
+
+endmodule
+// xilinx_bram_dp.v
+`timescale 1ns/1ps
+module xilinx_bram_dp #(
+    parameter ADDR_WIDTH = 10,
+    parameter DATA_WIDTH = 32,
+    parameter MEM_INIT_FILE = "microrom.mem"
+)(
+    input  wire                     clk,
+    // port A (read)
+    input  wire [ADDR_WIDTH-1:0]    addr_a,
+    output reg  [DATA_WIDTH-1:0]    dout_a,
+    // port B (read/write)
+    input  wire [ADDR_WIDTH-1:0]    addr_b,
+    input  wire [DATA_WIDTH-1:0]    din_b,
+    input  wire                     we_b,
+    output reg  [DATA_WIDTH-1:0]    dout_b
+);
+
+    localparam DEPTH = (1 << ADDR_WIDTH);
+    reg [DATA_WIDTH-1:0] mem [0:DEPTH-1];
+
+    initial begin
+        if (MEM_INIT_FILE != "") $readmemh(MEM_INIT_FILE, mem);
+        else begin integer i; for (i=0;i<DEPTH;i=i+1) mem[i]=0; end
+    end
+
+    // Port A: synchronous read
+    always @(posedge clk) begin
+        dout_a <= mem[addr_a];
+    end
+
+    // Port B: write-first behavior
+    always @(posedge clk) begin
+        if (we_b) mem[addr_b] <= din_b;
+        dout_b <= mem[addr_b];
+    end
+
+endmodule
+
+
+
+

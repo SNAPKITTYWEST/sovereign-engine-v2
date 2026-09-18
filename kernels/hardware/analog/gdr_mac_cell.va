@@ -1,0 +1,20 @@
+// gdr_mac_cell.va — Analog Multiply-Accumulate Cell
+// Models the multiplication as a voltage-controlled current source:
+//   I = (Vq * Vk) * G
+// Used as the physical leaf cell in the SKILL-generated common-centroid array.
+
+`include "constants.vams"
+`include "disciplines.vams"
+
+module gdr_mac_cell(vin_q, vin_k, vout);
+    input  vin_q, vin_k;
+    output vout;
+    electrical vin_q, vin_k, vout;
+
+    parameter real gain    = 1.0;
+    parameter real leakage = 1n;
+
+    analog begin
+        I(vout) <+ (V(vin_q) * V(vin_k) * gain) - (V(vout) * leakage);
+    end
+endmodule
