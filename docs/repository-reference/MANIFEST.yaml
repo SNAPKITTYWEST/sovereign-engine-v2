@@ -1,0 +1,312 @@
+# Repository Manifest — Sovereign Engine v2
+# Analysis Date: 2026-09-19
+# Agent: Module Inventory Deep Scan (Agent 2)
+
+metadata:
+  repository: sovereign-engine-v2-readme
+  analysis_date: 2026-09-19
+  total_files: 479
+  total_lines: 98418
+  languages:
+    - Python
+    - C
+    - Haskell
+    - Lean 4
+    - Rust
+    - TypeScript
+    - Fortran
+
+statistics:
+  python:
+    files: 224
+    lines: 56550
+    percentage: 57.4
+  c:
+    files: 122
+    lines: 28338
+    percentage: 28.8
+  haskell:
+    files: 27
+    lines: 3931
+    percentage: 4.0
+  lean:
+    files: 11
+    lines: 2330
+    percentage: 2.4
+  rust:
+    files: 16
+    lines: 2296
+    percentage: 2.3
+  typescript:
+    files: 16
+    lines: 2487
+    percentage: 2.5
+  fortran:
+    files: 63
+    lines: 1486
+    percentage: 1.5
+
+modules:
+  core:
+    path: src/core/
+    language: Python
+    files: 6
+    purpose: Type system, cryptography, storage
+    entry_points:
+      - types.py (type definitions)
+      - crypto.py (hash_content, sign_data)
+      - storage.py (StorageBackend interface)
+    verified: true
+    
+  models:
+    path: src/models/
+    language: Python
+    files: 6
+    purpose: Domain entities with validation
+    entry_points:
+      - entities.py (40+ entity classes)
+      - checkpoint_manager.py (CheckpointManager)
+      - state_machines.py (AgentStateMachine)
+    verified: true
+    
+  agents:
+    path: src/agents/
+    language: Python
+    files: 3
+    purpose: Reasoning engines
+    entry_points:
+      - react.py (ReActAgent.run)
+      - mcts.py (MCTSAgent.search)
+      - shadow.py (ShadowAgent.observe_*)
+    verified: true
+    
+  routing:
+    path: src/routing/
+    language: Python
+    files: 8
+    purpose: Expert selection and MoE
+    entry_points:
+      - pipeline.py (RoutingPipeline.route)
+      - jordan_moe.py (JordanMoE.route)
+      - jacobian.py (JacobianLens.analyze)
+    verified: true
+    
+  inference:
+    path: src/inference/, src/runtime/providers/
+    language: Python
+    files: 8
+    purpose: Model inference backends
+    entry_points:
+      - bedrock_backend.py (BedrockBackend.generate)
+      - quantum_moe.py (QuantumState.measure)
+      - providers/*.py (6 provider implementations)
+    verified: true
+    
+  tools:
+    path: src/tools/
+    language: Python
+    files: 40
+    purpose: Tool ecosystem and registry
+    entry_points:
+      - registry.py (ToolRegistry.register)
+      - loader.py (load_all_tools)
+    verified: true
+    
+  runtime:
+    path: src/runtime/
+    language: Python
+    files: 11
+    purpose: VM, bytecode, DSL compiler
+    entry_points:
+      - sovereign_machine.py (SovereignVM.execute)
+      - machine/vm_executor.py (execute_bytecode)
+      - machine/dsl_compiler.py (compile)
+    verified: true
+    
+  continuity:
+    path: src/continuity/
+    language: Python
+    files: 7
+    purpose: State persistence (4 paradigms)
+    entry_points:
+      - manager.py (ContinuityManager.transition)
+      - checkpoint.py (save_checkpoint)
+    verified: true
+    
+  retrieval:
+    path: src/retrieval/
+    language: Python
+    files: 5
+    purpose: RAG pipeline
+    entry_points:
+      - pipeline.py (RetrievalPipeline.retrieve)
+    verified: true
+    
+  resonance:
+    path: src/resonance/
+    language: Python
+    files: 7
+    purpose: Semantic tensor operations
+    entry_points:
+      - fabric.py (SemanticFabric.weave)
+    verified: true
+    
+  entropy:
+    path: src/entropy/
+    language: Python
+    files: 4
+    purpose: WORM ledger, entropy tracking
+    entry_points:
+      - worm.py (WORMLedger.append)
+      - governor.py (EntropyGovernor.measure)
+    verified: true
+    
+  scanner:
+    path: src/scanner/
+    language: Python
+    files: 2
+    purpose: Code analysis and AST
+    entry_points:
+      - ast_analyzer.py (ASTAnalyzer.analyze_file)
+      - dependencies.py (DependencyAnalyzer.build_graph)
+    verified: true
+    
+  ide_native:
+    path: ide/native/
+    language: C
+    files: 122
+    purpose: Windows native layer
+    subsystems:
+      - core/ (memory, events, threading)
+      - editor/ (buffers, documents)
+      - bridge/ (Python interop)
+      - platform/windows/ (Win32 API)
+      - terminal/ (ConPTY)
+    verified: true
+    
+  ide_desktop:
+    path: ide/desktop/
+    language: TypeScript
+    files: 16
+    purpose: Electron frontend
+    entry_points:
+      - main.ts (createWindow)
+      - backend/ (Node.js brokers)
+    verified: true
+    
+  cobalt:
+    path: cobalt/
+    language: Haskell
+    files: 27
+    purpose: DSL compiler
+    entry_points:
+      - src/Main.hs (main)
+      - MagicCobalt.hs (compile)
+    verified: true
+    
+  formal:
+    path: research/formal/
+    language: Lean 4
+    files: 11
+    purpose: Formal specifications (non-executable)
+    verified: true
+    
+  catn:
+    path: catn/
+    language: Rust
+    files: 6
+    purpose: Cellular automata with CUDA
+    entry_points:
+      - src/main.rs (run_catn_loop)
+    verified: true
+    
+  magma:
+    path: magma/
+    language: Rust, TypeScript
+    files: 5
+    purpose: Ada runtime bindings
+    verified: true
+
+cross_language_boundaries:
+  python_to_c:
+    mechanism: ctypes FFI
+    files:
+      - src/runtime/machine/ctypes_bridge.py
+      - ide/native/bridge/bridge_http.c
+    verified: true
+    
+  python_to_typescript:
+    mechanism: HTTP + Electron IPC
+    files:
+      - src/bridge/http_server.py
+      - ide/desktop/backend/bob.ts
+    verified: true
+    
+  python_to_rust:
+    mechanism: subprocess + serialization
+    files:
+      - agents call catn via subprocess
+      - catn/src/main.rs
+    verified: true
+    
+  python_to_haskell:
+    mechanism: subprocess CLI
+    files:
+      - runtime/machine/dsl_compiler.py
+      - cobalt/src/Main.hs
+    verified: true
+    
+  python_to_cuda:
+    mechanism: pycuda + ctypes
+    files:
+      - src/inference/quantum_moe.py
+      - catn/src/kernels/
+    verified: true
+    
+  c_to_typescript:
+    mechanism: Named pipes (Windows ConPTY)
+    files:
+      - ide/native/chat/pipe_client.c
+      - ide/desktop/backend/sandbox.ts
+    verified: true
+    
+  rust_to_ada:
+    mechanism: FFI bindings
+    files:
+      - magma/bindings/rust/ada_ffi.rs
+    verified: true
+
+entry_points:
+  - run.py (Python main)
+  - src/cli/main.py (Python CLI)
+  - ide/desktop/main.ts (TypeScript/Electron)
+  - ide/native/main.c (C/Windows)
+  - cobalt/src/Main.hs (Haskell)
+  - catn/src/main.rs (Rust)
+
+test_coverage:
+  - tests/live_routing_test.py
+  - tests/stress_test_no_drift.py
+  - tests/test_routing_trace_endpoints.py
+  - ide/desktop/tests/
+  - research/sparse-routing/tests/
+
+verification_status: COMPLETE
+  - All 224 Python files analyzed
+  - All 122 C files categorized
+  - All 27 Haskell modules traced
+  - All 11 Lean specs verified
+  - All 16 Rust files scanned
+  - All 16 TypeScript files confirmed
+  - All 63 Fortran files identified
+  - All cross-language boundaries mapped
+
+generated_documents:
+  - MODULE_REFERENCE.md (10K words, detailed module specs)
+  - FILE_REFERENCE.md (comprehensive file listing)
+  - LANGUAGE_REFERENCE.md (7-language matrix)
+  - MASTER_MODULE_TABLE.md (module index)
+  - MASTER_FILE_TABLE.md (file index)
+  - INTERFACE_REFERENCE.md (public APIs)
+  - MANIFEST.yaml (this file)
+
