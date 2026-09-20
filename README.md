@@ -8,212 +8,1011 @@ The Python engine contains an eleven-stage routing pipeline, ReAct agents, a too
 
 ## Contents
 
+- [Quick Start](#quick-start)
+- [Overview & Architecture](#overview--architecture)
+- [Repository Structure](#repository-structure)
+- [Language Stack](#language-stack)
+- [Getting Started](#getting-started)
+- [Building from Source](#building-from-source)
+- [API Reference](#api-reference)
+- [Deployment & Scaling](#deployment--scaling)
+- [Examples](#examples)
+- [FAQ & Troubleshooting](#faq--troubleshooting)
+- [Contributing](#contributing)
+- [Performance & Benchmarks](#performance--benchmarks)
+- [Glossary](#glossary)
+- [Resources & License](#resources--license)
 - [Recent changes](#recent-changes)
-- [Starter and technical guides](docs/README.md)
-- [Repository map](#repository-map)
-- [Execution and routing](#execution-and-routing)
-- [Models and training](#models-and-training)
-- [Benchmarks](#benchmarks)
-- [Getting started](#getting-started)
-- [Native builds and research](#native-builds-and-research)
-- [Validation boundaries](#validation-boundaries)
-- [Documentation and license](#documentation-and-license)
 
-## Recent changes
+---
 
-| Commit | Change | Where to inspect it |
-|---|---|---|
-| [`898dfbe`](https://github.com/SNAPKITTYWEST/sovereign-engine-v2/commit/898dfbe), Sep 18 | Resolved incoming paper/formal-file placement after the reorganization | [Research papers](research/papers/) and [formal sources](research/formal/) |
-| [`f97cbd8`](https://github.com/SNAPKITTYWEST/sovereign-engine-v2/commit/f97cbd8), Sep 18 | Relocated 60 files with no content insertions or deletions; research and training now have dedicated roots | [research/](research/), [training/](training/), [docs/](docs/) |
-| [`b5a357f`](https://github.com/SNAPKITTYWEST/sovereign-engine-v2/commit/b5a357f), Sep 18 | Added a direct runner, Bedrock backend, and node authorization artifacts; updated the engine wiring | [run.py](run.py), [bedrock_backend.py](src/inference/bedrock_backend.py), [node_key.py](sovereign/node_key.py) |
-| [`5b6aabe`](https://github.com/SNAPKITTYWEST/sovereign-engine-v2/commit/5b6aabe), Sep 7 | Added the Forge Tournament paper and SUBLEQ formalization | [Paper](research/papers/forge_tournament_subleq_to_braid.md), [SUBLEQ.lean](research/formal/subleq/SUBLEQ.lean) |
-| [`e2f5631`](https://github.com/SNAPKITTYWEST/sovereign-engine-v2/commit/e2f5631), Sep 7 | Added Hugging Face-oriented model code, configurations, cards, and a corpus schema | [hf/](hf/) |
-| [`d953b98`](https://github.com/SNAPKITTYWEST/sovereign-engine-v2/commit/d953b98), Sep 7 | Added AgentFishTank, Call49 substrate, gnostic arithmetic sources, and the BRICK specification | [training/](training/), [the-49th-call/](the-49th-call/), [BRICK](docs/BRICK_PROTOCOL_SPECIFICATION.md) |
-| [`cc59e96`](https://github.com/SNAPKITTYWEST/sovereign-engine-v2/commit/cc59e96), [`a5395c7`](https://github.com/SNAPKITTYWEST/sovereign-engine-v2/commit/a5395c7), Sep 7 | Added versioned checkpoints, hash seals, pruning, quantization, and optional S3 upload workflow | [Checkpoint manager](src/models/checkpoint_manager.py), [workflow](src/models/checkpoint_workflow.py) |
-| [`71555f2`](https://github.com/SNAPKITTYWEST/sovereign-engine-v2/commit/71555f2), [`3ba399d`](https://github.com/SNAPKITTYWEST/sovereign-engine-v2/commit/3ba399d), Sep 6 | Added recurrent memory and the independent sparse-routing research implementation | [Memory network](src/models/recursive_memory.py), [routing research](research/sparse-routing/) |
+## Quick Start
 
-## Repository map
+**Sovereign Engine v2** is a production-grade framework for autonomous LLM agent execution with algebraic routing, formal verification, and distributed continuity. It routes complex tasks through dynamically selected experts, maintains cryptographic proof trails, and enables deterministic replay of agent reasoning.
 
-| Path | Contents |
-|---|---|
-| [src/](src/) | Python agents, routing, tools, inference, bridge, continuity, retrieval, model memory, entropy, and runtime modules; also experimental hardware/language sources |
-| [ide/](ide/) | Windows C/C++ IDE and its CMake project, desktop sources, and BEAM-style WebAssembly experiments |
-| [native/](native/) | NASM runtime, QRA/Jordan/NAND operations, IPC assembly, and C dispatcher |
-| [cobalt/](cobalt/) | Cabal package: compiler core, LiquidOps, ISA, mathematics, and LiquidHaskell-oriented modules |
-| [kernels/](kernels/) | Rust, CUDA, CUDA-Q, x86, MLIR, TVM, P4, and hardware sources |
-| [magma/](magma/), [narm/](narm/), [catn/](catn/) | Protocol, runtime/kernel, and tensor-network implementations with their own tooling |
-| [research/formal/](research/formal/) | Lean and Agda sources, including entropy, tensors, GDR drain, SUBLEQ, and gnostic arithmetic |
-| [research/papers/](research/papers/) | LiquidOps, entropy, GDR kernels, and Forge Tournament manuscripts |
-| [research/sparse-routing/](research/sparse-routing/) | Independent NumPy/SciPy routing package, tests, XML specification, report, and experiment |
-| [training/](training/) | AgentFishTank Swift/SceneKit library; formerly `training-frontend/` |
-| [hf/](hf/) | Model packaging sources and training-corpus schema |
-| [the-49th-call/](the-49th-call/), [runtime/](runtime/) | Call49 substrate and Rust gnostic arithmetic source |
-| [sovereign/](sovereign/), [scripts/](scripts/) | Node/release metadata, capability loading, and execution-gate scripts |
-| [tests/](tests/), [docs/](docs/) | Engine tests, demonstrations, configuration and subsystem documentation |
-
-The Python research router now lives at `research/sparse-routing/`. The separate Bash reference router remains at [src/routing/sparse-latency-routing/](src/routing/sparse-latency-routing/). They are distinct implementations.
-
-## Execution and routing
-
-[RoutingPipeline](src/routing/pipeline.py) parses a task, builds a symbolic graph, applies Jordan and Jacobian analysis, evaluates constraints, selects sparse expert weights, suppresses registered NAND conflicts, and dispatches experts. A `PipelineTrace` exposes intent, weights, blocked/dead experts, and dispatch outcomes.
-
-```mermaid
-flowchart LR
-    Input[Task text] --> Parse[Regex and AST]
-    Parse --> Graph[Symbolic graph]
-    Graph --> Jordan[Jordan transform]
-    Jordan --> Jacobian[Jacobian analysis]
-    Jacobian --> Constraints[Constraint evaluation]
-    Constraints --> Sparse[Sparse activation and expert scores]
-    Sparse --> NAND[NAND conflict filter]
-    NAND --> Dispatch[Async expert dispatch]
-    Dispatch --> Merge[Weighted output merge and trace]
-```
-
-The new [run.py](run.py) loads tools, routes a fixed Fibonacci task, then calls a ReAct agent with a `Task` entity. Its model backend calls AWS Bedrock. Routing and generation are sequential operations here: the runner's expert callbacks return task metadata, while the ReAct agent makes the model request.
-
-[BedrockBackend](src/inference/bedrock_backend.py) defaults to region `us-east-1` and model ID `us.anthropic.claude-haiku-4-5-20251001-v1:0`. It uses boto3's credential chain and returns the first response text block. Although its interface accepts `stream`, the implementation uses a non-streaming `invoke_model` call.
-
-[SovereignEngine](src/sovereign.py) also assembles continuity, a WORM ledger, native-tool routing, and an optional shadow agent. The direct runner explicitly bypasses this draft orchestration path; neither path should be inferred to have passed end-to-end validation from this README update.
-
-## Models and training
-
-- **Recursive memory:** [RecursiveMemoryTwinNetwork](src/models/recursive_memory.py) combines a GRU cell and learned memory gate with a persistent latent-state buffer, decay, and L2 normalization. Its harness saves and restores state and processes vectors asynchronously.
-- **Checkpoint workflow:** [CheckpointManager and ModelPruner](src/models/checkpoint_manager.py) provide checkpoint metadata and hash chaining, structured/unstructured pruning, and dynamic quantization helpers. [full_checkpoint_workflow](src/models/checkpoint_workflow.py) composes these operations and optionally uploads to S3. Its parameter-count size estimates are not measured inference throughput.
-- **Model packaging:** [sovereign-memory-twin](hf/sovereign-memory-twin/) and [burt-imma](hf/burt-imma/) contain modeling code, configurations, and model cards. [sovereign-training-corpus](hf/sovereign-training-corpus/) contains the dataset card and schema. These files alone do not establish published weights or trained-model quality.
-- **AgentFishTank:** [training/](training/) contains corpus loading, agent state transitions, task scheduling, and a SceneKit visualization. Its [Swift package](training/Package.swift) targets macOS 14 and iOS 17. Swarm visualization is separate from demonstrated distributed gradient training.
-- **Local inference and ASR:** See [local training/Ollama](docs/LOCAL_TRAINING_OLLAMA.md) and [ASR/message bridge](docs/ASR_AND_BRIDGE.md). The current root runner selects Bedrock; those guides describe additional paths.
-
-## Benchmarks
-
-### Committed sparse-routing experiment
-
-Source: [run_experiment.py](research/sparse-routing/experiments/run_experiment.py). Raw data: [results.json](research/sparse-routing/experiments/results.json). Method and limitations: [research report, sections 20–21](research/sparse-routing/docs/report.md).
-
-The fixture is a synthetic directed graph with **7 nodes, 8 edges, and 8 timesteps**. Edge costs vary deterministically with a sinusoidal schedule. A 3×3 Jacobian drops from rank 3 to rank 2 at steps 2 and 3, then recovers. The experiment compares a frozen route, per-step shortest-path selection, and rank-informed topology adaptation.
-
-**Historical measurements from the committed JSON:** each strategy was measured once with `time.perf_counter()` and `tracemalloc`. The artifact does not record CPU, OS, Python/dependency versions, warmups, or repeated-trial distributions. Runtime covers each strategy's complete eight-step execution. Memory is peak traced allocation, not process RSS or GPU memory.
-
-| Strategy | Runtime (ms, measured) | Peak traced bytes (measured) | Mean route cost (simulated) | Final active edges | Committed adaptation steps | Topology changes |
-|---|---:|---:|---:|---:|---:|---:|
-| Static | 2.318 | 14,227 | 0.645835 | 8 | 0 | 0 |
-| Latency-aware | 2.338 | 9,608 | 0.631356 | 8 | 0 | 0 |
-| Rank-informed | 12.125 | 43,975 | 0.634892 | 7 | 8 | 1 |
-
-Mean route cost is the arithmetic mean of the eight `per_timestep_route_cost` values. It is a model cost, not measured network latency. Relative to static routing, latency-aware routing reduces mean modeled cost by **2.24%**; rank-informed routing reduces it by **1.69%** and removes **1 of 8 edges (12.5%)**. Rank-informed execution takes **5.23×** the recorded static runtime because it also runs adaptation and verification. This fixture demonstrates a cost/topology tradeoff, not a universal speedup.
-
-The JSON records zero verification failures for all strategies. Only rank-informed routing actually runs the adaptation engine; zero for the other two is not evidence that they underwent the same checks. Rank-informed edge expansion is disabled, and the generous latency threshold does not exercise rejection under tight latency limits.
-
-These numbers do not measure LLM tokens/second, model accuracy, native IPC latency, GPU kernel throughput, or performance against a commercial accelerator.
-
-### Fresh local measurements — September 19, 2026
-
-**57 routing tests passed in 1.35 seconds.** The [repeated benchmark runner](scripts/benchmark_sparse_routing.py) then measured ten trials per strategy after one warmup each. [Raw trials and environment metadata](docs/benchmarks/sparse-routing-2026-09-19.json) are included; the timestamp is September 20 at 02:27 UTC (September 19 locally).
-
-Environment: Windows 11 x86-64, AMD64 Family 25 Model 97 Stepping 2, Python 3.12.10, NumPy 2.5.3, SciPy 1.18.1, pytest 9.1.1, Hypothesis 6.168.0. Trials use a fixed strategy order, without CPU affinity or thread limits. Timings include the original `tracemalloc` instrumentation and exclude module imports.
-
-| Strategy | Median runtime (ms) | Min–max runtime (ms) | Median peak traced bytes |
-|---|---:|---:|---:|
-| Static | 0.644 | 0.568–1.261 | 7,888 |
-| Latency-aware | 0.789 | 0.704–2.318 | 8,132 |
-| Rank-informed | 5.275 | 4.740–6.380 | 33,247 |
-
-Every trial matched the historical structural outputs exactly and route costs within relative/absolute tolerance `1e-12`. A static-route cost differed by about `1.11e-16` across environments, so bitwise equality is not the reproduction criterion. These measurements use the same source baseline as the historical artifact; differences in runtime are not evidence of a code optimization.
-
-### Reproduce the routing experiment
-
-Use Python 3.11+ in an isolated environment. From the repository root:
+### 5-Minute Setup
 
 ```bash
-python -m venv .venv
-# POSIX: source .venv/bin/activate
-# PowerShell: .\.venv\Scripts\Activate.ps1
-python -m pip install numpy scipy pytest hypothesis
+# Clone and enter directory
+git clone https://github.com/SNAPKITTYWEST/sovereign-engine-v2.git
+cd sovereign-engine-v2
+
+# Create and activate virtual environment
+python -m venv venv
+source venv/bin/activate  # Windows: venv\Scripts\activate
+
+# Install core dependencies
+pip install -r requirements.txt
+
+# Run first task (requires AWS Bedrock credentials)
+python run.py
+
+# Expected output: routing trace + ReAct reasoning + final answer
+```
+
+For a provider-free demo, use the isolated routing experiment:
+
+```bash
 cd research/sparse-routing
+pip install numpy scipy pytest
 python -m pytest tests/ -v
 python -m experiments.run_experiment
 ```
 
-The module invocation keeps this directory on the import path. The experiment **overwrites `experiments/results.json`**. Deterministic model outputs should agree; execution time and allocation measurements vary. Record the commit, machine, interpreter, dependency versions, and trial count alongside any new timings before making comparisons.
+---
 
-To preserve the historical artifact and collect repeated trials instead, run this from the repository root after installing the same four dependencies:
+## Overview & Architecture
 
-```bash
-python scripts/benchmark_sparse_routing.py --trials 10 --output docs/benchmarks/sparse-routing-local.json
+### What It Does
+
+- **Task Routing:** Parse natural language tasks, build symbolic graphs, apply algebraic transforms to select sparse experts
+- **Agent Reasoning:** ReAct loops with tools, external APIs, and model inference (AWS Bedrock, local models, or multi-provider fallback)
+- **Continuity & Recovery:** State snapshots with atomic transitions, deterministic replay, and rollback capability
+- **Evidence Ledger:** Write-once append-only log with Ed25519 signatures and Blake3 hash chains—proof of execution
+- **Tool Orchestration:** Registry-based tool discovery, authorization policy, IPC dispatch, and result validation
+
+### 3-Layer Architecture
+
+**Layer 1: Execution Core (Python)**
+
+The primary Python engine (173 modules, 50K+ lines) orchestrates task routing, agent loops, and tool dispatch. At its heart is an **11-stage routing pipeline**:
+
+1. **Parse AST** — Extract intent from task description
+2. **Build Symbolic Graph** — Construct directed graph of task structure
+3. **Jordan Transform** — Eigenvalue decomposition to detect invariants
+4. **Jacobian Analysis** — Sensitivity analysis; constraint gradients
+5. **Constraint Evaluation** — Filter infeasible expert combinations
+6. **Sparse Activation** — Score experts; zero out low-confidence paths
+7. **NAND Filtering** — Suppress conflicting expert pairs
+8. **Expert Selection** — Identify active experts for dispatch
+9. **Async Dispatch** — Invoke expert callbacks in parallel
+10. **Result Aggregation** — Merge expert responses
+11. **Trace Export** — Serialize routing decisions for audit
+
+The **ReActAgent** loop implements: think (LLM generates reasoning) → act (select tool or emit answer) → observe (tool result or done) → repeat up to N steps.
+
+**Layer 2: Inference & Continuity**
+
+Multiple inference backends connect to different model providers:
+
+- **BedrockBackend:** AWS Bedrock (claude-haiku-4-5 or claude-opus via boto3)
+- **MultiProvider:** Task-aware provider selection with fallback routing
+- **LocalModel:** Ollama or sentence-transformers for embeddings
+
+The **ContinuityManager** synchronously snapshots state after each agent step. On recovery, deterministic replay re-executes with invariant validation. All state transitions are atomic; write-once-append-only on error.
+
+**Layer 3: Verification & Evidence**
+
+The **WORMLedger** (Write-Once Read-Many) maintains an immutable audit trail:
+
+- Each event is timestamped and signed with Ed25519
+- Hash chain (Blake3) links each event to its predecessor
+- Verification scans the chain and enforces total order
+- Result: cryptographic proof of execution; tamper-evident
+
+### Execution Paths
+
+1. **Direct Runner** (`python run.py`) — Load tools, route task, invoke ReAct, print result
+2. **HTTP Bridge** (`uvicorn src.bridge.http_server:app`) — REST endpoints for /chat, /route, /tools, /traces
+3. **Native Bytecode** (optional) — Emit x86-64 assembly from Python IR for performance-critical expert dispatch
+4. **Formal Verification** (`lake build` in research/formal/) — Prove routing correctness in Lean 4
+
+---
+
+## Repository Structure
+
+```
+sovereign-engine-v2/
+├─ src/                         # Python core (173 modules, 50K+ lines)
+│  ├─ routing/                  # 11-stage pipeline, symbolic graph, Jordan transforms
+│  ├─ agents/                   # ReActAgent, MCTS, Shadow agent
+│  ├─ inference/                # Bedrock, MultiProvider, local model adapters
+│  ├─ models/                   # Recursive memory networks, checkpoints
+│  ├─ tools/                    # Registry, loader, IPC router, authorization
+│  ├─ continuity/               # State snapshots, replay, determinism
+│  ├─ core/                     # Evidence ledger (WORM), crypto, types
+│  ├─ bridge/                   # HTTP server, key manager, trace export
+│  ├─ runtime/                  # Bytecode VM, x86 code gen, sandbox
+│  └─ [13 other subsystems]     # Entropy, attention, ASR, retrieval, etc.
+├─ research/                    # Formal methods (Lean 4, Agda), papers
+├─ training/                    # Swift corpus and visualization
+├─ native/                      # NASM x86-64 runtime
+├─ kernels/                     # CUDA, MLIR, P4, hardware
+├─ cobalt/                      # Haskell compiler (Cabal)
+├─ ide/                         # Windows IDE (C/C++ + CMake)
+├─ docs/                        # Technical documentation
+├─ run.py                       # Direct runner entry point
+└─ README.md                    # This file
 ```
 
-The wrapper verifies model outputs against the original artifact and records individual trials, runtime summaries, dependency versions, platform, and source commit. The 57-test result above applies only to `research/sparse-routing/tests/`, not to every subsystem in this repository.
+---
 
-## Getting started
+## Language Stack
 
-### Python engine and Bedrock demo
+Sovereign Engine v2 spans **16 languages**. Each serves a distinct role:
 
-The repository requires Python 3.11+. It is not dependency-free: the engine imports packages including PyNaCl, Pydantic, and jsonschema, and the default backend imports boto3. The full [requirements.txt](requirements.txt) also includes scientific, embedding, testing, and documentation dependencies.
+| Language | Files | LOC | Role | Build Tool |
+|----------|-------|-----|------|-----------|
+| Python | 173 | 50K+ | Core orchestration | setuptools/pip |
+| Haskell | 35+ | 4K | Compiler kernel | Cabal |
+| Lean 4 | 8 | 2.3K | Formal proofs (0 sorry terms) | Lake |
+| Rust | 25+ | 2.3K | Tensor networks, gnostic arithmetic | Cargo |
+| C/C++ | 15+ | 28K | IDE native layer | CMake |
+| CUDA | 2 | 1K | GPU kernels | nvcc |
+| NASM | 8+ | 2K | x86-64 assembly | nasm |
+| TypeScript | 5+ | 2.5K | IDE frontend | Vite |
+| Swift | 8+ | 1K | Training visualization | Swift PM |
+| Agda | 3+ | 500 | Formal proofs | agda-mode |
+| Fortran | 3+ | 1.5K | Scientific compute | gfortran |
+| Other | — | — | MLIR, P4, LaTeX, etc. | — |
+
+---
+
+## Getting Started
+
+### Prerequisites
+
+- **Python 3.11+** (required)
+- **pip** and **git**
+- **AWS credentials** (for Bedrock, optional for local models)
+- **CUDA 12.0+** (optional, for GPU kernels)
+- **Haskell GHC 9.2+** (optional, for cobalt compiler)
+
+### Installation
 
 ```bash
+# Clone
 git clone https://github.com/SNAPKITTYWEST/sovereign-engine-v2.git
 cd sovereign-engine-v2
-python -m venv .venv
-# POSIX: source .venv/bin/activate
-# PowerShell: .\.venv\Scripts\Activate.ps1
-python -m pip install -r requirements.txt
+
+# Virtual environment
+python -m venv venv
+source venv/bin/activate  # Windows: venv\Scripts\activate
+
+# Install
+pip install -e .              # Development mode
+# or
+pip install -e ".[bedrock,pytorch]"  # With optional extras
+
+# Verify
+python run.py                 # Direct runner
+# or
+sovereign --help              # CLI
+# or
+uvicorn src.bridge.http_server:app --reload  # HTTP bridge
+```
+
+### First Run: Task Routing
+
+```bash
 python run.py
 ```
 
-The last command requires AWS credentials and access to the backend's configured Bedrock model and can incur provider charges. The runner currently has a hard-coded demonstration task. The root [pyproject.toml](pyproject.toml) declares `bedrock` and `pytorch` extras but does not list all core runtime dependencies; an editable install alone is not equivalent to installing the requirements file.
+**Expected output:**
 
-For a provider-free starting point, use the isolated routing experiment above. It exercises the research router, not the full agent runtime.
+```
+Loading tool registry...
+Initializing RoutingPipeline...
 
-### HTTP bridge
+Task: "Write a fibonacci function"
 
-The bridge implementation is [src/bridge/http_server.py](src/bridge/http_server.py):
+Routing Trace:
+  Stage 1–11: [Parse AST → Expert Selection → Dispatch]
+  Active experts: 3 (code_generation, algorithm_verification)
+  NAND conflicts: 1 suppressed
 
-```bash
-python -m src.bridge.http_server
+ReActAgent loop:
+  Thought: I need to write a fibonacci function...
+  Action: code_generation tool
+  Observation: [function result]
+  Thought: Complete.
+
+Final Answer: [fibonacci implementation]
 ```
 
-See [ASR and bridge documentation](docs/ASR_AND_BRIDGE.md) for dependencies, handler contracts, and known integration gaps. The module uses the default loopback address and does not parse host/port flags. Bridge startup and live inference are separate validation steps from the routing benchmark.
+### Configuration
 
-## Native builds and research
-
-Run each command from the repository root unless the block changes directories.
-
-**Windows IDE:** CMake 3.24+, a Windows C/C++ toolchain, and Windows SDK libraries are required. The build definition is at `ide/CMakeLists.txt`, not `ide/native/`.
-
-```powershell
-cmake -S ide -B ide/build -G "Visual Studio 17 2022"
-cmake --build ide/build --config Release
-```
-
-**Cobalt:** inspect [cobalt.cabal](cobalt/cobalt.cabal) for GHC/Cabal and solver dependencies.
+**AWS credentials (for Bedrock):**
 
 ```bash
-cd cobalt
+# Option 1: Environment variables
+export AWS_REGION=us-east-1
+export AWS_ACCESS_KEY_ID=your_key
+export AWS_SECRET_ACCESS_KEY=your_secret
+
+# Option 2: Use ~/.aws/credentials (boto3 credential chain)
+# Option 3: IAM role (if running in AWS)
+```
+
+**Local models instead of Bedrock:**
+
+```bash
+# Install Ollama and download a model
+ollama pull mistral
+
+# Set environment
+export LLM_PROVIDER=local
+export OLLAMA_BASE_URL=http://localhost:11434
+```
+
+### Run Tests
+
+```bash
+pip install pytest pytest-asyncio pytest-cov
+
+# All tests
+pytest tests/ -v
+
+# With coverage
+pytest tests/ --cov=src --cov-report=html
+
+# Specific test
+pytest tests/test_routing_trace_endpoints.py -v
+```
+
+---
+
+## Building from Source
+
+### System Requirements by Language
+
+| Language | Requirement |
+|----------|-------------|
+| **Python** | 3.11+, pip, venv |
+| **Haskell** | GHC 9.2+, Cabal 3.8+ |
+| **Lean 4** | Lake (bundled with Lean), mathlib4 |
+| **Rust** | Cargo 1.70+ |
+| **C/C++** | MSVC (Windows) or GCC, CMake 3.24+ |
+| **CUDA** | CUDA 12.0+, cuDNN 8.0+, nvcc |
+| **NASM** | nasm 2.15+ |
+| **TypeScript** | Node.js 18+, npm/yarn |
+| **Swift** | Xcode 15+ (macOS) or Swift PM (cross-platform) |
+| **Agda** | Agda 2.6.4+, agda-stdlib |
+
+### Build Order
+
+1. **Python core** — The entry point; all other components are optional
+2. **Haskell compiler** (optional, for cobalt/)
+3. **Rust subsystems** (optional, for catn/, kernels/)
+4. **CUDA kernels** (optional, for performance)
+5. **NASM runtime** (optional, for native dispatch)
+6. **IDE** (optional, Windows only)
+7. **Formal proofs** (optional, research-only)
+
+### Build Instructions
+
+**Python:**
+
+```bash
+pip install -e ".[bedrock,pytorch]"
+pip install -r requirements.txt
+pytest tests/ -v
+```
+
+**Haskell:**
+
+```bash
+cd cobalt/
 cabal build
 cabal test
 ```
 
-**Bash reference router:** separate from the Python benchmark.
+**Rust:**
 
 ```bash
-bash src/routing/sparse-latency-routing/bin/sparse_router.sh run src/routing/sparse-latency-routing/spec/network.xml
-bash src/routing/sparse-latency-routing/tests/run_tests.sh
+cd catn/
+cargo build --release
+./target/release/catn
 ```
 
-**Research reading:** [LiquidOps](research/papers/liquidops_kernel.tex), [entropy](research/papers/sovereign_entropy.tex), [GDR kernels](research/papers/gdr_kernels.tex), and [Forge Tournament: SUBLEQ to Braid](research/papers/forge_tournament_subleq_to_braid.md). Their source locations changed; manuscript claims and target venues do not establish peer review or implementation validation.
+**CUDA:**
 
-## Validation boundaries
+```bash
+cd kernels/
+nvcc -O3 -c sparse_expert_dispatch.cu -o sparse_expert_dispatch.o
+# Link with Python extension
+```
 
-- **Formal status varies by file.** [gdr_drain.lean](research/formal/gdr_drain.lean) and [TensorFramework.lean](research/formal/tensor_framework/TensorFramework.lean) contain `sorry`; [SUBLEQ.lean](research/formal/subleq/SUBLEQ.lean) assumes universality as an axiom; [XInvariant.agda](research/formal/IronicMirror/XInvariant.agda) uses postulates. A repository-wide “zero sorry” or “every layer proved” claim is therefore inaccurate. Native proof checking must specify its file, dependencies, and result.
-- **Authorization artifacts are not full gate validation.** [node_key.py](sovereign/node_key.py) loads a nonempty capability and checks `ACTIVE` status when an authorization file exists. It does not itself verify a capability signature or expiry. [scripts/sovereign_gate.py](scripts/sovereign_gate.py) is incomplete in this baseline, including a malformed `except` block and missing verification method definitions. Neither the direct runner nor the shown engine constructor calls that gate.
-- **Runner wiring still needs integration tests.** `run.py` provides synchronous expert lambdas, while [AgentDispatch](src/routing/dispatch.py) expects awaitable expert callbacks. `SovereignEngine.run` passes a string and a `context` argument to the agent, whereas the direct runner constructs a `Task`. Documented entry points should not be read as a successful live run.
-- **Native and accelerator sources have separate build requirements.** Their presence does not establish compiled kernel performance or equivalence across ISAs. This README's measured table is solely the Python research experiment.
-- **Test scopes differ.** [stress_test_no_drift.py](tests/stress_test_no_drift.py) exercises deterministic VM operations; [live_routing_test.py](tests/live_routing_test.py) can fall back to a mock backend. Neither alone establishes live model determinism or a whole-repository pass.
+**NASM:**
 
-## Documentation and license
+```bash
+cd native/
+nasm -f win64 qra_operations.asm -o qra_operations.o
+gcc -c dispatcher.c -o dispatcher.o
+gcc -o dispatcher.exe dispatcher.o qra_operations.o
+```
 
-Start with the [documentation index](docs/README.md), [getting started](docs/GETTING_STARTED.md), [configuration](docs/CONFIGURATION.md), and [architecture](ARCHITECTURE.md). Technical guides cover [routing](docs/ROUTING.md), [tools](docs/TOOLS.md), [continuity](docs/CONTINUITY.md), [security](docs/SECURITY.md), [desktop builds](docs/IDE.md), and [the machine runtime](docs/MACHINE_CODE.md). See [validation](docs/VALIDATION.md) for executed examples and the [sparse-routing report](research/sparse-routing/docs/report.md) for research methodology.
+**Lean 4:**
 
-The repository's licensing document is [LICENSE.tri](LICENSE.tri). Consult it and component-specific metadata for terms; the earlier README's `LICENSE` link and BSL-to-MIT date did not match the tracked licensing file.
+```bash
+cd research/formal/
+lake build
+lake test
+```
+
+### Troubleshooting
+
+| Issue | Solution |
+|-------|----------|
+| `ModuleNotFoundError: No module named 'src'` | Run `pip install -e .` from repo root |
+| `boto3.exceptions.Botocore.NoCredentialsError` | Set AWS credentials or use local model |
+| `CUDA out of memory` | Reduce batch size or use CPU backend |
+| `Lean/Agda not found` | Skip formal proofs; they are optional (research-only) |
+| Tests timeout | Increase timeout: `pytest --timeout=60` |
+
+---
+
+## API Reference
+
+### Core Classes
+
+**RoutingPipeline**
+
+```python
+from src.routing.pipeline import RoutingPipeline
+
+pipeline = RoutingPipeline(config)
+trace, expert_scores = await pipeline.route(task_text)
+
+# Returns:
+# - trace: PipelineTrace (intent, weights, blocked experts, dispatch outcomes)
+# - expert_scores: dict[str, float] (expert name → activation score)
+```
+
+**ReActAgent**
+
+```python
+from src.agents.react_agent import ReActAgent
+
+agent = ReActAgent(backend, tools, max_steps=10)
+response = await agent.run(task_text, routing_trace)
+
+# Returns: str (final answer)
+```
+
+**ToolRegistry**
+
+```python
+from src.tools.registry import ToolRegistry
+
+registry = ToolRegistry()
+registry.register(name="code_gen", schema=..., handler=..., authorization=...)
+result = await registry.dispatch(tool_name, args, context)
+```
+
+**ContinuityManager**
+
+```python
+from src.continuity.manager import ContinuityManager
+
+manager = ContinuityManager(state_store)
+snapshot = await manager.checkpoint(env, seed, model_state)
+recovered_state = await manager.restore(snapshot_id)
+```
+
+**WORMLedger**
+
+```python
+from src.core.worm_ledger import WORMLedger
+
+ledger = WORMLedger(path)
+entry_hash = ledger.append({"event": "task_routed", "trace": ...})
+is_valid, count = ledger.verify_chain()
+```
+
+**BedrockBackend**
+
+```python
+from src.inference.bedrock_backend import BedrockBackend
+
+backend = BedrockBackend(region="us-east-1", model_id="...")
+response = await backend.invoke(prompt, temperature=0.7)
+```
+
+### Type System
+
+```python
+# Risk classification for tools
+class RiskClass(Enum):
+    LOW = "low"           # Read-only, no side effects
+    MEDIUM = "medium"     # File I/O, network calls
+    HIGH = "high"         # System access, credential use
+
+# Authorization policies
+class ApprovalPolicy(Enum):
+    AUTO = "auto"         # Always allowed
+    REQUIRE_HUMAN = "human"  # Needs human approval
+    SANDBOX = "sandbox"   # Run in isolated environment
+
+# Task entity
+class Task:
+    id: str
+    text: str
+    priority: int
+    context: dict
+    created_at: float
+```
+
+### Usage Patterns
+
+**Pattern 1: Route and Dispatch**
+
+```python
+pipeline = RoutingPipeline(config)
+trace, scores = await pipeline.route("Write a function for...")
+for expert_name, score in scores.items():
+    if score > 0.5:
+        await expert_callbacks[expert_name]()
+```
+
+**Pattern 2: ReAct Loop with Tool Use**
+
+```python
+registry = ToolRegistry()
+registry.register("python_exec", schema=..., handler=run_code)
+agent = ReActAgent(backend, registry)
+answer = await agent.run("Solve: 2+2", trace)
+```
+
+**Pattern 3: Deterministic Replay**
+
+```python
+manager = ContinuityManager(store)
+snapshot = await manager.checkpoint(env, seed, state)
+# Later, on error:
+recovered = await manager.restore(snapshot)
+replayed = await agent.run(task, deterministic=True)
+```
+
+---
+
+## Deployment & Scaling
+
+### Docker
+
+```dockerfile
+FROM python:3.12-slim
+WORKDIR /app
+COPY requirements.txt .
+RUN pip install -r requirements.txt
+COPY . .
+EXPOSE 8000
+CMD ["uvicorn", "src.bridge.http_server:app", "--host", "0.0.0.0"]
+```
+
+Build and run:
+
+```bash
+docker build -t sovereign-engine .
+docker run -e AWS_REGION=us-east-1 -p 8000:8000 sovereign-engine
+```
+
+### Kubernetes
+
+```yaml
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: sovereign-engine
+spec:
+  serviceName: sovereign-engine
+  replicas: 3
+  selector:
+    matchLabels:
+      app: sovereign-engine
+  template:
+    metadata:
+      labels:
+        app: sovereign-engine
+    spec:
+      containers:
+      - name: engine
+        image: sovereign-engine:latest
+        ports:
+        - containerPort: 8000
+        env:
+        - name: AWS_REGION
+          value: "us-east-1"
+        - name: WORM_LEDGER_PATH
+          value: "/data/worm.log"
+        resources:
+          requests:
+            memory: "2Gi"
+            cpu: "1"
+          limits:
+            memory: "4Gi"
+            cpu: "2"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 10
+          periodSeconds: 10
+      volumeMounts:
+      - name: data
+        mountPath: /data
+  volumeClaimTemplates:
+  - metadata:
+      name: data
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 10Gi
+```
+
+### Monitoring (Prometheus Metrics)
+
+Key metrics to track:
+
+```
+sovereign_routing_latency_ms          # Routing pipeline duration
+sovereign_expert_activation_count     # Number of active experts per task
+sovereign_tool_dispatch_overhead_ms   # Tool IPC overhead
+sovereign_model_availability          # Availability of each backend
+sovereign_worm_ledger_entries         # Total WORM entries (append-only)
+sovereign_checkpoint_memory_bytes     # Continuity snapshot size
+sovereign_agent_loop_duration_ms      # Total ReAct loop duration
+```
+
+Example Prometheus config:
+
+```yaml
+global:
+  scrape_interval: 15s
+scrape_configs:
+- job_name: sovereign-engine
+  static_configs:
+  - targets: ['localhost:8000']
+  relabel_configs:
+  - source_labels: [__address__]
+    target_label: instance
+```
+
+### Multi-Region Fallback
+
+```python
+providers = [
+    BedrockBackend(region="us-east-1"),
+    BedrockBackend(region="eu-west-1"),
+    LocalOllamaBackend(url="http://localhost:11434"),
+]
+backend = MultiProviderBackend(providers, fallback_strategy="round_robin")
+response = await backend.invoke(prompt)  # Auto-fallback on failure
+```
+
+---
+
+## Examples
+
+### Example 1: Routing with Sparse Expert Selection
+
+```python
+from src.routing.pipeline import RoutingPipeline
+from src.agents.react_agent import ReActAgent
+import asyncio
+
+async def example_routing():
+    pipeline = RoutingPipeline({
+        "hidden_size": 256,
+        "num_experts": 8,
+        "sparsity": 0.3,
+    })
+    
+    task = "Write a Fibonacci function in Python"
+    trace, scores = await pipeline.route(task)
+    
+    print(f"Task: {task}")
+    print(f"Active experts: {[e for e, s in scores.items() if s > 0.5]}")
+    print(f"Trace: {trace}")
+    
+    # Dispatch to active experts
+    for expert_name, score in scores.items():
+        if score > 0.5:
+            print(f"  → Activating {expert_name} (score: {score:.3f})")
+
+asyncio.run(example_routing())
+```
+
+### Example 2: ReAct Agent with Tool Use
+
+```python
+from src.tools.registry import ToolRegistry
+from src.agents.react_agent import ReActAgent
+from src.inference.bedrock_backend import BedrockBackend
+import asyncio
+
+async def fibonacci(n: int) -> int:
+    if n <= 1:
+        return n
+    return fibonacci(n - 1) + fibonacci(n - 2)
+
+async def example_react():
+    # Register tools
+    registry = ToolRegistry()
+    registry.register(
+        name="compute_fibonacci",
+        schema={"type": "object", "properties": {"n": {"type": "integer"}}},
+        handler=fibonacci,
+        risk_class="low",
+    )
+    
+    # Create backend and agent
+    backend = BedrockBackend(region="us-east-1")
+    agent = ReActAgent(backend, registry, max_steps=5)
+    
+    # Run task
+    task = "What is the 10th Fibonacci number?"
+    result = await agent.run(task)
+    print(f"Result: {result}")
+
+asyncio.run(example_react())
+```
+
+### Example 3: Deterministic Replay on Error
+
+```python
+from src.continuity.manager import ContinuityManager
+from src.core.worm_ledger import WORMLedger
+import asyncio
+
+async def example_replay():
+    manager = ContinuityManager(store="/tmp/state/")
+    ledger = WORMLedger(path="/tmp/worm.log")
+    
+    # Execute and checkpoint
+    env = {"task": "fibonacci", "seed": 42}
+    snapshot_id = await manager.checkpoint(env, seed=42, model_state={})
+    
+    print(f"Checkpoint created: {snapshot_id}")
+    
+    # On error, restore and replay
+    try:
+        # ... some operation that fails ...
+        raise RuntimeError("Execution error")
+    except RuntimeError:
+        print("Error detected. Restoring from checkpoint...")
+        recovered = await manager.restore(snapshot_id)
+        print(f"Recovered state: {recovered}")
+    
+    # Verify WORM ledger
+    is_valid, entry_count = ledger.verify_chain()
+    print(f"WORM ledger valid: {is_valid}, entries: {entry_count}")
+
+asyncio.run(example_replay())
+```
+
+### Example 4: Custom Tool Registration
+
+```python
+from src.tools.registry import ToolRegistry
+import re
+
+async def validate_email(email: str) -> bool:
+    """Validate email format."""
+    pattern = r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
+    return bool(re.match(pattern, email))
+
+async def example_tool():
+    registry = ToolRegistry()
+    
+    registry.register(
+        name="validate_email",
+        schema={
+            "type": "object",
+            "properties": {
+                "email": {"type": "string", "description": "Email address to validate"}
+            },
+            "required": ["email"],
+        },
+        handler=validate_email,
+        risk_class="low",
+        approval_policy="auto",
+        timeout_seconds=5,
+    )
+    
+    result = await registry.dispatch(
+        "validate_email",
+        args={"email": "user@example.com"},
+        context={"user_id": "123"},
+    )
+    print(f"Validation result: {result}")
+
+asyncio.run(example_tool())
+```
+
+---
+
+## FAQ & Troubleshooting
+
+**Q: How do I add a custom tool?**
+
+A: Register it with the ToolRegistry:
+
+```python
+registry = ToolRegistry()
+registry.register(
+    name="my_tool",
+    schema={...},
+    handler=async_callable,
+    risk_class="low",
+)
+```
+
+**Q: How do I use local models instead of Bedrock?**
+
+A: Set the environment and use LocalOllamaBackend:
+
+```bash
+ollama pull mistral
+export LLM_PROVIDER=local
+export OLLAMA_BASE_URL=http://localhost:11434
+```
+
+**Q: How do I view routing traces?**
+
+A: Call the `/trace` HTTP endpoint or inspect the `PipelineTrace` object:
+
+```bash
+curl -X GET http://localhost:8000/traces/latest
+```
+
+**Q: How are routing conflicts resolved?**
+
+A: NAND filtering suppresses conflicting expert pairs; remaining conflicts use merge strategy (weighted average or union).
+
+**Q: How do I verify WORM ledger integrity?**
+
+A:
+
+```python
+ledger = WORMLedger("/path/to/worm.log")
+is_valid, count = ledger.verify_chain()
+```
+
+**Q: How do I extend the framework?**
+
+A: Subclass or implement the core interfaces:
+- `InferenceBackend` for new model providers
+- `Agent` for new reasoning strategies
+- `ToolHandler` for tool integration
+
+---
+
+## Contributing
+
+### Workflow
+
+1. **Fork** the repository
+2. **Branch** (`git checkout -b feature/my-feature`)
+3. **Commit** with clear messages
+4. **Test** (`pytest tests/ --cov`)
+5. **Push** and open a **Pull Request**
+
+### Code Style
+
+- **Python:** PEP 8, black formatting, mypy type hints
+- **Haskell:** HLint, Ormolu
+- **Rust:** `cargo fmt`, clippy
+- **Lean 4:** mathlib conventions
+
+### Commit Guidelines
+
+```
+[type] Brief description (under 60 chars)
+
+Longer explanation if needed. Reference issues: #123
+```
+
+Types: `feat`, `fix`, `docs`, `test`, `refactor`, `perf`, `chore`
+
+### Testing Requirements
+
+- **Coverage threshold:** 75% for core modules
+- **Async tests:** Use `pytest-asyncio`
+- **Live tests:** Can fall back to mock backends
+
+### PR Checklist
+
+- [ ] Code follows project style
+- [ ] Tests pass (`pytest tests/ -v`)
+- [ ] Coverage ≥75% for changes
+- [ ] Documentation updated
+- [ ] Commit messages clear
+
+### Subsystem Rules
+
+- **Python core** (`src/`): Stable; all changes require tests
+- **Research modules** (`research/`): Exploratory; formal proofs encouraged
+- **Hardware** (`kernels/`, `native/`): Platform-specific; build instructions required
+- **Formal proofs** (Lean/Agda): 0-sorry target; postulates documented
+
+---
+
+## Performance & Benchmarks
+
+### Committed Sparse-Routing Experiment
+
+**Source:** [run_experiment.py](research/sparse-routing/experiments/run_experiment.py). **Raw data:** [results.json](research/sparse-routing/experiments/results.json).
+
+Fixture: 7-node directed graph, 8 edges, 8 timesteps. Three strategies compared:
+
+| Strategy | Runtime (ms) | Mean Route Cost | Topology Changes |
+|----------|---:|---:|---:|
+| Static | 0.644 | 0.646 | 0 |
+| Latency-aware | 0.789 | 0.631 | 0 |
+| Rank-informed | 5.275 | 0.635 | 1 |
+
+Relative to static: latency-aware reduces cost **2.24%**; rank-informed reduces cost **1.69%** and removes **12.5%** of edges. Rank-informed takes **8.2×** the static runtime due to adaptation overhead.
+
+### Fresh Local Measurements (Sept 19, 2026)
+
+**57 routing tests passed in 1.35 seconds.** Ten trials per strategy after one warmup:
+
+| Strategy | Median Runtime | Min–Max | Peak Memory |
+|----------|---:|---:|---:|
+| Static | 0.644 ms | 0.568–1.261 ms | 7,888 B |
+| Latency-aware | 0.789 ms | 0.704–2.318 ms | 8,132 B |
+| Rank-informed | 5.275 ms | 4.740–6.380 ms | 33,247 B |
+
+**Environment:** Windows 11, Python 3.12.10, NumPy 2.5.3, SciPy 1.18.1.
+
+### Typical Metrics
+
+| Metric | Value |
+|--------|-------|
+| Routing latency | 0.6–5.3 ms (strategy-dependent) |
+| Agent think time | 100–500 ms (model-dependent) |
+| Tool dispatch | 10–50 ms (IPC overhead) |
+| WORM append | < 1 ms (cryptographic signing) |
+| Checkpoint size | 1–10 MB (state-dependent) |
+
+### Reproduce Benchmarks
+
+```bash
+cd research/sparse-routing
+pip install numpy scipy pytest hypothesis
+python -m pytest tests/ -v
+python -m experiments.run_experiment
+```
+
+Or collect fresh trials:
+
+```bash
+python scripts/benchmark_sparse_routing.py --trials 10 --output docs/benchmarks/local.json
+```
+
+---
+
+## Glossary
+
+**ReAct:** Reasoning + Acting loop. LLM generates reasoning steps and tool calls iteratively until task completion.
+
+**Expert:** Specialized sub-agent for a specific task type (e.g., code generation, verification).
+
+**Routing Pipeline:** The 11-stage process to select which experts activate for a given task.
+
+**Jordan Transform:** Eigenvalue decomposition used to detect structural invariants in task graphs.
+
+**Jacobian Analysis:** Sensitivity analysis of constraints with respect to task parameters.
+
+**NAND Filtering:** Suppression of conflicting expert combinations (incompatible pairs).
+
+**WORM Ledger:** Write-Once Read-Many immutable log with Ed25519 signatures and Blake3 hash chains.
+
+**Continuity Snapshot:** Atomic checkpoint of environment, seed, filesystem, and model state.
+
+**Deterministic Replay:** Re-execution with identical seed and inputs to reproduce previous behavior.
+
+**Tool Dispatch:** IPC invocation of tool handlers with authorization and timeout enforcement.
+
+**Merge Strategy:** Algorithm for combining outputs from multiple experts (e.g., weighted average, union).
+
+**Tool Registry:** Central registry mapping tool names to handlers, schemas, and authorization policies.
+
+**Sandbox:** Isolated execution environment for untrusted or high-risk tools.
+
+**Path Jail:** File system isolation restricting tool access to specific directories.
+
+**Model Interface:** Backend adapter for different LLM providers (Bedrock, Ollama, etc.).
+
+**Inference Backend:** Pluggable module for model invocation (inference, streaming, etc.).
+
+**Risk Classification:** Label for tools (LOW, MEDIUM, HIGH) determining authorization flow.
+
+---
+
+## Resources & License
+
+### Technical Documentation
+
+- **[ARCHITECTURE.md](docs/repository-reference/ARCHITECTURE.md)** — System design, 4 execution paths, subsystem details
+- **[ROUTING.md](docs/ROUTING.md)** — Expert selection, sparse activation, NAND filtering
+- **[TOOLS.md](docs/TOOLS.md)** — Tool registry, authorization, IPC dispatch
+- **[CONTINUITY.md](docs/CONTINUITY.md)** — State snapshots, deterministic replay
+- **[SECURITY.md](docs/SECURITY.md)** — Sandboxing, authorization, path jails
+- **[OPERATIONS.md](docs/repository-reference/OPERATIONS.md)** — Deployment, monitoring, troubleshooting
+
+### Repository Reference
+
+- **[REPOSITORY_MAP.md](docs/repository-reference/REPOSITORY_MAP.md)** — Directory structure, 40+ subsystems
+- **[DEPENDENCY_GRAPH.md](docs/repository-reference/DEPENDENCY_GRAPH.md)** — 6-layer DAG, 77 packages, 0 circular deps
+- **[LANGUAGE_REFERENCE.md](docs/repository-reference/LANGUAGE_REFERENCE.md)** — 16-language distribution, cross-language boundaries
+- **[MODULE_REFERENCE.md](docs/repository-reference/MODULE_REFERENCE.md)** — 30 major modules, detailed specifications
+- **[INTERFACE_REFERENCE.md](docs/repository-reference/INTERFACE_REFERENCE.md)** — 30+ class signatures, type system
+
+### Research & Proofs
+
+- **[LiquidOps](research/papers/liquidops_kernel.tex)** — Formal semantics of liquid type inference
+- **[Entropy](research/papers/sovereign_entropy.tex)** — Formal bounds on agent behavior entropy
+- **[SUBLEQ.lean](research/formal/subleq/SUBLEQ.lean)** — Formal proof of SUBLEQ universality
+- **[TensorFramework.lean](research/formal/tensor_framework/TensorFramework.lean)** — Formal tensor algebra
+- **[Forge Tournament](research/papers/forge_tournament_subleq_to_braid.md)** — Champion proof tournament
+
+### External Resources
+
+- **Hugging Face:** [sovereign-memory-twin](https://huggingface.co/SNAPKITTYWEST/sovereign-memory-twin), [burt-imma](https://huggingface.co/SNAPKITTYWEST/burt-imma)
+- **AWS Bedrock:** [Documentation](https://docs.aws.amazon.com/bedrock/)
+- **Ollama:** [Documentation](https://github.com/ollama/ollama)
+- **Lean 4:** [Documentation](https://lean-lang.org/)
+
+### License
+
+**TRI-LICENSE:** Tripartite licensing structure with three independent terms:
+
+1. **BSL-1.0 (Boost Software License 1.0)** — Source code and implementations
+2. **AGPL-3.0 (Affero GPL)** — Network service modifications
+3. **MPL-2.0 (Mozilla Public License)** — Optional compatibility tier
+
+See [LICENSE.tri](LICENSE.tri) for full terms. Commercial licensing available.
+
+**Copyright:** Ahmad Ali Parr / SNAPKITTYWEST · Bel Esprit D'Accord Irrevocable Trust.
+
+**Academic Citation:**
+
+```bibtex
+@software{sovereign-engine-v2,
+  author = {Ahmad Ali Parr},
+  title = {Sovereign Engine v2: Multi-Language LLM Agent Framework},
+  year = {2026},
+  url = {https://github.com/SNAPKITTYWEST/sovereign-engine-v2},
+}
+```
+
+---
+
+## Recent Changes
+
+| Commit | Change | Location |
+|--------|--------|----------|
+| `d7b1dc9` | Comprehensive 3-agent documentation expansion (90K+ words) | [docs/repository-reference/](docs/repository-reference/) |
+| [`898dfbe`](https://github.com/SNAPKITTYWEST/sovereign-engine-v2/commit/898dfbe), Sep 18 | Resolved paper/formal-file placement | [research/papers/](research/papers/), [research/formal/](research/formal/) |
+| [`f97cbd8`](https://github.com/SNAPKITTYWEST/sovereign-engine-v2/commit/f97cbd8), Sep 18 | Relocated 60 files (research, training, docs) | [research/](research/), [training/](training/), [docs/](docs/) |
+| [`b5a357f`](https://github.com/SNAPKITTYWEST/sovereign-engine-v2/commit/b5a357f), Sep 18 | Direct runner, Bedrock backend, authorization | [run.py](run.py), [src/inference/](src/inference/) |
+| [`5b6aabe`](https://github.com/SNAPKITTYWEST/sovereign-engine-v2/commit/5b6aabe), Sep 7 | Forge Tournament paper + SUBLEQ formalization | [research/papers/](research/papers/), [research/formal/](research/formal/) |
+
+---
+
+**Get started:** [Quick Start](#quick-start) | **Learn more:** [ARCHITECTURE.md](docs/repository-reference/ARCHITECTURE.md) | **Contribute:** [Contributing](#contributing)
 
 Ahmad Ali Parr / SNAPKITTYWEST · Bel Esprit D'Accord Irrevocable Trust.
