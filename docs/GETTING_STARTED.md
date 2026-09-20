@@ -1,242 +1,75 @@
-# Getting Started with Sovereign Engine
+# Getting started
 
-Welcome! This guide will get you running your first agent task in under 10 minutes.
+This guide starts with routing code that does not need AWS, an API key, a model download, or a desktop build. Use Python 3.11+ and Git.
 
-## Prerequisites
-
-- **Python 3.11 or higher** — Check with: `python --version`
-- **No external dependencies** — Everything uses Python stdlib (struct, hashlib, asyncio, etc.)
-- Optional: NASM (for native assembly compilation)
-- Optional: C compiler (for IPC core dispatcher)
-
-## Installation
-
-### Option 1: From Source
+## 1. Clone and create an environment
 
 ```bash
-git clone https://github.com/SNAPKITTYWEST/sovereign-reverse.git
-cd sovereign-reverse/engine
-python -m pip install -e .
+git clone https://github.com/SNAPKITTYWEST/sovereign-engine-v2.git
+cd sovereign-engine-v2
+python -m venv .venv
 ```
 
-### Option 2: Install Locally
+Activate it using your shell:
+
+```powershell
+# Windows PowerShell
+.\.venv\Scripts\Activate.ps1
+```
 
 ```bash
-cd /path/to/sovereign-reverse/engine
-python -m pip install -e .
+# Linux/macOS
+source .venv/bin/activate
 ```
 
-### Verify Installation
+If activation is unavailable, invoke `.venv\Scripts\python.exe` on Windows or `.venv/bin/python` on POSIX instead of `python`. Check the selected environment:
 
 ```bash
-python -c "from src.sovereign import SovereignEngine; print('OK')"
+python -c "import sys; print(sys.executable); print(sys.version)"
+python -m pip install numpy scipy pytest hypothesis
 ```
 
-## First Run: Hello World
+These four packages support the independent research router. They are not the full engine dependencies.
 
-Create a file `hello.py`:
-
-```python
-import asyncio
-from pathlib import Path
-from src.sovereign import SovereignEngine, EngineConfig
-
-async def main():
-    # Create engine with default config
-    config = EngineConfig(
-        allowed_roots=[Path.cwd()],
-        continuity_dir=Path.home() / ".sovereign" / "continuity"
-    )
-    engine = SovereignEngine(config)
-    
-    # Run a simple task
-    result = await engine.run("write a Python function to calculate fibonacci(5)")
-    print("\n" + "="*60)
-    print("RESULT:")
-    print("="*60)
-    print(result)
-    
-    # Clean up
-    engine.shutdown()
-
-if __name__ == "__main__":
-    asyncio.run(main())
-```
-
-Run it:
+## 2. Run the reference tests
 
 ```bash
-python hello.py
+cd research/sparse-routing
+python -m pytest tests/ -q
+cd ../..
 ```
 
-You should see output like:
+The recorded run passed 57 tests. See [validation](VALIDATION.md) for scope. A missing `sparse_routing` import usually means the command was run from the wrong directory.
 
-```
-2024-08-06 10:15:23,456 - sovereign.engine - INFO - SovereignEngine initialized
-2024-08-06 10:15:23,478 - sovereign.engine - INFO - Starting task: write a Python function to calculate fibonacci(5)
-...
-============================================================
-RESULT:
-============================================================
-def fibonacci(n):
-    if n <= 1:
-        return n
-    return fibonacci(n-1) + fibonacci(n-2)
+## 3. Collect benchmark results
 
-print(fibonacci(5))  # Output: 5
-```
-
-## Understanding the Output
-
-### WORM Seal
-
-Every task execution is sealed in a **Write-Once Read-Many (WORM)** cryptographic ledger:
-
-```
-sovereign.worm                    # Binary append-only file (no text, no injection surface)
-  └─ 152-byte header             # Magic + version + timestamps + Blake2b hash + Ed25519 sig
-  └─ payload                     # Your task result (binary encoded)
-  └─ metadata                    # Execution context (binary encoded)
-```
-
-Read the ledger:
-
-```python
-from src.core.storage import WORMFile
-from pathlib import Path
-
-wf = WORMFile(Path("sovereign.worm"))
-for record in wf.scan():
-    print(f"Event: {record.event_type}")
-    print(f"Timestamp: {record.timestamp_s}")
-    print(f"Hash: {record.content_hash.hex()}")
-```
-
-### Routing Weights
-
-The engine routes tasks to multiple **experts** (specialized agents). Output shows which experts fired and their contribution:
-
-```
-Routing Decision:
-  code_generation:    0.65        # 65% contribution
-  error_checking:     0.28        # 28% contribution  
-  documentation:      0.07        # 7% contribution
-```
-
-This is driven by **Jordan algebra**, not softmax:
-- Non-associative grouping — expert topology matters
-- Fixed-point convergence — stable routing attractors
-- Spectral decomposition — provably unique expert selection
-
-### Continuity Directory
-
-Agent state survives restarts across 4 paradigms:
-
-```
-~/.sovereign/continuity/
-  └─ env_state.bin                # Paradigm 1: 64-bit env bitmask (hot-restart)
-  └─ seed.bin                     # Paradigm 2: Blake2b seed for deterministic replay
-  └─ inode/
-  │   └─ agent_id.state           # Paradigm 3: Zero-byte files as boolean gates
-  │   └─ agent_id.lock
-  └─ shm_block.bin                # Paradigm 4: Shared memory (cross-process realtime)
-  └─ checkpoints/
-      └─ checkpoint_1.ckpt        # Full binary snapshot with signature
-      └─ checkpoint_2.ckpt
-```
-
-## Common First-Time Issues
-
-### Issue: "ModuleNotFoundError: No module named 'src.sovereign'"
-
-**Fix:** Make sure you're in the engine directory and have run `pip install -e .`:
+From the repository root:
 
 ```bash
-cd /path/to/sovereign-reverse/engine
-python -m pip install -e .
-python hello.py
+python scripts/benchmark_sparse_routing.py --trials 10 --output docs/benchmarks/sparse-routing-local.json
 ```
 
-### Issue: "PermissionError: Cannot create continuity directory"
+The command prints timing summaries and writes individual trials and environment metadata. It compares structural outputs with the original fixture and permits a `1e-12` route-cost tolerance. It does not overwrite the historical experiment file. See the [benchmark explanation](../README.md#benchmarks).
 
-**Fix:** The engine needs to write to `~/.sovereign/continuity`. Make sure it exists and is writable:
+## 4. Try the engine routing API
+
+Follow the asynchronous expert example in [Routing](ROUTING.md). Unlike the research experiment, it exercises `src.routing.RoutingPipeline`. Both are provider-free, but they solve different routing problems.
+
+## 5. Choose an integration
+
+- [Tools](TOOLS.md): a small registered function with schema validation.
+- [Machine runtime](MACHINE_CODE.md): a stack program with a known arithmetic result.
+- [Ollama](LOCAL_TRAINING_OLLAMA.md): direct model inference against a running local service.
+- [IDE](IDE.md): Windows native client or Electron desktop sources.
+
+For the larger Python engine, install the repository requirements in a separate environment if you want to avoid adding the ML stack to this small test environment:
 
 ```bash
-mkdir -p ~/.sovereign/continuity
-chmod 700 ~/.sovereign/continuity
+python -m pip install -r requirements.txt
 ```
 
-Or use a custom path:
+The root runner selects Bedrock. It is not the recommended first success path: synchronous expert callbacks and agent/continuity interface mismatches remain in the current wiring. See [deployment readiness](PRODUCTION_HARDENING.md) before trying full orchestration. Installing the package alone does not install every runtime dependency.
 
-```python
-config = EngineConfig(
-    continuity_dir=Path("/tmp/my_continuity")
-)
-```
+## When something fails
 
-### Issue: "ValueError: no signature in WORM record"
-
-**Fix:** This is expected if no signing key is configured. The engine defaults to zero-signature (all bytes 0). To use real Ed25519 signing:
-
-```python
-from src.core.crypto import generate_signing_key
-
-key = generate_signing_key()
-engine = SovereignEngine(config)
-# engine will use key internally
-```
-
-### Issue: "Timeout: task exceeded 30 seconds"
-
-**Fix:** Increase the max step count or timeout in config:
-
-```python
-from src.agents.react import ReActConfig
-
-config = EngineConfig(
-    max_steps=25  # More thinking steps
-)
-engine = SovereignEngine(config)
-```
-
-Or in individual agent config:
-
-```python
-from src.agents.react import ReActAgent, ReActConfig
-
-react_config = ReActConfig(max_steps=25, timeout_ms=60000)
-```
-
-### Issue: "PathJail: denied /path/to/file"
-
-**Fix:** The engine restricts filesystem access to `allowed_roots`. Add your path:
-
-```python
-config = EngineConfig(
-    allowed_roots=[
-        Path("/home/user/projects"),
-        Path("/tmp/scratch")
-    ]
-)
-```
-
-## Next Steps
-
-- **[CONFIGURATION.md](CONFIGURATION.md)** — All EngineConfig options with defaults
-- **[ROUTING.md](ROUTING.md)** — How the 11-stage pipeline works
-- **[TOOLS.md](TOOLS.md)** — Complete tool inventory (34 tools)
-- **[CONTINUITY.md](CONTINUITY.md)** — State recovery and replay
-- **[SECURITY.md](SECURITY.md)** — PathJail, SSRFGuard, WORM verification
-
-## Production Checklist
-
-Before shipping to production:
-
-- [ ] Set up Ed25519 signing key (see [SECURITY.md](SECURITY.md))
-- [ ] Configure `allowed_roots` to restrict filesystem access
-- [ ] Enable WORM ledger integrity checks (script in [SECURITY.md](SECURITY.md))
-- [ ] Set up continuity directory with proper permissions
-- [ ] Test task recovery (kill agent mid-task, restart)
-- [ ] Configure rate limits on destructive tools (see [TOOLS.md](TOOLS.md))
-- [ ] Enable shadow agent for async observation: `enable_shadow=True`
-- [ ] Set appropriate model provider in config (Bedrock/OpenRouter/Ollama)
+Capture the command, current directory, Python executable/version, and traceback. Use [Testing and troubleshooting](TESTING.md) to distinguish environment failures from known integration gaps.

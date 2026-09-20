@@ -1,4 +1,4 @@
-﻿# Sovereign Engine v2
+# Sovereign Engine v2
 
 A multi-language repository for LLM agent execution, sparse expert routing, persistent model memory, compiler and hardware experiments, and formal research.
 
@@ -9,6 +9,7 @@ The Python engine contains an eleven-stage routing pipeline, ReAct agents, a too
 ## Contents
 
 - [Recent changes](#recent-changes)
+- [Starter and technical guides](docs/README.md)
 - [Repository map](#repository-map)
 - [Execution and routing](#execution-and-routing)
 - [Models and training](#models-and-training)
@@ -168,10 +169,10 @@ For a provider-free starting point, use the isolated routing experiment above. I
 The bridge implementation is [src/bridge/http_server.py](src/bridge/http_server.py):
 
 ```bash
-python -m src.bridge.http_server --host 127.0.0.1 --port 19000
+python -m src.bridge.http_server
 ```
 
-See [ASR and bridge documentation](docs/ASR_AND_BRIDGE.md) for request examples and [configuration](docs/CONFIGURATION.md) for settings. Bridge startup and live inference are separate validation steps from the routing benchmark.
+See [ASR and bridge documentation](docs/ASR_AND_BRIDGE.md) for dependencies, handler contracts, and known integration gaps. The module uses the default loopback address and does not parse host/port flags. Bridge startup and live inference are separate validation steps from the routing benchmark.
 
 ## Native builds and research
 
@@ -211,7 +212,7 @@ bash src/routing/sparse-latency-routing/tests/run_tests.sh
 
 ## Documentation and license
 
-Start with [getting started](docs/GETTING_STARTED.md), [configuration](docs/CONFIGURATION.md), [architecture](ARCHITECTURE.md), and the [sparse-routing report](research/sparse-routing/docs/report.md). Older subsystem documents may retain pre-reorganization paths; use the repository map above for current locations.
+Start with the [documentation index](docs/README.md), [getting started](docs/GETTING_STARTED.md), [configuration](docs/CONFIGURATION.md), and [architecture](ARCHITECTURE.md). Technical guides cover [routing](docs/ROUTING.md), [tools](docs/TOOLS.md), [continuity](docs/CONTINUITY.md), [security](docs/SECURITY.md), [desktop builds](docs/IDE.md), and [the machine runtime](docs/MACHINE_CODE.md). See [validation](docs/VALIDATION.md) for executed examples and the [sparse-routing report](research/sparse-routing/docs/report.md) for research methodology.
 
 The repository's licensing document is [LICENSE.tri](LICENSE.tri). Consult it and component-specific metadata for terms; the earlier README's `LICENSE` link and BSL-to-MIT date did not match the tracked licensing file.
 
