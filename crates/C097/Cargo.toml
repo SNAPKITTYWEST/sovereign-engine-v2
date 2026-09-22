@@ -1,0 +1,13 @@
+[package]
+name = "end_to_end_trace_verification"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+runtime_state_snapshot = { path = "../C081" }
+trace_recording_runtime = { path = "../C086" }
+certificate_generation = { path = "../C087" }
+runtime_bridge_tests_integration = { path = "../C090" }
+rust_lean_correspondence = { path = "../C093" }
+
+[lib]

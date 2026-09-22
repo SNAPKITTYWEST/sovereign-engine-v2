@@ -1,0 +1,12 @@
+[package]
+name = "recursion_base_case"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+prime_enumeration = { path = "../C022" }
+gap_candidate_set = { path = "../C023" }
+prime_gap_relationship = { path = "../C029" }
+recursive_solver_state = { path = "../C031" }
+
+[lib]

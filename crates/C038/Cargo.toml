@@ -1,0 +1,11 @@
+[package]
+name = "recursion_contradiction_detection"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+gap_constraint_satisfaction = { path = "../C027" }
+recursive_solver_state = { path = "../C031" }
+recursive_solver_cursor = { path = "../C033" }
+
+[lib]

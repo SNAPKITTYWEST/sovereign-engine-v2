@@ -1,0 +1,16 @@
+[package]
+name = "multiplicity_arena_tests_integration"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+multiplicity_arena_core = { path = "../C011" }
+multiplicity_arena_layout = { path = "../C012" }
+multiplicity_arena_allocation = { path = "../C013" }
+multiplicity_arena_initialization = { path = "../C014" }
+multiplicity_arena_pointers = { path = "../C015" }
+multiplicity_arena_ownership = { path = "../C016" }
+multiplicity_arena_deallocation = { path = "../C017" }
+multiplicity_arena_failure_handling = { path = "../C018" }
+
+[lib]

@@ -1,0 +1,12 @@
+[package]
+name = "tor_chain_complex_interface"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+projective_resolution = { path = "../C046" }
+tor_functor_definition = { path = "../C051" }
+derived_homology = { path = "../C054" }
+tor_invariants_computation = { path = "../C058" }
+
+[lib]

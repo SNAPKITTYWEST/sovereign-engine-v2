@@ -1,0 +1,11 @@
+[package]
+name = "recursion_runtime_binding"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+recursive_solver_state = { path = "../C031" }
+recursion_depth_management = { path = "../C032" }
+runtime_state_snapshot = { path = "../C081" }
+
+[lib]

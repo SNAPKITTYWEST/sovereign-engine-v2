@@ -1,0 +1,9 @@
+[package]
+name = "dimension_upper_bounds"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+krull_dimension_definition = { path = "../C067" }
+
+[lib]

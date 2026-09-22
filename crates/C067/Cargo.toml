@@ -1,0 +1,11 @@
+[package]
+name = "krull_dimension_definition"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+spectrum_definition = { path = "../C064" }
+spectrum_order = { path = "../C065" }
+spectrum_chains = { path = "../C066" }
+
+[lib]

@@ -1,0 +1,10 @@
+[package]
+name = "gap_verification"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+gap_candidate_set = { path = "../C023" }
+gap_constraint_satisfaction = { path = "../C027" }
+
+[lib]

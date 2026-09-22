@@ -1,0 +1,10 @@
+[package]
+name = "multiplicity_arena_initialization"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+multiplicity_arena_core = { path = "../C011" }
+multiplicity_arena_layout = { path = "../C012" }
+
+[lib]

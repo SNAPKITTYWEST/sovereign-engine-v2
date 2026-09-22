@@ -1,0 +1,11 @@
+[package]
+name = "tor_zero_structure"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+tor_functor_definition = { path = "../C051" }
+tensor_product_module = { path = "../C052" }
+derived_homology = { path = "../C054" }
+
+[lib]

@@ -1,0 +1,15 @@
+[package]
+name = "cross_layer_lemmas_library"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+type_checking_interface = { path = "../C071" }
+gap_lemmas_library = { path = "../C073" }
+memory_lemmas_library = { path = "../C074" }
+recursion_lemmas_library = { path = "../C075" }
+homological_lemmas_library = { path = "../C076" }
+tor_resolution_lemmas_library = { path = "../C077" }
+krull_lemmas_library = { path = "../C078" }
+
+[lib]

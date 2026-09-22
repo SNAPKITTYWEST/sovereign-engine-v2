@@ -1,0 +1,17 @@
+[package]
+name = "runtime_bridge_tests_integration"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+runtime_state_snapshot = { path = "../C081" }
+tensor_runtime_binding = { path = "../C082" }
+prime_state_binding = { path = "../C083" }
+multiplicity_state_binding = { path = "../C084" }
+recursion_runtime_binding = { path = "../C085" }
+trace_recording_runtime = { path = "../C086" }
+certificate_generation = { path = "../C087" }
+rollback_mechanism = { path = "../C088" }
+runtime_invariant_checking = { path = "../C089" }
+
+[lib]

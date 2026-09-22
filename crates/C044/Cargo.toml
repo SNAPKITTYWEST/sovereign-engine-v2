@@ -1,0 +1,9 @@
+[package]
+name = "differential_squared_zero"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+differential_operator = { path = "../C043" }
+
+[lib]

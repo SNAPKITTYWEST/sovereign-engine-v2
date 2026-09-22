@@ -1,0 +1,10 @@
+[package]
+name = "tor_higher_degrees"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+tor_functor_definition = { path = "../C051" }
+derived_homology = { path = "../C054" }
+
+[lib]

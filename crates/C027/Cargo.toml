@@ -1,0 +1,9 @@
+[package]
+name = "gap_constraint_satisfaction"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+gap_absolute_difference = { path = "../C026" }
+
+[lib]

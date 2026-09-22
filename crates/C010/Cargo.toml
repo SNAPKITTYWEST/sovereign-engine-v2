@@ -1,0 +1,11 @@
+[package]
+name = "gap_tensor_trace"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+gap_tensor_core = { path = "../C001" }
+gap_tensor_equality = { path = "../C005" }
+gap_tensor_serialization = { path = "../C006" }
+
+[lib]

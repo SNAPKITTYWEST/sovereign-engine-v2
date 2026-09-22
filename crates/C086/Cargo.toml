@@ -1,0 +1,11 @@
+[package]
+name = "trace_recording_runtime"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+gap_tensor_trace = { path = "../C010" }
+runtime_state_snapshot = { path = "../C081" }
+certificate_generation = { path = "../C087" }
+
+[lib]

@@ -1,0 +1,13 @@
+[package]
+name = "krull_lemmas_library"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+spectrum_definition = { path = "../C064" }
+krull_dimension_definition = { path = "../C067" }
+dimension_upper_bounds = { path = "../C068" }
+krull_certification = { path = "../C069" }
+type_checking_interface = { path = "../C071" }
+
+[lib]

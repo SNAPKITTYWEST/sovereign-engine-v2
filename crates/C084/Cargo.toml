@@ -1,0 +1,11 @@
+[package]
+name = "multiplicity_state_binding"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+multiplicity_arena_core = { path = "../C011" }
+multiplicity_arena_layout = { path = "../C012" }
+runtime_state_snapshot = { path = "../C081" }
+
+[lib]

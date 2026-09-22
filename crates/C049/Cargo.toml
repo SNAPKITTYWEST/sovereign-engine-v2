@@ -1,0 +1,12 @@
+[package]
+name = "resolution_certification"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+differential_squared_zero = { path = "../C044" }
+projective_resolution = { path = "../C046" }
+exactness_predicate = { path = "../C047" }
+homology_computation = { path = "../C048" }
+
+[lib]

@@ -1,0 +1,11 @@
+[package]
+name = "tensor_homology_correspondence"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+chain_complex_types = { path = "../C042" }
+homology_computation = { path = "../C048" }
+cross_layer_types = { path = "../C091" }
+
+[lib]

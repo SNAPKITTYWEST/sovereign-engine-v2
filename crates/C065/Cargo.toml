@@ -1,0 +1,10 @@
+[package]
+name = "spectrum_order"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+gap_tensor_ordering = { path = "../C008" }
+spectrum_definition = { path = "../C064" }
+
+[lib]

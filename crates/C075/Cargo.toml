@@ -1,0 +1,13 @@
+[package]
+name = "recursion_lemmas_library"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+recursive_solver_state = { path = "../C031" }
+recursion_depth_management = { path = "../C032" }
+recursion_base_case = { path = "../C036" }
+recursion_backtracking = { path = "../C037" }
+type_checking_interface = { path = "../C071" }
+
+[lib]

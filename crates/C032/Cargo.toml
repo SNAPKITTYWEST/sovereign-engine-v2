@@ -1,0 +1,9 @@
+[package]
+name = "recursion_depth_management"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+recursive_solver_state = { path = "../C031" }
+
+[lib]

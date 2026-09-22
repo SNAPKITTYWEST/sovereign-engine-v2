@@ -1,0 +1,17 @@
+[package]
+name = "homological_tests_integration"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+chain_complex_shape = { path = "../C041" }
+chain_complex_types = { path = "../C042" }
+differential_operator = { path = "../C043" }
+differential_squared_zero = { path = "../C044" }
+projective_module_definition = { path = "../C045" }
+projective_resolution = { path = "../C046" }
+exactness_predicate = { path = "../C047" }
+homology_computation = { path = "../C048" }
+resolution_certification = { path = "../C049" }
+
+[lib]

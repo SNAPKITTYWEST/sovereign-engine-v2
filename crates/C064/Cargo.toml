@@ -1,0 +1,10 @@
+[package]
+name = "spectrum_definition"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+ideal_interface = { path = "../C061" }
+prime_ideal_predicate = { path = "../C062" }
+
+[lib]

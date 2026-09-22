@@ -1,0 +1,9 @@
+[package]
+name = "prime_ideal_predicate"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+ideal_interface = { path = "../C061" }
+
+[lib]

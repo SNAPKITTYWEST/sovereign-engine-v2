@@ -1,0 +1,10 @@
+[package]
+name = "projective_module_definition"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+chain_complex_shape = { path = "../C041" }
+chain_complex_types = { path = "../C042" }
+
+[lib]

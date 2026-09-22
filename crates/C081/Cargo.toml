@@ -1,0 +1,11 @@
+[package]
+name = "runtime_state_snapshot"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+gap_tensor_core = { path = "../C001" }
+gap_tensor_invariants = { path = "../C007" }
+gap_tensor_trace = { path = "../C010" }
+
+[lib]

@@ -1,0 +1,12 @@
+[package]
+name = "tor_functor_definition"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+chain_complex_shape = { path = "../C041" }
+differential_squared_zero = { path = "../C044" }
+projective_resolution = { path = "../C046" }
+homology_computation = { path = "../C048" }
+
+[lib]

@@ -1,0 +1,19 @@
+[package]
+name = "final_certification_report"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+type_checking_interface = { path = "../C071" }
+lean_obligation_aggregator = { path = "../C080" }
+cross_layer_types = { path = "../C091" }
+cross_layer_invariants = { path = "../C092" }
+rust_lean_correspondence = { path = "../C093" }
+prime_gap_correspondence = { path = "../C094" }
+tensor_homology_correspondence = { path = "../C095" }
+tor_spectrum_correspondence = { path = "../C096" }
+end_to_end_trace_verification = { path = "../C097" }
+counterexample_harness = { path = "../C098" }
+full_regression_test_suite = { path = "../C099" }
+
+[lib]

@@ -1,0 +1,12 @@
+[package]
+name = "projective_resolution"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+chain_complex_shape = { path = "../C041" }
+chain_complex_types = { path = "../C042" }
+differential_squared_zero = { path = "../C044" }
+projective_module_definition = { path = "../C045" }
+
+[lib]

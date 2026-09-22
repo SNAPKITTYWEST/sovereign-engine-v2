@@ -1,0 +1,12 @@
+[package]
+name = "memory_lemmas_library"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+multiplicity_arena_core = { path = "../C011" }
+multiplicity_arena_layout = { path = "../C012" }
+multiplicity_arena_allocation = { path = "../C013" }
+type_checking_interface = { path = "../C071" }
+
+[lib]

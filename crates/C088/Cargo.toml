@@ -1,0 +1,10 @@
+[package]
+name = "rollback_mechanism"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+runtime_state_snapshot = { path = "../C081" }
+runtime_invariant_checking = { path = "../C089" }
+
+[lib]

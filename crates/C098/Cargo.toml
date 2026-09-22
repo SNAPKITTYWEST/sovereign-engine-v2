@@ -1,0 +1,14 @@
+[package]
+name = "counterexample_harness"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+cross_layer_types = { path = "../C091" }
+cross_layer_invariants = { path = "../C092" }
+rust_lean_correspondence = { path = "../C093" }
+prime_gap_correspondence = { path = "../C094" }
+tensor_homology_correspondence = { path = "../C095" }
+tor_spectrum_correspondence = { path = "../C096" }
+
+[lib]

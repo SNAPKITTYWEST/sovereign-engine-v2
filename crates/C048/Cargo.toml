@@ -1,0 +1,11 @@
+[package]
+name = "homology_computation"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+chain_complex_shape = { path = "../C041" }
+differential_operator = { path = "../C043" }
+differential_squared_zero = { path = "../C044" }
+
+[lib]

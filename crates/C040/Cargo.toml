@@ -1,0 +1,12 @@
+[package]
+name = "recursive_solver_trace"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+gap_tensor_trace = { path = "../C010" }
+recursive_solver_state = { path = "../C031" }
+recursive_solver_transition = { path = "../C035" }
+recursion_solution_path = { path = "../C039" }
+
+[lib]

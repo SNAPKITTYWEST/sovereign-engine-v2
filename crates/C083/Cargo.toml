@@ -1,0 +1,12 @@
+[package]
+name = "prime_state_binding"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+prime_predicate = { path = "../C021" }
+gap_candidate_set = { path = "../C023" }
+gap_ordering = { path = "../C024" }
+runtime_state_snapshot = { path = "../C081" }
+
+[lib]

@@ -1,0 +1,11 @@
+[package]
+name = "resolution_tensored"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+differential_operator = { path = "../C043" }
+differential_squared_zero = { path = "../C044" }
+tensor_product_module = { path = "../C052" }
+
+[lib]

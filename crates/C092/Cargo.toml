@@ -1,0 +1,14 @@
+[package]
+name = "cross_layer_invariants"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+gap_tensor_invariants = { path = "../C007" }
+multiplicity_arena_layout = { path = "../C012" }
+gap_constraint_satisfaction = { path = "../C027" }
+resolution_certification = { path = "../C049" }
+runtime_invariant_checking = { path = "../C089" }
+cross_layer_types = { path = "../C091" }
+
+[lib]

@@ -1,0 +1,12 @@
+[package]
+name = "tensor_runtime_binding"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+gap_tensor_core = { path = "../C001" }
+gap_tensor_primes = { path = "../C002" }
+gap_tensor_trace = { path = "../C010" }
+runtime_state_snapshot = { path = "../C081" }
+
+[lib]

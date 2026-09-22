@@ -1,0 +1,17 @@
+[package]
+name = "tor_tests_integration"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+tor_functor_definition = { path = "../C051" }
+tensor_product_module = { path = "../C052" }
+resolution_tensored = { path = "../C053" }
+derived_homology = { path = "../C054" }
+tor_zero_structure = { path = "../C055" }
+tor_higher_degrees = { path = "../C056" }
+functoriality_of_tor = { path = "../C057" }
+tor_invariants_computation = { path = "../C058" }
+tor_chain_complex_interface = { path = "../C059" }
+
+[lib]

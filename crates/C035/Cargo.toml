@@ -1,0 +1,12 @@
+[package]
+name = "recursive_solver_transition"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+gap_constraint_satisfaction = { path = "../C027" }
+recursive_solver_state = { path = "../C031" }
+recursion_depth_management = { path = "../C032" }
+recursive_solver_cursor = { path = "../C033" }
+
+[lib]

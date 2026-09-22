@@ -1,0 +1,14 @@
+[package]
+name = "runtime_invariant_checking"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+gap_tensor_invariants = { path = "../C007" }
+runtime_state_snapshot = { path = "../C081" }
+tensor_runtime_binding = { path = "../C082" }
+prime_state_binding = { path = "../C083" }
+multiplicity_state_binding = { path = "../C084" }
+recursion_runtime_binding = { path = "../C085" }
+
+[lib]

@@ -1,0 +1,9 @@
+[package]
+name = "gap_ordering"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+gap_candidate_set = { path = "../C023" }
+
+[lib]

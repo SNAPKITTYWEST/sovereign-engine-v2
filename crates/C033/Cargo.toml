@@ -1,0 +1,11 @@
+[package]
+name = "recursive_solver_cursor"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+gap_candidate_set = { path = "../C023" }
+gap_ordering = { path = "../C024" }
+recursive_solver_state = { path = "../C031" }
+
+[lib]

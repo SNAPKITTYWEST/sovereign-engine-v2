@@ -1,0 +1,11 @@
+[package]
+name = "exactness_predicate"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+differential_operator = { path = "../C043" }
+differential_squared_zero = { path = "../C044" }
+homology_computation = { path = "../C048" }
+
+[lib]

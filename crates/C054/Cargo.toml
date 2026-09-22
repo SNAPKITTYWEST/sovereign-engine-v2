@@ -1,0 +1,12 @@
+[package]
+name = "derived_homology"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+homology_computation = { path = "../C048" }
+tor_functor_definition = { path = "../C051" }
+tensor_product_module = { path = "../C052" }
+resolution_tensored = { path = "../C053" }
+
+[lib]

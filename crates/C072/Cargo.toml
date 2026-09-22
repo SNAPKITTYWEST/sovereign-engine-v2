@@ -1,0 +1,10 @@
+[package]
+name = "obligation_management"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+gap_tensor_trace = { path = "../C010" }
+type_checking_interface = { path = "../C071" }
+
+[lib]

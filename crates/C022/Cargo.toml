@@ -1,0 +1,9 @@
+[package]
+name = "prime_enumeration"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+prime_predicate = { path = "../C021" }
+
+[lib]

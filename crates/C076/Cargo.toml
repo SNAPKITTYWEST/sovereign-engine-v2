@@ -1,0 +1,14 @@
+[package]
+name = "homological_lemmas_library"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+differential_operator = { path = "../C043" }
+differential_squared_zero = { path = "../C044" }
+exactness_predicate = { path = "../C047" }
+homology_computation = { path = "../C048" }
+resolution_certification = { path = "../C049" }
+type_checking_interface = { path = "../C071" }
+
+[lib]

@@ -1,0 +1,11 @@
+[package]
+name = "recursion_backtracking"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+recursive_solver_state = { path = "../C031" }
+recursion_depth_management = { path = "../C032" }
+recursive_solver_transition = { path = "../C035" }
+
+[lib]

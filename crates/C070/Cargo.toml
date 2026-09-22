@@ -1,0 +1,17 @@
+[package]
+name = "krull_spectrum_tests_integration"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+ideal_interface = { path = "../C061" }
+prime_ideal_predicate = { path = "../C062" }
+maximal_ideal_predicate = { path = "../C063" }
+spectrum_definition = { path = "../C064" }
+spectrum_order = { path = "../C065" }
+spectrum_chains = { path = "../C066" }
+krull_dimension_definition = { path = "../C067" }
+dimension_upper_bounds = { path = "../C068" }
+krull_certification = { path = "../C069" }
+
+[lib]

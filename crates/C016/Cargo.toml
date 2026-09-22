@@ -1,0 +1,10 @@
+[package]
+name = "multiplicity_arena_ownership"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+multiplicity_arena_core = { path = "../C011" }
+multiplicity_arena_pointers = { path = "../C015" }
+
+[lib]

@@ -1,0 +1,9 @@
+[package]
+name = "prime_predicate"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+gap_tensor_core = { path = "../C001" }
+
+[lib]

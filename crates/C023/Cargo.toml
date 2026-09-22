@@ -1,0 +1,9 @@
+[package]
+name = "gap_candidate_set"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+prime_enumeration = { path = "../C022" }
+
+[lib]

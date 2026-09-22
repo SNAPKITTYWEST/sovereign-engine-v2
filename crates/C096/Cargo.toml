@@ -1,0 +1,12 @@
+[package]
+name = "tor_spectrum_correspondence"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+derived_homology = { path = "../C054" }
+tor_invariants_computation = { path = "../C058" }
+dimension_upper_bounds = { path = "../C068" }
+cross_layer_types = { path = "../C091" }
+
+[lib]

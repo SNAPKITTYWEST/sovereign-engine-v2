@@ -1,0 +1,10 @@
+[package]
+name = "chain_complex_shape"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+gap_tensor_core = { path = "../C001" }
+gap_tensor_shape = { path = "../C004" }
+
+[lib]

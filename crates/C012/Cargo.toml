@@ -1,0 +1,11 @@
+[package]
+name = "multiplicity_arena_layout"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+gap_tensor_core = { path = "../C001" }
+gap_tensor_shape = { path = "../C004" }
+multiplicity_arena_core = { path = "../C011" }
+
+[lib]
