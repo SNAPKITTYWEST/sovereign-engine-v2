@@ -69,43 +69,39 @@ impl Spectrum {
         self.primes.contains(&p)
     }
 
-    /// Specialization: P ⊆ Q in spectrum order
+    /// Specialization: `(p) ⊆ (q)` for two points of the spectrum.
     pub fn specializes(&self, p: u64, q: u64) -> bool {
-        if !self.contains_prime(p) || !self.contains_prime(q) {
-            return false;
-        }
-        // P specializes to Q if P ⊆ Q
-        p % q == 0 || p == q
+        self.contains_prime(p) && self.contains_prime(q) && principal_contained(p, q)
     }
 
-    /// Get minimal primes (bottom elements of spectrum)
+    /// Minimal primes: no other point of the spectrum is strictly contained
+    /// in them (in Z: `(0)` if present).
     pub fn minimal_primes(&self) -> Vec<u64> {
-        let mut minimal = Vec::new();
-        for &p in &self.primes {
-            let is_minimal = self
-                .primes
-                .iter()
-                .all(|&q| q == p || p % q != 0);
-            if is_minimal {
-                minimal.push(p);
-            }
-        }
-        minimal
+        self.primes
+            .iter()
+            .copied()
+            .filter(|&p| self.primes.iter().all(|&q| q == p || !principal_contained(q, p)))
+            .collect()
     }
 
-    /// Get maximal primes (top elements of spectrum)
+    /// Maximal primes: no other point of the spectrum strictly contains them
+    /// (in Z: the non-zero primes).
     pub fn maximal_primes(&self) -> Vec<u64> {
-        let mut maximal = Vec::new();
-        for &p in &self.primes {
-            let is_maximal = self
-                .primes
-                .iter()
-                .all(|&q| q == p || q % p != 0);
-            if is_maximal {
-                maximal.push(p);
-            }
-        }
-        maximal
+        self.primes
+            .iter()
+            .copied()
+            .filter(|&p| self.primes.iter().all(|&q| q == p || !principal_contained(p, q)))
+            .collect()
+    }
+}
+
+/// `(a) ⊆ (b)` in Z: `b | a`, where `(0)` is contained in every ideal and
+/// only `(0)` is contained in `(0)`.
+pub fn principal_contained(a: u64, b: u64) -> bool {
+    if b == 0 {
+        a == 0
+    } else {
+        a % b == 0
     }
 }
 
@@ -144,9 +140,27 @@ mod tests {
 
     #[test]
     fn test_spectrum_specializes() {
-        let spec = Spectrum::new(vec![2, 4]);
-        // 4 specializes to 2 (4 ⊆ (2) in some sense)
-        assert!(spec.specializes(4, 2) || !spec.specializes(4, 2));
+        let spec = Spectrum::new(vec![0, 2, 3, 4]);
+        assert!(!spec.contains_prime(4));
+        assert!(spec.specializes(0, 2));
+        assert!(!spec.specializes(2, 0));
+        assert!(!spec.specializes(2, 3));
+        assert!(spec.specializes(3, 3));
+        assert!(!spec.specializes(4, 2));
+    }
+
+    #[test]
+    fn generic_point_and_closed_points() {
+        let spec = Spectrum::new(vec![0, 2, 3, 5]);
+        assert_eq!(spec.minimal_primes(), vec![0]);
+        assert_eq!(spec.maximal_primes(), vec![2, 3, 5]);
+        let closed = Spectrum::new(vec![2, 3]);
+        assert_eq!(closed.minimal_primes(), vec![2, 3]);
+        assert_eq!(closed.maximal_primes(), vec![2, 3]);
+        assert!(principal_contained(12, 4));
+        assert!(!principal_contained(4, 12));
+        assert!(principal_contained(0, 7));
+        assert!(!principal_contained(7, 0));
     }
 
     #[test]

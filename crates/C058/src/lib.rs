@@ -39,9 +39,15 @@ impl BettiNumbers {
         self.ranks.values().sum()
     }
 
-    /// Regularity (highest non-zero degree)
+    /// Highest degree with a non-zero Betti number. (Over Z there is no
+    /// grading, so this is the top non-vanishing degree of the free part, not
+    /// Castelnuovo–Mumford regularity.)
     pub fn regularity(&self) -> Option<usize> {
-        self.ranks.keys().max().copied()
+        self.ranks
+            .iter()
+            .filter(|(_, &rank)| rank > 0)
+            .map(|(&degree, _)| degree)
+            .max()
     }
 }
 
@@ -60,27 +66,31 @@ pub fn compute_betti_numbers(tor: &TorComputation) -> BettiNumbers {
     betti
 }
 
-/// Compute torsion complexity (sum of torsion exponents across all Tor groups)
+/// Torsion complexity: sum of the torsion exponents of every Tor group that
+/// has torsion (saturating).
 pub fn torsion_complexity(tor: &TorComputation) -> u64 {
     tor.groups
         .values()
+        .filter(|g| !g.torsion.is_empty())
         .map(|g| g.torsion_exponent())
-        .product()
+        .fold(0u64, u64::saturating_add)
 }
 
-/// Check if the Tor computation represents a free resolution (all torsion vanishes)
+/// True iff every computed Tor group is torsion-free.
 pub fn is_free_resolution(tor: &TorComputation) -> bool {
     tor.groups
         .values()
         .all(|g| g.torsion.is_empty())
 }
 
-/// Global dimension estimate from Tor groups
+/// Tor dimension of the pair: the highest degree with a non-trivial Tor
+/// group (`None` if every group is trivial). Over Z this is at most 1.
 pub fn global_dimension(tor: &TorComputation) -> Option<usize> {
-    if tor.groups.is_empty() {
-        return None;
-    }
-    tor.groups.keys().max().copied()
+    tor.groups
+        .iter()
+        .filter(|(_, g)| !g.is_trivial())
+        .map(|(&degree, _)| degree)
+        .max()
 }
 
 #[cfg(test)]
@@ -116,6 +126,21 @@ mod tests {
         let group = TorGroup::new(tor_functor_definition::TorIndex::new(0), 3);
         tor.insert_tor(0, group);
         assert!(is_free_resolution(&tor));
+    }
+
+    #[test]
+    fn invariants_of_a_real_tor_computation() {
+        let tor = derived_homology::tor_of(
+            &tor_functor_definition::ProjectiveResolution::cyclic_resolution(4),
+            &tor_functor_definition::ProjectiveResolution::cyclic_resolution(6),
+        )
+        .unwrap();
+        let betti = compute_betti_numbers(&tor);
+        assert_eq!(betti.total_rank(), 0);
+        assert_eq!(betti.regularity(), None);
+        assert_eq!(torsion_complexity(&tor), 4);
+        assert!(!is_free_resolution(&tor));
+        assert_eq!(global_dimension(&tor), Some(1));
     }
 
     #[test]

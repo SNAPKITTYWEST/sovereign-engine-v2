@@ -1,43 +1,33 @@
-# spectrum_chains
+# `spectrum_chains` (C066)
 
-Totally-ordered chains of primes in a spectrum, and enumeration of maximal
-chains — the direct input to Krull dimension.
+Tier 6 — Krull dimension. *Generated from the crate source; regenerate after API changes.*
 
-## What it does
+Prime chains in a spectrum: totally ordered sequences of prime ideals.
+Used to compute Krull dimension as length of longest chains.
 
-`PrimeChain` wraps a `Vec<u64>` representing a chain `P0 ⊆ P1 ⊆ ...` under
-the specialization preorder; `is_valid` checks every pair is comparable via
-`preorder.le`, and `extend(p, preorder)` appends `p` only if it's `≥` the
-chain's current last element. `MaximalChains::find_all` does a
-breadth-ish search (worklist of partial chains) from every prime in the
-spectrum, building all extendable chains, then keeps only those not
-strictly subsumed by another (`is_subchain`, an order-preserving subsequence
-check), giving the maximal chains. `longest_length()` and
-`chains_of_length(n)` expose the results.
+## Dependencies
+
+- [C064 `spectrum_definition`](../C064/README.md)
+- [C065 `spectrum_order`](../C065/README.md)
 
 ## Public API
 
-- `PrimeChain::singleton`, `empty`, `len`, `is_empty`, `elements`,
-  `is_valid`, `extend` — plus `Ord`/`PartialOrd` by lexicographic `Vec` order
-- `MaximalChains::find_all(&Spectrum, &SpecializationPreorder)`,
-  `longest_length`, `chains()`, `chains_of_length(len)`
+| Item | Description |
+|---|---|
+| `struct PrimeChain` | A chain in the spectrum: totally ordered sequence of primes |
+| `fn PrimeChain::singleton(p: u64) -> Self` | Create a single-element chain |
+| `fn PrimeChain::empty() -> Self` | Create empty chain |
+| `fn PrimeChain::len(&self) -> usize` | Length of the chain |
+| `fn PrimeChain::is_empty(&self) -> bool` | Check if chain is empty |
+| `fn PrimeChain::elements(&self) -> &[u64]` | Get elements in chain |
+| `fn PrimeChain::is_valid(&self, preorder: &SpecializationPreorder) -> bool` | Check if chain is valid (totally ordered) |
+| `fn PrimeChain::extend(&self, p: u64, preorder: &SpecializationPreorder) -> Option<Self>` | Try to extend the chain with `p`. |
+| `struct MaximalChains` | Maximal chains in a spectrum |
+| `fn MaximalChains::find_all(spec: &Spectrum, preorder: &SpecializationPreorder) -> Self` | Find all maximal chains in spectrum |
+| `fn MaximalChains::longest_length(&self) -> usize` | Length of longest chain |
+| `fn MaximalChains::chains(&self) -> &[PrimeChain]` | Get all maximal chains |
+| `fn MaximalChains::chains_of_length(&self, len: usize) -> Vec<&PrimeChain>` | Filter chains of given length |
 
-## Pipeline role
+## Tests
 
-Depends on `spectrum_definition` (C064) and `spectrum_order` (C065). This is
-the crate `krull_dimension_definition` (C067) calls directly to compute
-`dim(R) = longest_chain_length - 1`.
-
-## Non-obvious design decisions / gaps
-
-- `find_all`'s de-duplication/subsumption pruning
-  (`maximal.retain(...); maximal.push(chain)`) is an O(chains^2) pass run
-  once per starting prime — a naive but workable approach for small
-  spectra; there is no bound on chain-search blowup for larger inputs.
-- `is_subchain` checks for an order-preserving embedding of one chain's
-  elements into another, not a literal Vec prefix — this is what lets
-  `find_all` discard chains subsumed by longer ones built from a different
-  starting point.
-- No test actually asserts a *specific* dimension value from a nontrivial
-  spectrum (e.g. that `{2,4,6}` yields a chain of length 2); tests only
-  check chains are non-empty or extend successfully.
+`cargo test -p spectrum_chains` runs 5 unit tests.

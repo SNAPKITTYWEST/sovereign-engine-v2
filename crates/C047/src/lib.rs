@@ -6,32 +6,56 @@
 
 #![warn(missing_docs)]
 
+use chain_complex_shape::integer_matrix::smith_form;
 use differential_operator::DifferentialOperator;
 use differential_squared_zero::SquaredZeroVerifier;
 use homology_computation::HomologyComputationResult;
 
 /// A certificate that a sequence is exact at a given degree.
+///
+/// Over Z, exactness at degree n (`ker d_n = im d_{n+1}`) needs equal ranks
+/// *and* a torsion-free quotient: for `0 → Z --·2--> Z → 0`, at degree 0
+/// both `ker d_0` and `im d_1` have rank 1, yet `ker d_0 / im d_1 = Z/2`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ExactnessCertificate {
     /// The degree where exactness is certified.
     pub degree: i32,
     /// Whether the sequence is exact at this degree.
     pub is_exact: bool,
-    /// Dimension of the kernel.
+    /// Rank of `ker d_n`.
     pub kernel_dim: usize,
-    /// Dimension of the image.
+    /// Rank of `im d_{n+1}`.
     pub image_dim: usize,
+    /// Whether `ker d_n / im d_{n+1}` is torsion-free.
+    pub torsion_free: bool,
 }
 
 impl ExactnessCertificate {
-    /// Create a new certificate.
+    /// Certificate from ranks, assuming a torsion-free quotient.
     pub fn new(degree: i32, kernel_dim: usize, image_dim: usize) -> Self {
-        let is_exact = kernel_dim == image_dim;
+        Self::from_ranks(degree, kernel_dim, image_dim, true)
+    }
+
+    /// Certificate from ranks and the torsion status of the quotient.
+    pub fn from_ranks(degree: i32, kernel_dim: usize, image_dim: usize, torsion_free: bool) -> Self {
         Self {
             degree,
-            is_exact,
+            is_exact: kernel_dim == image_dim && torsion_free,
             kernel_dim,
             image_dim,
+            torsion_free,
+        }
+    }
+
+    /// Certificate for a degree where the check could not be carried out
+    /// (d² ≠ 0 or arithmetic overflow): never exact.
+    pub fn failed(degree: i32) -> Self {
+        Self {
+            degree,
+            is_exact: false,
+            kernel_dim: 0,
+            image_dim: 0,
+            torsion_free: false,
         }
     }
 
@@ -56,23 +80,17 @@ impl ExactnessPredicateChecker {
     /// Exactness at degree n: ker(d_n) = im(d_{n+1})
     /// This is equivalent to H_n = 0 (trivial homology).
     pub fn check_at_degree(diff: &DifferentialOperator, degree: i32) -> ExactnessCertificate {
-        // First verify d² = 0
-        let cert = SquaredZeroVerifier::verify_at_degree(diff, degree);
-        if !cert.is_valid {
-            return ExactnessCertificate::new(degree, 0, 0);
+        // im d_{n+1} ⊆ ker d_n requires d_n ∘ d_{n+1} = 0.
+        if !SquaredZeroVerifier::verify_at_degree(diff, degree + 1).is_valid {
+            return ExactnessCertificate::failed(degree);
         }
-
-        // Compute kernel and image
-        let kernel_dim = Self::compute_kernel_dimension(diff, degree);
-        let image_dim = Self::compute_image_dimension(diff, degree);
-
-        ExactnessCertificate::new(degree, kernel_dim, image_dim)
-    }
-
-    /// Accessor for target rank (used in verification).
-    #[allow(dead_code)]
-    fn get_target_rank(diff: &DifferentialOperator, degree: i32) -> usize {
-        diff.target_rank(degree)
+        let outgoing = smith_form(&diff.to_dense_matrix(degree), diff.source_rank(degree));
+        let incoming = smith_form(&diff.to_dense_matrix(degree + 1), diff.source_rank(degree + 1));
+        let (Ok(outgoing), Ok(incoming)) = (outgoing, incoming) else {
+            return ExactnessCertificate::failed(degree);
+        };
+        let kernel_dim = diff.source_rank(degree).saturating_sub(outgoing.rank());
+        ExactnessCertificate::from_ranks(degree, kernel_dim, incoming.rank(), incoming.is_torsion_free())
     }
 
     /// Check global exactness: the complex is exact everywhere.
@@ -117,89 +135,6 @@ impl ExactnessPredicateChecker {
         result.support_degrees().is_empty()
     }
 
-    /// Compute kernel dimension (estimated).
-    fn compute_kernel_dimension(diff: &DifferentialOperator, degree: i32) -> usize {
-        let source_rank = diff.source_rank(degree);
-        let matrix = diff.to_dense_matrix(degree);
-
-        if matrix.is_empty() {
-            return source_rank; // Zero map has all elements in kernel
-        }
-
-        // Estimate rank of matrix
-        let mut rank = 0;
-        let rows = matrix.len();
-        let cols = if rows > 0 { matrix[0].len() } else { 0 };
-
-        let mut current_col = 0;
-
-        for current_row in 0..rows {
-            if current_col >= cols {
-                break;
-            }
-
-            // Find pivot
-            let mut pivot_row = None;
-            for r in current_row..rows {
-                if matrix[r][current_col] != 0 {
-                    pivot_row = Some(r);
-                    break;
-                }
-            }
-
-            if pivot_row.is_some() {
-                rank += 1;
-                current_col += 1;
-            } else {
-                current_col += 1;
-            }
-        }
-
-        source_rank - rank
-    }
-
-    /// Compute image dimension (estimated).
-    fn compute_image_dimension(diff: &DifferentialOperator, degree: i32) -> usize {
-        let _target_rank = diff.target_rank(degree);
-        let matrix = diff.to_dense_matrix(degree);
-
-        if matrix.is_empty() {
-            return 0; // Zero map has trivial image
-        }
-
-        // Estimate rank of matrix
-        let mut rank = 0;
-        let rows = matrix.len();
-        let cols = if rows > 0 { matrix[0].len() } else { 0 };
-
-        let mut mat = matrix.clone();
-        let mut current_col = 0;
-
-        for current_row in 0..rows {
-            if current_col >= cols {
-                break;
-            }
-
-            // Find pivot
-            let mut pivot_row = None;
-            for r in current_row..rows {
-                if mat[r][current_col] != 0 {
-                    pivot_row = Some(r);
-                    break;
-                }
-            }
-
-            if let Some(piv) = pivot_row {
-                mat.swap(current_row, piv);
-                rank += 1;
-                current_col += 1;
-            } else {
-                current_col += 1;
-            }
-        }
-
-        rank
-    }
 }
 
 /// Global proof that a sequence is exact (acyclic).
@@ -283,6 +218,51 @@ mod tests {
         };
         assert!(proof.is_exact);
         assert_eq!(proof.exact_count(), 2);
+    }
+
+    fn complex(ranks: Vec<(i32, usize)>, maps: &[(i32, usize, Vec<(usize, i64)>)]) -> DifferentialOperator {
+        let mut diff = DifferentialOperator::new(ChainComplexShape::from_ranks(ranks));
+        for (degree, gen, image) in maps {
+            diff.set_generator_image(*degree, *gen, degree - 1, image.clone());
+        }
+        diff
+    }
+
+    #[test]
+    fn identity_complex_is_exact() {
+        let diff = complex(vec![(0, 2), (1, 2)], &[(1, 0, vec![(0, 1)]), (1, 1, vec![(1, 1)])]);
+        let proof = ExactnessPredicateChecker::check_global_exactness(&diff);
+        assert!(proof.is_exact, "{}", proof.summary());
+    }
+
+    #[test]
+    fn zero_differential_is_not_exact() {
+        let diff = complex(vec![(0, 1), (1, 1)], &[(1, 0, vec![])]);
+        let proof = ExactnessPredicateChecker::check_global_exactness(&diff);
+        assert!(!proof.is_exact);
+        let c0 = proof.cert_at(0).unwrap();
+        assert_eq!((c0.kernel_dim, c0.image_dim), (1, 0));
+    }
+
+    #[test]
+    fn torsion_breaks_exactness() {
+        let diff = complex(vec![(0, 1), (1, 1)], &[(1, 0, vec![(0, 2)])]);
+        let c0 = ExactnessPredicateChecker::check_at_degree(&diff, 0);
+        assert_eq!((c0.kernel_dim, c0.image_dim), (1, 1));
+        assert!(!c0.torsion_free);
+        assert!(!c0.is_exact);
+        assert!(ExactnessPredicateChecker::check_at_degree(&diff, 1).is_exact);
+    }
+
+    #[test]
+    fn non_complex_is_never_exact() {
+        let diff = complex(
+            vec![(0, 1), (1, 1), (2, 1)],
+            &[(1, 0, vec![(0, 1)]), (2, 0, vec![(0, 1)])],
+        );
+        let c1 = ExactnessPredicateChecker::check_at_degree(&diff, 1);
+        assert!(!c1.is_exact);
+        assert!(!ExactnessPredicateChecker::check_global_exactness(&diff).is_exact);
     }
 
     #[test]

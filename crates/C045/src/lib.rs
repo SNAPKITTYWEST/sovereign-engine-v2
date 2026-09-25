@@ -8,6 +8,7 @@
 
 #![warn(missing_docs)]
 
+use chain_complex_shape::integer_matrix::{self, MatrixError, SmithForm};
 use chain_complex_types::ChainElement;
 
 /// A projective module P, represented as a free module (since we work over a PID).
@@ -88,13 +89,10 @@ impl ProjectiveModuleHomomorphism {
         matrix: Vec<Vec<i64>>,
     ) -> Self {
         assert_eq!(matrix.len(), target.rank, "matrix rows must equal target rank");
-        if target.rank > 0 {
-            assert_eq!(
-                matrix[0].len(),
-                source.rank,
-                "matrix columns must equal source rank"
-            );
-        }
+        assert!(
+            matrix.iter().all(|row| row.len() == source.rank),
+            "matrix columns must equal source rank"
+        );
         Self {
             source,
             target,
@@ -183,52 +181,30 @@ impl ProjectiveModuleHomomorphism {
         true
     }
 
-    /// Compute the rank (as a matrix).
+    /// The matrix (target_rank rows × source_rank columns).
+    pub fn matrix(&self) -> &[Vec<i64>] {
+        &self.matrix
+    }
+
+    /// Smith normal form of the matrix: rank, invariant factors (torsion of
+    /// the cokernel) and a Z-basis of the kernel.
+    pub fn smith_form(&self) -> Result<SmithForm, MatrixError> {
+        integer_matrix::smith_form(&self.matrix, self.source.rank)
+    }
+
+    /// Rank of the matrix, or an error if exact arithmetic overflows.
+    pub fn try_rank(&self) -> Result<usize, MatrixError> {
+        Ok(self.smith_form()?.rank())
+    }
+
+    /// Rank of the matrix.
+    ///
+    /// # Panics
+    /// Panics if exact rank computation overflows 128-bit arithmetic; use
+    /// [`Self::try_rank`] to handle that case.
     pub fn rank(&self) -> usize {
-        // Gaussian elimination to find rank
-        let mut mat = self.matrix.clone();
-        let mut rank = 0;
-
-        let rows = mat.len();
-        let cols = if rows > 0 { mat[0].len() } else { 0 };
-
-        let mut current_col = 0;
-        for current_row in 0..rows {
-            if current_col >= cols {
-                break;
-            }
-
-            // Find pivot
-            let mut pivot_row = None;
-            for r in current_row..rows {
-                if mat[r][current_col] != 0 {
-                    pivot_row = Some(r);
-                    break;
-                }
-            }
-
-            if let Some(piv) = pivot_row {
-                mat.swap(current_row, piv);
-                rank += 1;
-
-                // Eliminate
-                for r in 0..rows {
-                    if r != current_row && mat[r][current_col] != 0 {
-                        let factor = mat[r][current_col];
-                        for c in 0..cols {
-                            mat[r][c] = mat[r][c] * mat[current_row][current_col]
-                                - factor * mat[current_row][c];
-                        }
-                    }
-                }
-
-                current_col += 1;
-            } else {
-                current_col += 1;
-            }
-        }
-
-        rank
+        self.try_rank()
+            .expect("rank computation overflowed; use try_rank to handle this")
     }
 }
 
@@ -349,6 +325,25 @@ mod tests {
         let matrix = vec![vec![1, 0], vec![0, 1]];
         let hom = ProjectiveModuleHomomorphism::new(p, q, matrix);
         assert_eq!(hom.rank(), 2);
+    }
+
+    #[test]
+    fn rank_handles_dependent_rows_and_large_entries() {
+        let p = ProjectiveModule::new(3, 0);
+        let q = ProjectiveModule::new(2, 0);
+        let dependent = ProjectiveModuleHomomorphism::new(p.clone(), q.clone(), vec![vec![1, 2, 3], vec![2, 4, 6]]);
+        assert_eq!(dependent.rank(), 1);
+        let big = i64::MAX / 2;
+        let large = ProjectiveModuleHomomorphism::new(p, q, vec![vec![big, big - 1, 1], vec![big - 1, big - 2, 1]]);
+        assert_eq!(large.try_rank(), Ok(2));
+    }
+
+    #[test]
+    fn smith_form_of_homomorphism() {
+        let p = ProjectiveModule::new(1, 1);
+        let q = ProjectiveModule::new(1, 0);
+        let times_six = ProjectiveModuleHomomorphism::new(p, q, vec![vec![6]]);
+        assert_eq!(times_six.smith_form().unwrap().torsion(), vec![6]);
     }
 
     #[test]

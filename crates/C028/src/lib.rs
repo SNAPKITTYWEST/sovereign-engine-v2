@@ -75,17 +75,15 @@ pub fn verify_multi_constraint(
     VerificationResult::new(passed, failed)
 }
 
-/// Verify that gaps follow a primality condition.
+/// Verify that each `(p, q, gap)` is consistent with `p`, `q` being
+/// consecutive primes: `q > p`, `gap = q − p ≥ 1`, and the gap is even unless
+/// `p = 2` (every prime after 2 is odd, so the only odd gap is 2 → 3).
 pub fn verify_gaps_around_primes(
     candidates: &[(u64, u64, u64)],
 ) -> VerificationResult {
-    // A gap between consecutive primes p and q should have q - p >= 2
     let results: Vec<bool> = candidates
         .iter()
-        .map(|&(p, q, gap)| {
-            // Verify internal consistency
-            q > p && gap == q - p && gap >= 2
-        })
+        .map(|&(p, q, gap)| q > p && gap == q - p && (p == 2 || gap % 2 == 0))
         .collect();
 
     let passed = results.iter().filter(|&&p| p).count();
@@ -165,9 +163,11 @@ mod tests {
 
     #[test]
     fn test_verify_gaps_around_primes() {
-        let candidates = vec![(3, 5, 2), (5, 7, 2), (7, 11, 4), (11, 13, 2)];
+        let candidates = vec![(2, 3, 1), (3, 5, 2), (5, 7, 2), (7, 11, 4), (11, 13, 2)];
         let result = verify_gaps_around_primes(&candidates);
         assert!(result.all_passed());
+        let bad = vec![(3, 6, 3), (5, 7, 3), (7, 5, 2)];
+        assert_eq!(verify_gaps_around_primes(&bad).failed, 3);
     }
 
     #[test]

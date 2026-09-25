@@ -168,16 +168,20 @@ impl RecursionContext {
         }
     }
 
-    /// Enter a new recursion level, returning the depth context.
-    pub fn enter(&mut self) -> Option<RecursionDepthGuard> {
-        if let Some(depth) = self.manager.increase_depth() {
-            Some(RecursionDepthGuard {
-                context_id: self.context_id,
-                depth,
-            })
-        } else {
-            None
-        }
+    /// Enter a new recursion level. The returned guard restores the previous
+    /// depth when dropped; nested levels are entered through the guard.
+    /// `None` if the maximum depth is reached.
+    pub fn enter(&mut self) -> Option<RecursionDepthGuard<'_>> {
+        let depth = self.manager.increase_depth()?;
+        Some(RecursionDepthGuard {
+            context: self,
+            depth,
+        })
+    }
+
+    /// Identifier of this context.
+    pub fn context_id(&self) -> u64 {
+        self.context_id
     }
 
     /// Get the current manager.
@@ -197,24 +201,67 @@ impl Default for RecursionContext {
     }
 }
 
-/// RAII guard for managing depth on exit of a scope.
+/// RAII guard for one recursion level: dropping it restores the depth the
+/// context had before [`RecursionContext::enter`].
 #[derive(Debug)]
-pub struct RecursionDepthGuard {
-    #[allow(dead_code)]
-    context_id: u64,
+pub struct RecursionDepthGuard<'a> {
+    context: &'a mut RecursionContext,
     depth: u32,
 }
 
-impl RecursionDepthGuard {
-    /// Get the depth of this guard.
+impl RecursionDepthGuard<'_> {
+    /// Depth of this level.
     pub fn depth(&self) -> u32 {
         self.depth
+    }
+
+    /// Enter a nested level.
+    pub fn enter(&mut self) -> Option<RecursionDepthGuard<'_>> {
+        self.context.enter()
+    }
+
+    /// The depth manager (read-only while the guard is alive).
+    pub fn manager(&self) -> &DepthManager {
+        &self.context.manager
+    }
+}
+
+impl Drop for RecursionDepthGuard<'_> {
+    fn drop(&mut self) {
+        self.context.manager.decrease_depth();
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn guard_restores_depth_on_drop() {
+        let mut ctx = RecursionContext::new();
+        {
+            let mut outer = ctx.enter().unwrap();
+            assert_eq!(outer.depth(), 1);
+            {
+                let inner = outer.enter().unwrap();
+                assert_eq!(inner.depth(), 2);
+                assert_eq!(inner.manager().current_depth(), 2);
+            }
+            assert_eq!(outer.manager().current_depth(), 1);
+        }
+        assert_eq!(ctx.manager().current_depth(), 0);
+        assert!(ctx.manager().is_top_level());
+    }
+
+    #[test]
+    fn guard_respects_max_depth() {
+        let mut ctx = RecursionContext::new();
+        *ctx.manager_mut() = DepthManager::with_max_depth(1);
+        let mut g = ctx.enter().unwrap();
+        assert!(g.enter().is_none());
+        drop(g);
+        assert_eq!(ctx.manager().current_depth(), 0);
+    }
 
     #[test]
     fn test_depth_manager_creation() {

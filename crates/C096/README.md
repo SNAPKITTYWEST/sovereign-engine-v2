@@ -1,16 +1,33 @@
-# tor_spectrum_correspondence — UNIMPLEMENTED SCAFFOLD
+# `tor_spectrum_correspondence` (C096)
 
-`src/lib.rs` is a 7-line stub with no types, functions, or tests.
+Tier 9 — cross-layer certification. *Generated from the crate source; regenerate after API changes.*
 
-## Intended purpose (inferred from name + dependencies)
+Correspondence between Tor (Tier 5) and the prime spectrum (Tier 6):
+the highest non-vanishing Tor degree of any pair of cyclic groups is at
+most the Krull dimension of Spec(ℤ) (computed on a finite prefix). This
+is the finite, checkable shadow of "ℤ is regular of dimension 1, so its
+global dimension — which bounds Tor dimension — equals its Krull
+dimension".
 
-Depends on `derived_homology` (C054), `tor_invariants_computation` (C058),
-`dimension_upper_bounds` (C068), and `cross_layer_types` (C091) — spanning
-the Tor-functor (Layer 2) and Krull-dimension (Layer 3) crates. Presumably
-meant to relate Tor invariants to spectrum/dimension bounds, the one
-correspondence crate that bridges two non-adjacent layers directly (2 and
-3) rather than one layer to its Lean lemma library.
+## Dependencies
 
-## Status
+- [C054 `derived_homology`](../C054/README.md)
+- [C058 `tor_invariants_computation`](../C058/README.md)
+- [C068 `dimension_upper_bounds`](../C068/README.md)
+- [C091 `cross_layer_types`](../C091/README.md)
 
-Empty. Blocked on `cross_layer_types` (C091).
+## Re-exports
+
+- `dimension_upper_bounds::KrullDim`
+
+## Public API
+
+| Item | Description |
+|---|---|
+| `fn spec_z_prefix_dimension(bound: u64) -> KrullDim` | Krull dimension of `{(0)} ∪ {(p) : p ≤ bound}`. |
+| `fn check_tor_dimension_bounded_with(max_order: i64, krull: KrullDim) -> CorrespondenceReport` | For `0 ≤ m, n ≤ max_order`, check that the Tor dimension of `(ℤ/m, ℤ/n)` satisfies the upper bound `krull`. |
+| `fn check_tor_dimension_bounded_by_krull(max_order: i64) -> CorrespondenceReport` | The real check: bound by the dimension of the Spec(ℤ) prefix up to `max_order` (at least up to 2). |
+
+## Tests
+
+`cargo test -p tor_spectrum_correspondence` runs 2 unit tests.

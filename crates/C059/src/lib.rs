@@ -7,6 +7,7 @@
 pub use projective_resolution::ProjectiveResolution;
 pub use tor_functor_definition::TorComputation;
 pub use derived_homology::compute_tor_from_resolution;
+use derived_homology::tor_of;
 pub use tor_invariants_computation::{BettiNumbers, compute_betti_numbers};
 
 /// Wrapper for a complete Tor-computed chain complex
@@ -21,16 +22,25 @@ pub struct TorChainComplexData {
 }
 
 impl TorChainComplexData {
-    /// Create from a resolution
-    pub fn from_resolution(resolution: ProjectiveResolution) -> Self {
-        let tor = TorComputation::new();
-        let betti = compute_betti_numbers(&tor);
+    /// `Tor_*(M, Z)` for the module `M` resolved by `resolution`
+    /// (`Tor_0 = M`, higher groups vanish).
+    pub fn from_resolution(resolution: ProjectiveResolution) -> Result<Self, String> {
+        Self::from_resolutions(resolution, &ProjectiveResolution::free_of_rank_one())
+    }
 
-        Self {
+    /// `Tor_*(M, N)` for `M` resolved by `resolution` and `N` resolved by
+    /// `coefficients`.
+    pub fn from_resolutions(
+        resolution: ProjectiveResolution,
+        coefficients: &ProjectiveResolution,
+    ) -> Result<Self, String> {
+        let tor = tor_of(&resolution, coefficients)?;
+        let betti = compute_betti_numbers(&tor);
+        Ok(Self {
             resolution,
             tor,
             betti,
-        }
+        })
     }
 
     /// Update Tor computation
@@ -39,7 +49,8 @@ impl TorChainComplexData {
         self.tor = tor;
     }
 
-    /// Export as chain complex interface (simplified)
+    /// Summary: number of resolution modules, total Betti rank, and the
+    /// highest degree with free rank.
     pub fn as_complex_data(&self) -> ChainComplexInterface {
         ChainComplexInterface {
             num_degrees: self.resolution.len(),
@@ -49,8 +60,8 @@ impl TorChainComplexData {
     }
 }
 
-/// Simplified chain complex interface for compatibility
-#[derive(Clone, Debug)]
+/// Summary of a Tor computation attached to a resolution.
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ChainComplexInterface {
     /// Number of chain modules
     pub num_degrees: usize,
@@ -108,6 +119,30 @@ mod tests {
             regularity: Some(0),
         };
         assert!(iface.is_acyclic());
+    }
+
+    #[test]
+    fn data_from_resolutions_computes_tor() {
+        let z = ProjectiveResolution::cyclic_resolution(0);
+        let data = TorChainComplexData::from_resolution(z).unwrap();
+        assert_eq!(data.betti.beta(0), 1);
+        assert!(data.as_complex_data().is_acyclic());
+
+        let data = TorChainComplexData::from_resolutions(
+            ProjectiveResolution::cyclic_resolution(4),
+            &ProjectiveResolution::cyclic_resolution(6),
+        )
+        .unwrap();
+        assert_eq!(data.tor.tor(1).unwrap().torsion_orders(), vec![2]);
+        assert_eq!(data.as_complex_data().regularity, None);
+
+        let mut not_exact = ProjectiveResolution::new();
+        let p = tor_functor_definition::ProjectiveModule::new(1, 0);
+        let p1 = tor_functor_definition::ProjectiveModule::new(1, 1);
+        not_exact.add_module(p.clone());
+        not_exact.add_module(p1.clone());
+        not_exact.add_differential(tor_functor_definition::ProjectiveModuleHomomorphism::new(p1, p, vec![vec![0]]));
+        assert!(TorChainComplexData::from_resolution(not_exact).is_err());
     }
 
     #[test]

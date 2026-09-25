@@ -1,20 +1,32 @@
-# tensor_runtime_binding — UNIMPLEMENTED SCAFFOLD
+# `tensor_runtime_binding` (C082)
 
-`src/lib.rs` is a 7-line stub with no types, functions, or tests.
+Tier 8 — runtime bridge. *Generated from the crate source; regenerate after API changes.*
 
-## Intended purpose (inferred from name + dependencies)
+Binds a live gap tensor to the runtime snapshot store: every mutation
+goes through the binding, is validated at the prime level, and is
+recorded. The binding's claims (only candidate primes written, invariants
+held, history intact) are re-checkable against the recording.
 
-Depends on `gap_tensor_core` (C001), `gap_tensor_primes` (C002),
-`gap_tensor_trace` (C010), and `runtime_state_snapshot` (C081, itself
-unimplemented). Presumably meant to bind live gap-tensor computation state
-into the `runtime_state_snapshot` structure, so that a running Rust
-execution trace of tensor operations can later be checked against Lean
-lemmas via `rust_lean_correspondence` (C093).
+## Dependencies
 
-## Status
+- [C001 `gap_tensor_core`](../C001/README.md)
+- [C002 `gap_tensor_primes`](../C002/README.md)
+- [C010 `gap_tensor_trace`](../C010/README.md)
+- [C081 `runtime_state_snapshot`](../C081/README.md)
 
-Empty. Blocked on `runtime_state_snapshot` (C081) being implemented first.
-Downstream consumers `certificate_generation` (C087),
-`runtime_invariant_checking` (C089), `runtime_bridge_tests_integration`
-(C090), and `rust_lean_correspondence` (C093) all depend on this crate and
-are themselves empty scaffolds.
+## Public API
+
+| Item | Description |
+|---|---|
+| `enum BindingError` | Why a write was refused. |
+| `struct TensorBinding` | A tensor whose every state is recorded. |
+| `fn TensorBinding::new(name: impl Into<String>, tensor: GapTensor) -> Self` | Bind `tensor`, recording its initial state. |
+| `fn TensorBinding::tensor(&self) -> &GapTensor` | Current state. |
+| `fn TensorBinding::store(&self) -> &SnapshotStore` | Recorded history. |
+| `fn TensorBinding::rejected(&self) -> &[(usize, GapTensorNode)]` | Writes refused so far. |
+| `fn TensorBinding::set_node(&mut self, index: usize, node: GapTensorNode) -> Result<&RuntimeSnapshot, BindingError>` | Write node `index` (flat, row-major). |
+| `fn TensorBinding::apply(&mut self, label: &str, f: impl FnOnce(&mut GapTensor)) -> Result<&RuntimeSnapshot, BindingError>` | Apply a bulk update and record the result. |
+
+## Tests
+
+`cargo test -p tensor_runtime_binding` runs 3 unit tests.

@@ -121,14 +121,17 @@ impl ExecutionTrace {
         self.record_event(EventType::Transition, message, depth, cursor);
     }
 
-    /// Add a completed solution path.
+    /// Add a completed solution path, recording a Solution event at the
+    /// path's final depth and position (0 and 0 for an empty path).
     pub fn record_solution(&mut self, path: SolutionPath) {
+        let depth = path.final_depth().unwrap_or(0);
+        let position = path.final_position().unwrap_or(0);
         self.solution_paths.push(path);
         self.record_event(
             EventType::Solution,
             "Solution found".to_string(),
-            0,
-            0,
+            depth,
+            position,
         );
     }
 
@@ -194,16 +197,18 @@ impl ExecutionTrace {
         }
     }
 
-    /// Generate a formatted trace report.
+    /// Generate a formatted trace report. Each event shows the milliseconds
+    /// elapsed since the first event.
     pub fn format_trace(&self) -> String {
         let mut result = String::new();
         result.push_str("=== EXECUTION TRACE ===\n\n");
 
+        let start_ms = self.events.first().map_or(0, |e| e.timestamp_ms);
         for event in &self.events {
             result.push_str(&format!(
-                "[{:04}] @{:3}ms depth={} cursor={} | {}: {}\n",
+                "[{:04}] +{}ms depth={} cursor={} | {}: {}\n",
                 event.event_id,
-                event.timestamp_ms % 1000,
+                event.timestamp_ms.saturating_sub(start_ms),
                 event.depth,
                 event.cursor_position,
                 event.event_type,
@@ -358,6 +363,25 @@ mod tests {
         let formatted = trace.format_trace();
         assert!(formatted.contains("EXECUTION TRACE"));
         assert!(formatted.contains("Starting"));
+    }
+
+    #[test]
+    fn solution_event_uses_the_path_endpoint() {
+        use recursion_solution_path::SolutionStep;
+        use recursive_solver_transition::TransitionOperator;
+        let mut path = SolutionPath::new();
+        path.add_step(SolutionStep::new(0, TransitionOperator::Advance, 0, 3, 0, 2));
+        let mut trace = ExecutionTrace::new();
+        trace.record_solution(path);
+        let event = trace.events_by_type(EventType::Solution)[0];
+        assert_eq!((event.depth, event.cursor_position), (2, 3));
+    }
+
+    #[test]
+    fn format_trace_shows_time_since_first_event() {
+        let mut trace = ExecutionTrace::new();
+        trace.record_event(EventType::Start, "Starting".to_string(), 0, 0);
+        assert!(trace.format_trace().contains("[0000] +0ms depth=0 cursor=0 | Start: Starting"));
     }
 
     #[test]

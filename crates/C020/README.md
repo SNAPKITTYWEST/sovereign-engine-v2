@@ -1,18 +1,34 @@
-# multiplicity_arena_tests_integration (C020)
+# `multiplicity_arena_tests_integration` (C020)
 
-**Status: unimplemented scaffold.** The crate is currently only a stub — `src/lib.rs` is 7 lines: a module doc comment, `#![warn(missing_docs)]`, and a `// Scaffold: Add your code here.` marker. It compiles (empty lib) but exports nothing.
+Tier 1 — multiplicity arena. *Generated from the crate source; regenerate after API changes.*
 
-## Intended purpose
+End-to-end scenarios across the arena stack (layout, bootstrap,
+allocation, pointers, ownership, drain/rollback, fail-closed handling).
+ returns a per-scenario report so a failure says
+which scenario broke and why.
 
-Integration tests tying the multiplicity_arena_* family together end to end, mirroring prime_gap_tests_integration's role for Tier 2.
+## Dependencies
 
-## Pipeline role
+- [C011 `multiplicity_arena_core`](../C011/README.md)
+- [C012 `multiplicity_arena_layout`](../C012/README.md)
+- [C013 `multiplicity_arena_allocation`](../C013/README.md)
+- [C014 `multiplicity_arena_initialization`](../C014/README.md)
+- [C015 `multiplicity_arena_pointers`](../C015/README.md)
+- [C016 `multiplicity_arena_ownership`](../C016/README.md)
+- [C017 `multiplicity_arena_deallocation`](../C017/README.md)
+- [C018 `multiplicity_arena_failure_handling`](../C018/README.md)
 
-Part of the multiplicity_arena_* family rooted at `gap_tensor_core` (C001) and `multiplicity_arena_core` (C011). No `[dependencies]` are declared in `Cargo.toml` yet, so even the expected dependency on C001/C011 has not been wired up.
+## Public API
 
-## Gaps / TODOs
+| Item | Description |
+|---|---|
+| `struct ScenarioResult` | Outcome of one scenario. |
+| `fn ScenarioResult::passed(&self) -> bool` | Did the scenario pass? |
+| `struct IntegrationReport` | Outcome of all scenarios. |
+| `fn IntegrationReport::all_passed(&self) -> bool` | True iff every scenario passed. |
+| `fn IntegrationReport::failures(&self) -> Vec<&ScenarioResult>` | The failed scenarios. |
+| `fn run_arena_integration() -> IntegrationReport` | Run every scenario. |
 
-- No implementation: this is a pure placeholder crate.
-- No dependency on `gap_tensor_core`/`multiplicity_arena_core` declared, despite the name implying it operates on `GapTensorNode`/`MultiplicityArena`.
-- No tests.
-- `#![warn(missing_docs)]` is present but moot with no public items to document.
+## Tests
+
+`cargo test -p multiplicity_arena_tests_integration` runs 2 unit tests.

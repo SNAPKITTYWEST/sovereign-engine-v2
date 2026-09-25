@@ -6,7 +6,15 @@
 #![warn(missing_docs)]
 
 use prime_gap_relationship::{PrimeGapPair, prime_gap_pairs};
-use recursive_solver_state::RecursiveSolverState;
+use recursive_solver_state::{GapConstraint, RecursiveSolverState};
+
+/// Does the consecutive prime pair satisfy the constraint? The gap must
+/// match and the lower prime must lie within the (optional) bounds.
+pub fn constraint_admits(constraint: &GapConstraint, pair: &PrimeGapPair) -> bool {
+    pair.gap == constraint.gap_size as u64
+        && (constraint.min_prime == 0 || pair.prime >= constraint.min_prime as u64)
+        && (constraint.max_prime == 0 || pair.prime <= constraint.max_prime as u64)
+}
 
 /// Criteria for detecting a base case.
 #[derive(Debug, Clone)]
@@ -80,10 +88,21 @@ impl BaseCaseValidator {
         state.depth() >= max_depth
     }
 
-    /// Check if no valid moves remain.
-    pub fn check_no_valid_moves(&self, state: &RecursiveSolverState) -> bool {
-        // This would need cursor info; for now, check if state is contradictory
-        state.is_contradictory()
+    /// No valid move remains from `cursor_pos`: the state is contradictory,
+    /// or no remaining prime pair satisfies any unsatisfied constraint (with
+    /// no unsatisfied constraints, any remaining pair is a valid move).
+    pub fn check_no_valid_moves(&self, state: &RecursiveSolverState, cursor_pos: usize) -> bool {
+        if state.is_contradictory() {
+            return true;
+        }
+        let remaining = self.gap_pairs.get(cursor_pos..).unwrap_or(&[]);
+        let open: Vec<&GapConstraint> = state.constraints().iter().filter(|c| !c.is_satisfied).collect();
+        if open.is_empty() {
+            return remaining.is_empty();
+        }
+        !remaining
+            .iter()
+            .any(|pair| open.iter().any(|c| constraint_admits(c, pair)))
     }
 
     /// Check if sequence is exhausted.
@@ -130,7 +149,7 @@ impl BaseCaseValidator {
             return Some(BaseCase::PatternMatched(current_gap));
         }
 
-        if self.check_no_valid_moves(state) {
+        if self.check_no_valid_moves(state, cursor_pos) {
             return Some(BaseCase::NoValidMoves);
         }
 
@@ -245,6 +264,53 @@ mod tests {
             stats.case_counts.get("SequenceExhausted"),
             Some(&2)
         );
+    }
+
+    fn constraint(gap_size: u32, min_prime: u32, max_prime: u32) -> GapConstraint {
+        GapConstraint {
+            position: 0,
+            min_prime,
+            max_prime,
+            gap_size,
+            is_satisfied: false,
+        }
+    }
+
+    #[test]
+    fn valid_moves_follow_constraints() {
+        let v = BaseCaseValidator::new(100);
+        let idx_89 = v.gap_pairs().iter().position(|p| p.prime == 89).unwrap();
+
+        let mut state = RecursiveSolverState::new();
+        state.add_constraint(constraint(8, 0, 0));
+        assert!(!v.check_no_valid_moves(&state, 0), "89 → 97 has gap 8");
+        assert!(!v.check_no_valid_moves(&state, idx_89));
+        assert!(v.check_no_valid_moves(&state, idx_89 + 1), "no gap 8 after 89 below 100");
+
+        let mut impossible = RecursiveSolverState::new();
+        impossible.add_constraint(constraint(14, 0, 0));
+        assert!(v.check_no_valid_moves(&impossible, 0), "first gap 14 is 113 → 127");
+
+        let mut bounded = RecursiveSolverState::new();
+        bounded.add_constraint(constraint(2, 50, 60));
+        assert!(!v.check_no_valid_moves(&bounded, 0), "59 → 61");
+        let mut out_of_range = RecursiveSolverState::new();
+        out_of_range.add_constraint(constraint(2, 20, 28));
+        assert!(v.check_no_valid_moves(&out_of_range, 0), "no twin primes with 20 ≤ p ≤ 28");
+    }
+
+    #[test]
+    fn contradictions_and_unconstrained_states() {
+        let v = BaseCaseValidator::new(30);
+        let mut state = RecursiveSolverState::new();
+        assert!(!v.check_no_valid_moves(&state, 0));
+        assert!(v.check_no_valid_moves(&state, v.gap_pairs().len()));
+        state.set_contradictory();
+        assert!(v.check_no_valid_moves(&state, 0));
+        let mut satisfied = RecursiveSolverState::new();
+        satisfied.add_constraint(constraint(4, 0, 0));
+        satisfied.mark_constraint_satisfied(0);
+        assert!(!v.check_no_valid_moves(&satisfied, 0));
     }
 
     #[test]

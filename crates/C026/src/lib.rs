@@ -46,7 +46,9 @@ pub fn gap_sequence_distance(gaps1: &[u64], gaps2: &[u64]) -> f64 {
     sum.sqrt()
 }
 
-/// Compute the "roughness" of a gap sequence (variance of differences).
+/// "Roughness" of a gap sequence: the population standard deviation (divide
+/// by n) of consecutive gap differences. Note that `gap_multiplicity`'s
+/// `gap_std_dev` uses the sample convention (divide by n − 1).
 pub fn sequence_roughness(candidates: &[(u64, u64, u64)]) -> f64 {
     let diffs = gap_differences(candidates);
     if diffs.is_empty() {
@@ -79,9 +81,9 @@ mod tests {
 
     #[test]
     fn test_absolute_gap_differences() {
-        let candidates = vec![(2, 3, 1), (3, 5, 2), (5, 7, 2), (7, 11, 4)];
-        let abs_diffs = absolute_gap_differences(&candidates);
-        assert!(abs_diffs.iter().all(|&d| d >= 0));
+        let candidates = vec![(2, 3, 1), (3, 5, 2), (5, 7, 2), (7, 11, 4), (11, 13, 2)];
+        assert_eq!(absolute_gap_differences(&candidates), vec![1, 0, 2, 2]);
+        assert!(absolute_gap_differences(&candidates[..1]).is_empty());
     }
 
     #[test]
@@ -104,6 +106,7 @@ mod tests {
     fn test_sequence_roughness() {
         let candidates = vec![(2, 3, 1), (3, 5, 2), (5, 7, 2), (7, 11, 4)];
         let roughness = sequence_roughness(&candidates);
-        assert!(roughness >= 0.0);
+        assert!((roughness - (2.0f64 / 3.0).sqrt()).abs() < 1e-12);
+        assert_eq!(sequence_roughness(&candidates[..1]), 0.0);
     }
 }

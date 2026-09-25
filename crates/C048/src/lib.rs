@@ -5,7 +5,10 @@
 
 #![warn(missing_docs)]
 
-use differential_operator::DifferentialOperator;
+pub use chain_complex_shape::integer_matrix;
+use chain_complex_shape::integer_matrix::smith_form;
+pub use chain_complex_shape::ChainComplexShape;
+pub use differential_operator::DifferentialOperator;
 use differential_squared_zero::SquaredZeroVerifier;
 use std::collections::HashMap;
 
@@ -78,9 +81,7 @@ impl HomologyGroup {
     }
 }
 
-/// A simplified homology computation result for a chain complex.
-/// In practice, computing homology requires Gaussian elimination over Z,
-/// which is complex. This provides a simplified interface for smaller examples.
+/// Homology groups of a chain complex, one per degree of its shape.
 #[derive(Debug, Clone)]
 pub struct HomologyComputationResult {
     /// Homology groups H_n for each degree n.
@@ -163,68 +164,31 @@ impl Default for HomologyComputationResult {
 pub struct HomologyComputer;
 
 impl HomologyComputer {
-    /// Compute homology at degree n for a differential operator.
+    /// Compute `H_n = ker(d_n) / im(d_{n+1})` exactly over Z.
     ///
-    /// This is a simplified version. Full computation requires:
-    /// 1. Compute ker(d_n)
-    /// 2. Compute im(d_{n+1})
-    /// 3. Form the quotient ker(d_n) / im(d_{n+1})
-    /// 4. Use Smith normal form to identify rank and torsion
-    ///
-    /// For now, we verify d² = 0 and return a placeholder.
+    /// `ker d_n` is a direct summand of `C_n` (its quotient embeds in the
+    /// free module `C_{n-1}`), so `H_n ≅ Z^r ⊕ ⊕ Z/e_j` with
+    /// `r = rank C_n − rank d_n − rank d_{n+1}` and `e_j` the invariant
+    /// factors of `d_{n+1}` greater than 1 (Smith normal form).
     pub fn compute_at_degree(
         diff: &DifferentialOperator,
         degree: i32,
     ) -> Result<HomologyGroup, String> {
-        // First verify d² = 0 at this degree
-        let cert = SquaredZeroVerifier::verify_at_degree(diff, degree);
-        if !cert.is_valid {
-            return Err(format!("d² ≠ 0 at degree {}", degree));
+        if !SquaredZeroVerifier::verify_at_degree(diff, degree + 1).is_valid {
+            return Err(format!("d² ≠ 0: d_{} ∘ d_{} is non-zero", degree, degree + 1));
         }
-
-        // Get rank information
-        let _source_rank = diff.source_rank(degree);
-
-        // For now, return a homology group with rank equal to kernel dimension
-        // A full implementation would compute the quotient ker(d_n) / im(d_{n+1})
-        let kernel_rank = Self::estimate_kernel_rank(diff, degree);
-
-        Ok(HomologyGroup::new(degree, kernel_rank))
-    }
-
-    /// Estimate the kernel rank (simplified).
-    /// Full computation would use Gaussian elimination.
-    fn estimate_kernel_rank(diff: &DifferentialOperator, degree: i32) -> usize {
-        let matrix = diff.to_dense_matrix(degree);
-
-        if matrix.is_empty() || matrix[0].is_empty() {
-            return diff.source_rank(degree);
+        let rank_n = diff.source_rank(degree);
+        let outgoing = smith_form(&diff.to_dense_matrix(degree), rank_n).map_err(|e| e.to_string())?;
+        let incoming = smith_form(&diff.to_dense_matrix(degree + 1), diff.source_rank(degree + 1))
+            .map_err(|e| e.to_string())?;
+        let free_rank = rank_n
+            .checked_sub(outgoing.rank() + incoming.rank())
+            .ok_or_else(|| format!("rank d_{} + rank d_{} exceeds rank C_{}", degree, degree + 1, degree))?;
+        let mut group = HomologyGroup::new(degree, free_rank);
+        for t in incoming.torsion() {
+            group.add_torsion(t);
         }
-
-        // Simple rank estimation: use Gaussian elimination (modulo complexity)
-        let mut rank = 0;
-        let rows = matrix.len();
-        let cols = matrix[0].len();
-
-        let mut col_pivots = vec![false; cols];
-
-        for row in 0..rows {
-            for col in 0..cols {
-                if matrix[row][col] != 0 {
-                    col_pivots[col] = true;
-                    break;
-                }
-            }
-        }
-
-        for pivot in col_pivots {
-            if pivot {
-                rank += 1;
-            }
-        }
-
-        // Kernel rank = cols - matrix rank
-        (cols as i32 - rank as i32).max(0) as usize
+        Ok(group)
     }
 
     /// Compute homology for all degrees in the chain complex.
@@ -314,6 +278,63 @@ mod tests {
         result.add_group(HomologyGroup::new(0, 2)); // +2
         result.add_group(HomologyGroup::new(1, 1)); // -1
         assert_eq!(result.euler_characteristic(), 1);
+    }
+
+    use chain_complex_shape::ChainComplexShape;
+
+    fn complex(ranks: Vec<(i32, usize)>, maps: &[(i32, usize, Vec<(usize, i64)>)]) -> DifferentialOperator {
+        let mut diff = DifferentialOperator::new(ChainComplexShape::from_ranks(ranks));
+        for (degree, gen, image) in maps {
+            diff.set_generator_image(*degree, *gen, degree - 1, image.clone());
+        }
+        diff
+    }
+
+    #[test]
+    fn multiplication_by_two_has_z2_homology() {
+        let diff = complex(vec![(0, 1), (1, 1)], &[(1, 0, vec![(0, 2)])]);
+        let h = HomologyComputer::compute_all(&diff).unwrap();
+        let h0 = h.group_at(0).unwrap();
+        assert_eq!((h0.rank, h0.torsion.clone()), (0, vec![2]));
+        assert!(h.group_at(1).unwrap().is_trivial());
+    }
+
+    #[test]
+    fn circle_as_triangle_boundary() {
+        let diff = complex(
+            vec![(0, 3), (1, 3)],
+            &[
+                (1, 0, vec![(0, -1), (1, 1)]),
+                (1, 1, vec![(1, -1), (2, 1)]),
+                (1, 2, vec![(2, -1), (0, 1)]),
+            ],
+        );
+        let h = HomologyComputer::compute_all(&diff).unwrap();
+        assert_eq!(h.group_at(0).unwrap(), &HomologyGroup::new(0, 1));
+        assert_eq!(h.group_at(1).unwrap(), &HomologyGroup::new(1, 1));
+        assert_eq!(h.euler_characteristic(), 0);
+    }
+
+    #[test]
+    fn identity_and_zero_differentials() {
+        let identity = complex(vec![(0, 2), (1, 2)], &[(1, 0, vec![(0, 1)]), (1, 1, vec![(1, 1)])]);
+        let h = HomologyComputer::compute_all(&identity).unwrap();
+        assert!(h.support_degrees().is_empty());
+
+        let zero = complex(vec![(0, 1), (1, 1)], &[(1, 0, vec![])]);
+        let h = HomologyComputer::compute_all(&zero).unwrap();
+        assert_eq!(h.support_degrees(), vec![0, 1]);
+        assert_eq!(h.group_at(1).unwrap().rank, 1);
+    }
+
+    #[test]
+    fn non_complex_is_rejected() {
+        let diff = complex(
+            vec![(0, 1), (1, 1), (2, 1)],
+            &[(1, 0, vec![(0, 1)]), (2, 0, vec![(0, 1)])],
+        );
+        assert!(HomologyComputer::compute_at_degree(&diff, 1).is_err());
+        assert!(HomologyComputer::compute_all(&diff).is_err());
     }
 
     #[test]

@@ -1,21 +1,43 @@
-# recursive_solver_transition (C035)
+# `recursive_solver_transition` (C035)
 
-## What it does
-The transition engine: applies state-changing operators (`Advance`, `Retreat`, `ApplyConstraint`, `Backtrack`, `Terminal`) to a bundle of `(RecursiveSolverState, DepthManager, RecursiveSolverCursor)`, recording a `TransitionResult` for each.
+Tier 3 — recursive solver. *Generated from the crate source; regenerate after API changes.*
+
+State transitions during recursive solving. Handles operator application,
+constraint satisfaction checks, and state mutations.
+
+## Dependencies
+
+- [C001 `gap_tensor_core`](../C001/README.md)
+- [C027 `gap_constraint_satisfaction`](../C027/README.md)
+- [C031 `recursive_solver_state`](../C031/README.md)
+- [C032 `recursion_depth_management`](../C032/README.md)
+- [C033 `recursive_solver_cursor`](../C033/README.md)
 
 ## Public API
-- `TransitionOperator` enum (5 variants).
-- `TransitionResult { operator, success, message, new_cursor_pos }`, with `success()`/`failure()` constructors.
-- `SolverTransitionEngine::new(state, depth_manager, cursor)`.
-- `transition_advance()`, `transition_retreat()`, `transition_apply_constraint(&GapConstraint)`, `transition_backtrack()`, `transition_terminal(GapTensorNode)`.
-- `execute_transitions(&[TransitionOperator]) -> Vec<TransitionResult>` — batch runner; note it synthesizes placeholder inputs internally (`GapConstraint::unbounded()`, `GapTensorNode::NIL`) for the `ApplyConstraint`/`Terminal` ops rather than taking per-op parameters.
-- Accessors: `state()`, `cursor()`, `cursor_mut()`, `transitions()`, `depth_manager()`.
 
-## Pipeline position
-Wires together C031 (state), C032 (depth manager), C033 (cursor), C027 (`gap_constraint_satisfaction::GapConstraint`, the *other* constraint type — see C031's README note), and C001 (`GapTensorNode`). This is the central orchestrator that C037 (backtracking), C039 (solution path), and C040 (trace) build on top of.
+| Item | Description |
+|---|---|
+| `enum TransitionOperator` | Represents a transition operation between solver states. |
+| `enum TransitionStep` | A transition together with the data it needs. |
+| `struct TransitionResult` | Result of a transition operation. |
+| `fn TransitionResult::success(operator: TransitionOperator, message: String, new_pos: Option<usize>) -> Self` | Create a successful transition result. |
+| `fn TransitionResult::failure(operator: TransitionOperator, message: String) -> Self` | Create a failed transition result. |
+| `struct SolverTransitionEngine` | Manages state transitions during recursive solving. |
+| `fn SolverTransitionEngine::new(state: RecursiveSolverState, depth_manager: DepthManager, cursor: RecursiveSolverCursor) -> Self` | Create a new transition engine. |
+| `fn SolverTransitionEngine::transition_advance(&mut self) -> TransitionResult` | Apply an advance transition. |
+| `fn SolverTransitionEngine::transition_retreat(&mut self) -> TransitionResult` | Apply a retreat transition. |
+| `fn SolverTransitionEngine::transition_apply_constraint(&mut self, constraint: &GapConstraint) -> TransitionResult` | Apply a constraint at the current position. |
+| `fn SolverTransitionEngine::transition_backtrack(&mut self) -> TransitionResult` | Apply a backtrack transition. |
+| `fn SolverTransitionEngine::transition_terminal(&mut self, node: GapTensorNode) -> TransitionResult` | Mark current position as terminal. |
+| `fn SolverTransitionEngine::execute_step(&mut self, step: &TransitionStep) -> TransitionResult` | Execute one step. |
+| `fn SolverTransitionEngine::execute_steps(&mut self, steps: &[TransitionStep]) -> Vec<TransitionResult>` | Execute a sequence of steps, each carrying its own data. |
+| `fn SolverTransitionEngine::execute_transitions(&mut self, ops: &[TransitionOperator]) -> Vec<TransitionResult>` | Execute bare operators. |
+| `fn SolverTransitionEngine::state(&self) -> &RecursiveSolverState` | Get the current state. |
+| `fn SolverTransitionEngine::cursor(&self) -> &RecursiveSolverCursor` | Get the current cursor. |
+| `fn SolverTransitionEngine::cursor_mut(&mut self) -> &mut RecursiveSolverCursor` | Get a mutable reference to the cursor. |
+| `fn SolverTransitionEngine::transitions(&self) -> &[TransitionResult]` | Get transition history. |
+| `fn SolverTransitionEngine::depth_manager(&self) -> &DepthManager` | Get the depth manager. |
 
-## Notes / gaps
-- **Gap:** `execute_transitions` always applies `GapConstraint::unbounded()` for every `ApplyConstraint` op in a batch and `GapTensorNode::NIL` for every `Terminal` op — it cannot express "apply *this specific* constraint at step N" through the batch API. Real constraint/terminal-node application must go through the single-op methods directly; the batch convenience method is effectively decorative for those two operators.
-- `transition_apply_constraint` on failure marks the cursor position invalid AND sets the state contradictory as a side effect — a caller inspecting only the returned `TransitionResult.success` won't see that two other pieces of mutable state changed.
-- `transition_backtrack` relies on `state.pop_state()` (from C031's path stack), not on `DepthManager`'s own backtrack-point stack (C032) — two backtracking mechanisms exist in the pipeline and this crate uses only one of them; C037 is where the other one (`BacktrackManager`) lives, so the two are not yet unified.
-- 6 unit tests.
+## Tests
+
+`cargo test -p recursive_solver_transition` runs 9 unit tests.

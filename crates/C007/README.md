@@ -1,18 +1,32 @@
-# gap_tensor_invariants (C007)
+# `gap_tensor_invariants` (C007)
 
-**Status: unimplemented scaffold.** The crate is currently only a stub — `src/lib.rs` is 7 lines: a module doc comment, `#![warn(missing_docs)]`, and a `// Scaffold: Add your code here.` marker. It compiles (empty lib) but exports nothing.
+Tier 0 — gap tensor primitives. *Generated from the crate source; regenerate after API changes.*
 
-## Intended purpose
+Well-formedness invariants for gap tensor nodes and tensors:
 
-Invariant checking for gap tensors — validation rules a tensor must satisfy (e.g. SIGMA_GAP_MAX bounds, no duplicate axis entries).
+* a non-nil node carries a candidate prime;
+* a Nil node is clean (zero multiplicity and zero weight);
+* spectral weights are finite and non-negative;
+* consecutive non-nil nodes (in row-major order) differ in prime by at most
+  `SIGMA_GAP_MAX` — a larger jump is dissonance.
 
-## Pipeline role
+## Dependencies
 
-Part of the gap_tensor_* family rooted at `gap_tensor_core` (C001) and `multiplicity_arena_core` (C011). No `[dependencies]` are declared in `Cargo.toml` yet, so even the expected dependency on C001/C011 has not been wired up.
+- [C001 `gap_tensor_core`](../C001/README.md)
+- [C002 `gap_tensor_primes`](../C002/README.md)
+- [C004 `gap_tensor_shape`](../C004/README.md)
 
-## Gaps / TODOs
+## Public API
 
-- No implementation: this is a pure placeholder crate.
-- No dependency on `gap_tensor_core`/`multiplicity_arena_core` declared, despite the name implying it operates on `GapTensorNode`/`MultiplicityArena`.
-- No tests.
-- `#![warn(missing_docs)]` is present but moot with no public items to document.
+| Item | Description |
+|---|---|
+| `enum Violation` | A single invariant violation, located by flat node index. |
+| `struct InvariantReport` | Result of checking a node sequence. |
+| `fn InvariantReport::is_valid(&self) -> bool` | True iff no violations were found. |
+| `fn check_node(index: usize, node: &GapTensorNode) -> Vec<Violation>` | Node-local invariants for the node at `index`. |
+| `fn check_nodes(nodes: &[GapTensorNode]) -> InvariantReport` | Check every node-local invariant plus dissonance between consecutive non-nil nodes. |
+| `fn check_tensor(tensor: &GapTensor) -> InvariantReport` | Check a tensor's nodes in row-major order. |
+
+## Tests
+
+`cargo test -p gap_tensor_invariants` runs 3 unit tests.

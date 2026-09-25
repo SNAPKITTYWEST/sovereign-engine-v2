@@ -11,23 +11,9 @@ pub use prime_ideal_predicate::{is_prime_ideal, PrimePoint};
 /// An ideal M is maximal iff R/M is a field
 /// Equivalently: M is maximal if it is prime and contains no other primes
 pub fn is_maximal_ideal(ideal: &Ideal) -> bool {
-    if !is_prime_ideal(ideal) {
-        return false;
-    }
-
-    if ideal.is_zero {
-        return false; // (0) is not maximal in a field
-    }
-
-    // For principal ideals (p), maximal iff p is prime
-    if ideal.num_generators() == 1 {
-        let p = ideal.generators.iter().next().unwrap();
-        return is_prime_number(*p);
-    }
-
-    // For composite ideals, check if the gcd is prime and ideal is not too small
-    let g = ideal.gcd();
-    is_prime_number(g) && g > 1
+    // In Z, (0) is prime but not maximal ((0) ⊂ (p)); (g) is maximal iff g
+    // is a prime number.
+    !ideal.is_zero && is_prime_ideal(ideal) && is_prime_number(ideal.gcd())
 }
 
 /// Check if a number is prime
@@ -72,12 +58,11 @@ pub fn compare_ideals(left: &Ideal, right: &Ideal) -> IdealComparison {
     }
 }
 
-/// Check if ideal is properly between two ideals
+/// `lower ⊊ candidate ⊊ upper` as ideals (compared by their elements, not
+/// by their generator lists).
 pub fn is_strictly_between(lower: &Ideal, candidate: &Ideal, upper: &Ideal) -> bool {
-    lower.contains_ideal(candidate)
-        && candidate.contains_ideal(upper)
-        && lower != candidate
-        && candidate != upper
+    compare_ideals(candidate, lower) == IdealComparison::StrictlyGreater
+        && compare_ideals(upper, candidate) == IdealComparison::StrictlyGreater
 }
 
 #[cfg(test)]
@@ -111,17 +96,26 @@ mod tests {
 
     #[test]
     fn test_compare_ideals_contained() {
-        let ideal2 = Ideal::principal(2);
-        let ideal4 = Ideal::principal(4);
-        let cmp = compare_ideals(&ideal2, &ideal4);
-        assert!(cmp == IdealComparison::StrictlyGreater || cmp == IdealComparison::Incomparable);
+        let (two, four, three) = (Ideal::principal(2), Ideal::principal(4), Ideal::principal(3));
+        assert_eq!(compare_ideals(&two, &four), IdealComparison::StrictlyGreater);
+        assert_eq!(compare_ideals(&four, &two), IdealComparison::StrictlyLess);
+        assert_eq!(compare_ideals(&two, &three), IdealComparison::Incomparable);
+        assert_eq!(compare_ideals(&Ideal::new(vec![4, 6]), &two), IdealComparison::Equal);
     }
 
     #[test]
     fn test_is_strictly_between() {
-        let small = Ideal::principal(2);
-        let medium = Ideal::new(vec![4]);
-        let large = Ideal::new(vec![8]);
-        assert!(is_strictly_between(&large, &medium, &small) || !is_strictly_between(&large, &medium, &small));
+        let (eight, four, two) = (Ideal::principal(8), Ideal::principal(4), Ideal::principal(2));
+        assert!(is_strictly_between(&eight, &four, &two));
+        assert!(!is_strictly_between(&two, &four, &eight));
+        assert!(!is_strictly_between(&four, &Ideal::new(vec![8, 12]), &two));
+        assert!(is_strictly_between(&Ideal::zero(), &two, &Ideal::principal(1)));
+    }
+
+    #[test]
+    fn maximal_ideals_of_z() {
+        assert!(is_maximal_ideal(&Ideal::new(vec![6, 9])));
+        assert!(!is_maximal_ideal(&Ideal::new(vec![2, 3])));
+        assert!(!is_maximal_ideal(&Ideal::principal(9)));
     }
 }

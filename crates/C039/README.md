@@ -1,18 +1,51 @@
-# recursion_solution_path (C039)
+# `recursion_solution_path` (C039)
 
-## What it does
-Records the sequence of `TransitionOperator` applications that constitute one attempted solution, and manages multiple such paths (completed, pruned, in-progress) via `SolutionPathRecorder`.
+Tier 3 — recursive solver. *Generated from the crate source; regenerate after API changes.*
+
+Records and manages the solution path during recursive solving.
+Captures each transition as part of the final solution sequence.
+
+## Dependencies
+
+- [C010 `gap_tensor_trace`](../C010/README.md)
+- [C031 `recursive_solver_state`](../C031/README.md)
+- [C034 `recursive_solver_selection`](../C034/README.md)
+- [C035 `recursive_solver_transition`](../C035/README.md)
 
 ## Public API
-- `SolutionStep { step_number, operator, from_position, to_position, from_depth, to_depth, gap_value, is_solution_branch }`; builder methods `with_gap()`, `mark_solution()`.
-- `SolutionPath` — `new()`, `add_step()`, `steps()`, `step_count()`, `mark_complete()`, `is_complete()`, `cost()` (= last step's `to_depth`), `set_constraints_satisfied()`/`constraints_satisfied()`, `final_position()`, `final_depth()`, `format_path() -> String` (human-readable multi-line dump).
-- `SolutionPathRecorder::new()` — `record_step()`, `complete_path(constraints_satisfied)`, `prune_path()`, `current_path()`, `completed_paths()`, `pruned_paths()`, `best_path()` (min by `cost`), `stats() -> SolutionStats`, `reset()`.
-- `SolutionStats { completed_paths, pruned_paths, best_cost, average_steps }`.
 
-## Pipeline position
-Depends on `gap_tensor_trace` (C010, declared, unused), `recursive_solver_state` (C031, declared, unused), `recursive_solver_selection` (C034, declared, unused), and `recursive_solver_transition` (C035) for `TransitionOperator`. This is the only actually-used dependency — the other three are dead weight in Cargo.toml. Feeds `recursive_solver_trace` (C040), which wraps `SolutionPath` into the full execution trace.
+| Item | Description |
+|---|---|
+| `struct SolutionStep` | A step in a solution path. |
+| `fn SolutionStep::new(step_number: usize, operator: TransitionOperator, from_pos: usize, to_pos: usize, from_d: u32, to_d: u32) -> Self` | Create a new solution step. |
+| `fn SolutionStep::with_gap(mut self, gap: u64) -> Self` | Add gap value to the step. |
+| `fn SolutionStep::mark_solution(mut self) -> Self` | Mark as a solution branch. |
+| `struct SolutionPath` | A complete solution path consisting of multiple steps. |
+| `fn SolutionPath::new() -> Self` | Create a new empty solution path. |
+| `fn SolutionPath::add_step(&mut self, step: SolutionStep)` | Add a step to the path. |
+| `fn SolutionPath::steps(&self) -> &[SolutionStep]` | Get all steps in the path. |
+| `fn SolutionPath::step_count(&self) -> usize` | Get the number of steps. |
+| `fn SolutionPath::mark_complete(&mut self)` | Mark path as complete (solution found). |
+| `fn SolutionPath::is_complete(&self) -> bool` | Check if this is a complete solution. |
+| `fn SolutionPath::cost(&self) -> usize` | Get the cost (depth) of this path. |
+| `fn SolutionPath::set_constraints_satisfied(&mut self, count: usize)` | Set the number of constraints satisfied. |
+| `fn SolutionPath::constraints_satisfied(&self) -> usize` | Get constraints satisfied. |
+| `fn SolutionPath::final_position(&self) -> Option<usize>` | Get the final position reached. |
+| `fn SolutionPath::final_depth(&self) -> Option<u32>` | Get the final depth reached. |
+| `fn SolutionPath::format_path(&self) -> String` | Create a formatted string representation. |
+| `struct SolutionPathRecorder` | Records and manages solution paths during solving. |
+| `fn SolutionPathRecorder::new() -> Self` | Create a new recorder. |
+| `fn SolutionPathRecorder::record_step(&mut self, step: SolutionStep)` | Add a step to the current path. |
+| `fn SolutionPathRecorder::complete_path(&mut self, constraints_satisfied: usize)` | Complete the current path. |
+| `fn SolutionPathRecorder::prune_path(&mut self)` | Prune the current path (dead end). |
+| `fn SolutionPathRecorder::current_path(&self) -> &SolutionPath` | Get the current path. |
+| `fn SolutionPathRecorder::completed_paths(&self) -> &[SolutionPath]` | Get completed solution paths. |
+| `fn SolutionPathRecorder::pruned_paths(&self) -> &[SolutionPath]` | Get pruned paths. |
+| `fn SolutionPathRecorder::best_path(&self) -> Option<&SolutionPath>` | Get the best completed path (shortest cost). |
+| `fn SolutionPathRecorder::stats(&self) -> SolutionStats` | Get solution statistics. |
+| `fn SolutionPathRecorder::reset(&mut self)` | Reset the recorder. |
+| `struct SolutionStats` | Statistics about solution paths found. |
 
-## Notes / gaps
-- **Gap:** three of four declared dependencies (C010, C031, C034) are unused. The crate is self-contained around `TransitionOperator` alone; it doesn't reference solver state, gap tensors, or selection directly, despite what Cargo.toml implies.
-- `SolutionPath::cost()` is defined as the `to_depth` of the *most recently added* step, not a sum or max over all steps — i.e., "cost" here means final depth reached, not total step count or cumulative weight. Worth confirming this matches the intended notion of solution cost before reusing it for path comparison (`best_path()` picks min by this field).
-- 9 unit tests.
+## Tests
+
+`cargo test -p recursion_solution_path` runs 10 unit tests.

@@ -1,37 +1,28 @@
-# maximal_ideal_predicate
+# `maximal_ideal_predicate` (C063)
 
-Maximality test for `Ideal`, plus a containment-comparison utility used to
-order ideals.
+Tier 6 — Krull dimension. *Generated from the crate source; regenerate after API changes.*
 
-## What it does
+Test whether an ideal is maximal.
 
-`is_maximal_ideal(&Ideal) -> bool`: false for the zero ideal; for a principal
-ideal `(p)`, maximal iff `p` is prime; for multi-generator ideals, maximal
-iff `gcd(generators)` is prime and `> 1`. Also defines `IdealComparison`
-(StrictlyGreater/StrictlyLess/Equal/Incomparable) via `compare_ideals`, built
-from `Ideal::contains_ideal` in both directions, and `is_strictly_between`
-for testing whether one ideal sits strictly inside a chain of two others.
+## Dependencies
+
+- [C061 `ideal_interface`](../C061/README.md)
+- [C062 `prime_ideal_predicate`](../C062/README.md)
+
+## Re-exports
+
+- `ideal_interface::Ideal`
+- `prime_ideal_predicate::{is_prime_ideal, PrimePoint}`
 
 ## Public API
 
-- `is_maximal_ideal(&Ideal) -> bool`
-- `IdealComparison` enum, `compare_ideals(left, right) -> IdealComparison`
-- `is_strictly_between(lower, candidate, upper) -> bool`
-- Re-exports `Ideal`, `is_prime_ideal`, `PrimePoint` from upstream crates
+| Item | Description |
+|---|---|
+| `fn is_maximal_ideal(ideal: &Ideal) -> bool` | Check if an ideal is maximal An ideal M is maximal iff R/M is a field Equivalently: M is maximal if it is prime and contains no other primes |
+| `enum IdealComparison` | Compare two ideals by containment |
+| `fn compare_ideals(left: &Ideal, right: &Ideal) -> IdealComparison` | Compare two ideals |
+| `fn is_strictly_between(lower: &Ideal, candidate: &Ideal, upper: &Ideal) -> bool` | `lower ⊊ candidate ⊊ upper` as ideals (compared by their elements, not by their generator lists). |
 
-## Pipeline role
+## Tests
 
-Depends on `ideal_interface` (C061) and `prime_ideal_predicate` (C062).
-`compare_ideals` is the containment-order primitive that `spectrum_order`
-(C065) generalizes into the specialization preorder over an entire spectrum.
-
-## Gaps / weak spots
-
-- In Z (a PID with dimension 1), maximal ideals coincide with nonzero prime
-  ideals, so `is_maximal_ideal` largely duplicates `is_prime_ideal` plus a
-  nonzero check — expected for this toy model, but would need real height
-  computation for a general ring.
-- Two tests (`test_compare_ideals_contained`, `test_is_strictly_between`)
-  assert `cond || !cond`, which is a tautology and passes regardless of the
-  actual comparison result — these do not verify correctness of
-  `compare_ideals` on that input, only that it doesn't panic.
+`cargo test -p maximal_ideal_predicate` runs 7 unit tests.

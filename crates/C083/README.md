@@ -1,17 +1,31 @@
-# prime_state_binding — UNIMPLEMENTED SCAFFOLD
+# `prime_state_binding` (C083)
 
-`src/lib.rs` is a 7-line stub with no types, functions, or tests.
+Tier 8 — runtime bridge. *Generated from the crate source; regenerate after API changes.*
 
-## Intended purpose (inferred from name + dependencies)
+Binds a run of the prime/gap engine (Tier 2) to the runtime snapshot
+store: the primes up to a limit are enumerated, encoded as tensor nodes
+and recorded. Claims about the run (all values prime, gaps consistent,
+orderings are permutations, encoding faithful) are re-checkable.
 
-Depends on `prime_predicate` (C021), `gap_candidate_set` (C023),
-`gap_ordering` (C024), and `runtime_state_snapshot` (C081, itself
-unimplemented). Presumably meant to bind the prime-gap search state (which
-candidates are live, current ordering) into the runtime snapshot, so a gap
-search's runtime execution can be certified against
-`gap_lemmas_library` (C073) and eventually `prime_gap_correspondence`
-(C094).
+## Dependencies
 
-## Status
+- [C021 `prime_predicate`](../C021/README.md)
+- [C023 `gap_candidate_set`](../C023/README.md)
+- [C024 `gap_ordering`](../C024/README.md)
+- [C081 `runtime_state_snapshot`](../C081/README.md)
 
-Empty. Blocked on `runtime_state_snapshot` (C081).
+## Public API
+
+| Item | Description |
+|---|---|
+| `enum PrimeRunError` | Why a run could not be bound. |
+| `struct PrimeStateBinding` | A recorded run of the prime engine. |
+| `fn PrimeStateBinding::run(name: impl Into<String>, limit: u64) -> Result<Self, PrimeRunError>` | Enumerate primes up to `limit` and record them. |
+| `fn PrimeStateBinding::primes(&self) -> &[u64]` | Primes enumerated. |
+| `fn PrimeStateBinding::candidates(&self) -> &[(u64, u64, u64)]` | Consecutive-prime gaps `(p, q, q − p)`. |
+| `fn PrimeStateBinding::limit(&self) -> u64` | The limit. |
+| `fn PrimeStateBinding::store(&self) -> &SnapshotStore` | Recorded history. |
+
+## Tests
+
+`cargo test -p prime_state_binding` runs 3 unit tests.

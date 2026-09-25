@@ -1,22 +1,44 @@
-# recursion_backtracking (C037)
+# `recursion_backtracking` (C037)
 
-## What it does
-A second, independent backtracking mechanism (distinct from `RecursiveSolverState`'s path stack in C031): explicit checkpoint save/restore over full `RecursiveSolverState` snapshots, with four strategies (`LastCheckpoint`, `ToDepth`, `NSteps`, `ToRoot`) and a failed-branch log.
+Tier 3 — recursive solver. *Generated from the crate source; regenerate after API changes.*
+
+Backtracking mechanisms for recursive solver. Manages backtrack stacks,
+checkpoint saving, and state restoration during constraint satisfaction failures.
+
+## Dependencies
+
+- [C031 `recursive_solver_state`](../C031/README.md)
+- [C032 `recursion_depth_management`](../C032/README.md)
+- [C035 `recursive_solver_transition`](../C035/README.md)
 
 ## Public API
-- `Checkpoint { state, depth, id }`.
-- `BacktrackStrategy` enum (4 variants).
-- `BacktrackManager::new()`; `save_checkpoint(state, depth) -> id`, `last_checkpoint()`, `pop_checkpoint()`, `checkpoint_by_id(id)`, `checkpoint_count()`.
-- `record_failed_branch(checkpoint_id, reason)`, `failed_branches()`.
-- `backtrack(strategy) -> Option<Checkpoint>` — dispatches on strategy.
-- `reset()`, `stack_depth()`, `can_backtrack()`.
-- `BacktrackContext` — pairs a `BacktrackManager` with a `DepthManager` (C032) and counts total backtracks performed; `save()`, `backtrack()`, `total_backtracks()`, accessors.
 
-## Pipeline position
-Depends on `recursive_solver_state` (C031) and `recursion_depth_management` (C032). This is the second of two backtracking mechanisms in the layer — see C035's note about `transition_backtrack` using the state's own path stack instead of this crate. Nothing in C031–C060 currently imports `recursion_backtracking`, so it appears to be an alternate/unused strategy relative to the one actually wired into the transition engine.
+| Item | Description |
+|---|---|
+| `struct Checkpoint` | A checkpoint that can be restored. |
+| `fn Checkpoint::new(state: RecursiveSolverState, depth: u32, id: u64) -> Self` | Create a new checkpoint. |
+| `enum BacktrackStrategy` | Backtrack strategy for recovery. |
+| `struct BacktrackManager` | Manages backtracking during recursive solving. |
+| `fn BacktrackManager::new() -> Self` | Create a new backtrack manager. |
+| `fn BacktrackManager::save_checkpoint(&mut self, state: RecursiveSolverState, depth: u32) -> u64` | Save a checkpoint. |
+| `fn BacktrackManager::last_checkpoint(&self) -> Option<&Checkpoint>` | Get the most recent checkpoint. |
+| `fn BacktrackManager::pop_checkpoint(&mut self) -> Option<Checkpoint>` | Pop and return the most recent checkpoint. |
+| `fn BacktrackManager::checkpoint_by_id(&self, id: u64) -> Option<&Checkpoint>` | Get a checkpoint by ID. |
+| `fn BacktrackManager::checkpoint_count(&self) -> usize` | Get the number of checkpoints. |
+| `fn BacktrackManager::record_failed_branch(&mut self, checkpoint_id: u64, reason: String)` | Record a failed branch. |
+| `fn BacktrackManager::failed_branches(&self) -> &[(usize, String)]` | Get failed branch records. |
+| `fn BacktrackManager::backtrack(&mut self, strategy: BacktrackStrategy) -> Option<Checkpoint>` | Backtrack using a specific strategy. |
+| `fn BacktrackManager::reset(&mut self)` | Clear all checkpoints and failed branches. |
+| `fn BacktrackManager::stack_depth(&self) -> usize` | Get checkpoint stack depth. |
+| `fn BacktrackManager::can_backtrack(&self) -> bool` | Check if there are saved checkpoints to backtrack to. |
+| `struct BacktrackContext` | Combines backtracking with depth management. |
+| `fn BacktrackContext::new(backtrack: BacktrackManager, depth_mgr: DepthManager) -> Self` | Create a new backtrack context. |
+| `fn BacktrackContext::save(&mut self, state: RecursiveSolverState) -> u64` | Save the current state. |
+| `fn BacktrackContext::backtrack(&mut self, strategy: BacktrackStrategy) -> Option<Checkpoint>` | Perform a backtrack operation. |
+| `fn BacktrackContext::total_backtracks(&self) -> usize` | Get total backtrack operations. |
+| `fn BacktrackContext::backtrack_manager(&self) -> &BacktrackManager` | Get the backtrack manager. |
+| `fn BacktrackContext::depth_manager(&self) -> &DepthManager` | Get the depth manager. |
 
-## Notes / gaps
-- **Gap — architectural duplication:** this crate and C031's `path_stack`/`pop_state()` are two separate, non-interoperating backtracking implementations. `BacktrackManager` stores full-state clones per checkpoint (heavier) vs. C031's `(cursor, depth, node)` tuples (lighter). Worth deciding which is canonical, or documenting why both exist.
-- `BacktrackStrategy::ToDepth` pops checkpoints one at a time in a `while let` loop with an early return inside — correct but slightly awkward control flow; the loop body's `self.checkpoints.pop()` on the non-matching branch discards checkpoints without returning them, which is intentional (skipping past them) but easy to misread as a bug at a glance.
-- `BacktrackStrategy::ToRoot` clones `checkpoints.first()` before clearing — necessary since `clear()` would otherwise invalidate the reference; fine, just note it's an O(state size) clone.
-- 8 unit tests, no dead dependencies.
+## Tests
+
+`cargo test -p recursion_backtracking` runs 9 unit tests.

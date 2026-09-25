@@ -1,19 +1,40 @@
-# trace_recording_runtime — UNIMPLEMENTED SCAFFOLD
+# `trace_recording_runtime` (C086)
 
-`src/lib.rs` is a 7-line stub with no types, functions, or tests.
+Tier 8 — runtime bridge. *Generated from the crate source; regenerate after API changes.*
 
-## Intended purpose (inferred from name + dependencies)
+One tamper-evident trace for a whole execution: the recorded states of
+every binding and the certificates issued for them, interleaved in a
+single hash chain. Certificates are recorded as labelled entries (the
+label is covered by the chain digest), so editing a certificate summary,
+a state, or the order of entries is detected by .
 
-Depends on `gap_tensor_trace` (C010), `runtime_state_snapshot` (C081), and
-`certificate_generation` (C087) — all three currently unimplemented.
-Presumably meant to record a sequence of runtime snapshots into an
-execution trace, feeding `certificate_generation` (C087) and later
-`end_to_end_trace_verification` (C097).
+## Dependencies
 
-## Status
+- [C010 `gap_tensor_trace`](../C010/README.md)
+- [C081 `runtime_state_snapshot`](../C081/README.md)
+- [C087 `certificate_generation`](../C087/README.md)
 
-Empty. Blocked on `runtime_state_snapshot` (C081) and
-`certificate_generation` (C087). Note the dependency on C087, which itself
-depends back on C086's sibling crates (C082-C085) but not on C086 — no
-circular dependency, but a reminder that C086 sits logically after C087 in
-data flow despite the numeric ordering suggesting otherwise.
+## Public API
+
+| Item | Description |
+|---|---|
+| `const CERTIFICATE_PREFIX: &str = "certificate "` | Label prefix of certificate entries. |
+| `enum EntryKind` | Kind of a trace entry. |
+| `struct RuntimeTrace` | A whole-execution trace. |
+| `fn RuntimeTrace::new() -> Self` | An empty trace. |
+| `fn RuntimeTrace::from_entries(entries: Vec<TraceEntry>) -> Result<Self, TraceError>` | Rebuild from entries, rejecting a broken chain. |
+| `fn RuntimeTrace::record_state(&mut self, label: &str, tensor: &GapTensor) -> u64` | Record a free-form state. |
+| `fn RuntimeTrace::record_store(&mut self, source: &str, store: &SnapshotStore)` | Append every snapshot of a binding's history. |
+| `fn RuntimeTrace::record_certificate(&mut self, certificate: &ExecutionCertificate) -> u64` | Append a certificate summary. |
+| `fn RuntimeTrace::verify(&self) -> Result<(), TraceError>` | Verify the whole chain. |
+| `fn RuntimeTrace::len(&self) -> usize` | Number of entries. |
+| `fn RuntimeTrace::is_empty(&self) -> bool` | Nothing recorded? |
+| `fn RuntimeTrace::head_digest(&self) -> u64` | Digest of the whole execution. |
+| `fn RuntimeTrace::entries(&self) -> &[TraceEntry]` | Raw entries. |
+| `fn RuntimeTrace::kind(&self, index: usize) -> Option<EntryKind>` | Classify entry `index`. |
+| `fn RuntimeTrace::replay(&self, index: usize) -> Result<GapTensor, TraceError>` | Replay entry `index`. |
+| `fn RuntimeTrace::certificates(&self) -> Vec<String>` | Certificate summaries in order. |
+
+## Tests
+
+`cargo test -p trace_recording_runtime` runs 2 unit tests.

@@ -1,18 +1,49 @@
-# multiplicity_arena_layout (C012)
+# `multiplicity_arena_layout` (C012)
 
-**Status: unimplemented scaffold.** The crate is currently only a stub — `src/lib.rs` is 7 lines: a module doc comment, `#![warn(missing_docs)]`, and a `// Scaffold: Add your code here.` marker. It compiles (empty lib) but exports nothing.
+Tier 1 — multiplicity arena. *Generated from the crate source; regenerate after API changes.*
 
-## Intended purpose
+Partition of a multiplicity arena into four contiguous regions laid out
+in order — TEXT, DATA, STACK, HEAP — plus region-level reads and writes
+that are bounds-checked against the layout.
 
-Memory layout policy for MultiplicityArena — presumably alignment/stride/padding strategy for GapTensorNode arrays beyond the plain contiguous layout in C011.
+A sealed arena (one that has passed certification) is treated as
+immutable: every write path here refuses it.
 
-## Pipeline role
+## Dependencies
 
-Part of the multiplicity_arena_* family rooted at `gap_tensor_core` (C001) and `multiplicity_arena_core` (C011). No `[dependencies]` are declared in `Cargo.toml` yet, so even the expected dependency on C001/C011 has not been wired up.
+- [C001 `gap_tensor_core`](../C001/README.md)
+- [C004 `gap_tensor_shape`](../C004/README.md)
+- [C011 `multiplicity_arena_core`](../C011/README.md)
 
-## Gaps / TODOs
+## Re-exports
 
-- No implementation: this is a pure placeholder crate.
-- No dependency on `gap_tensor_core`/`multiplicity_arena_core` declared, despite the name implying it operates on `GapTensorNode`/`MultiplicityArena`.
-- No tests.
-- `#![warn(missing_docs)]` is present but moot with no public items to document.
+- `gap_tensor_core::GapTensorNode`
+- `multiplicity_arena_core::MultiplicityArena`
+
+## Public API
+
+| Item | Description |
+|---|---|
+| `enum Region` | One of the four arena regions. |
+| `const Region::ALL: [Region` | All regions in layout order. |
+| `struct RegionSpan` | A half-open span `[start, start + len)` of arena node indices. |
+| `fn RegionSpan::end(&self) -> usize` | One past the last node index. |
+| `fn RegionSpan::contains(&self, index: usize) -> bool` | Does the span contain `index`? |
+| `fn RegionSpan::is_empty(&self) -> bool` | Is the span zero-length? |
+| `enum LayoutError` | Errors from layout construction and region access. |
+| `struct ArenaLayout` | Region partition of an arena. |
+| `fn ArenaLayout::new(text: usize, data: usize, stack: usize, heap: usize) -> Result<Self, LayoutError>` | Lay out the four regions contiguously. |
+| `fn ArenaLayout::for_tensor(shape: &TensorShape, text: usize, stack: usize, heap: usize) -> Result<Self, LayoutError>` | A layout whose DATA region holds exactly one tensor of `shape`. |
+| `fn ArenaLayout::span(&self, region: Region) -> RegionSpan` | The span of `region`. |
+| `fn ArenaLayout::total(&self) -> usize` | Total nodes across all regions. |
+| `fn ArenaLayout::region_of(&self, index: usize) -> Option<Region>` | The region containing node `index`, if any. |
+| `fn ArenaLayout::allocate(&self) -> MultiplicityArena` | Allocate a Nil-filled arena sized for this layout. |
+| `fn ArenaLayout::check_arena(&self, arena: &MultiplicityArena) -> Result<(), LayoutError>` | Check that `arena` was allocated for this layout. |
+| `fn ArenaLayout::check_writable(&self, arena: &MultiplicityArena) -> Result<(), LayoutError>` | Check that `arena` matches this layout and is not sealed. |
+| `fn ArenaLayout::read_region(&self, arena: &MultiplicityArena, region: Region) -> Result<Vec<GapTensorNode>, LayoutError>` | Copy out every node of `region`. |
+| `fn ArenaLayout::write_region(&self, arena: &mut MultiplicityArena, region: Region, nodes: &[GapTensorNode]) -> Result<(), LayoutError>` | Write `nodes` to the start of `region`; the rest of the region is left unchanged. |
+| `fn ArenaLayout::fill_region(&self, arena: &mut MultiplicityArena, region: Region, node: GapTensorNode) -> Result<(), LayoutError>` | Set every node of `region` to `node`. |
+
+## Tests
+
+`cargo test -p multiplicity_arena_layout` runs 5 unit tests.

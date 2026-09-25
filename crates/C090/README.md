@@ -1,18 +1,46 @@
-# runtime_bridge_tests_integration — UNIMPLEMENTED SCAFFOLD
+# `runtime_bridge_tests_integration` (C090)
 
-`src/lib.rs` is a 7-line stub with no types, functions, or tests.
+Tier 8 — runtime bridge. *Generated from the crate source; regenerate after API changes.*
 
-## Intended purpose (inferred from name + dependencies)
+End-to-end scenarios for the runtime bridge (C081–C089): bindings record
+real executions of Tiers 0–3, invariants are re-checked, certificates are
+issued, rollbacks keep state valid, and the whole execution is captured
+in one verifiable trace.  reports each
+scenario by name.
 
-Depends on every other crate in the runtime-binding layer
-(`runtime_state_snapshot` C081 through `runtime_invariant_checking` C089,
-all currently unimplemented). This is the runtime-binding layer's
-counterpart to `krull_spectrum_tests_integration` (C070) — meant to be the
-capstone integration-test crate exercising the full snapshot → binding →
-trace → certificate → invariant-check → rollback pipeline end to end.
+## Dependencies
 
-## Status
+- [C081 `runtime_state_snapshot`](../C081/README.md)
+- [C082 `tensor_runtime_binding`](../C082/README.md)
+- [C083 `prime_state_binding`](../C083/README.md)
+- [C084 `multiplicity_state_binding`](../C084/README.md)
+- [C085 `recursion_runtime_binding`](../C085/README.md)
+- [C086 `trace_recording_runtime`](../C086/README.md)
+- [C087 `certificate_generation`](../C087/README.md)
+- [C088 `rollback_mechanism`](../C088/README.md)
+- [C089 `runtime_invariant_checking`](../C089/README.md)
 
-Empty. All nine of its dependencies (C081-C089) are also empty scaffolds,
-so this crate cannot be meaningfully implemented until the entire
-runtime-binding layer exists.
+## Re-exports
+
+- `multiplicity_state_binding::ArenaBinding`
+- `prime_state_binding::PrimeStateBinding`
+- `recursion_runtime_binding::RecursionBinding`
+- `tensor_runtime_binding::TensorBinding`
+
+## Public API
+
+| Item | Description |
+|---|---|
+| `struct StandardExecution` | A complete, clean execution of the four bindings. |
+| `fn standard_execution() -> Result<StandardExecution, String>` | Run the standard execution. |
+| `fn StandardExecution::certificate(&self) -> ExecutionCertificate` | Certificate for all four bindings. |
+| `fn StandardExecution::trace(&self) -> RuntimeTrace` | Whole-execution trace: every binding's history, then the certificate. |
+| `struct ScenarioResult` | Outcome of one scenario. |
+| `struct RuntimeIntegrationReport` | Outcome of all scenarios. |
+| `fn RuntimeIntegrationReport::all_passed(&self) -> bool` | True iff every scenario passed. |
+| `fn RuntimeIntegrationReport::failures(&self) -> Vec<&ScenarioResult>` | Failed scenarios. |
+| `fn run_runtime_integration() -> RuntimeIntegrationReport` | Run every scenario. |
+
+## Tests
+
+`cargo test -p runtime_bridge_tests_integration` runs 1 unit test.

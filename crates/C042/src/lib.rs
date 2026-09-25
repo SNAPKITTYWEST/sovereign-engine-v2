@@ -1,10 +1,13 @@
 //! chain_complex_types
 //!
 //! Chain element types and operations. Defines elements of chain complexes
-//! as formal sums of generators with integer coefficients.
+//! as formal sums of generators with integer coefficients. Elements and
+//! chains can be checked against a `ChainComplexShape`, and coefficient
+//! addition and scaling panic on i64 overflow instead of wrapping.
 
 #![warn(missing_docs)]
 
+use chain_complex_shape::ChainComplexShape;
 use std::collections::HashMap;
 
 /// A single chain element at a fixed degree n.
@@ -54,9 +57,19 @@ impl ChainElement {
     }
 
     /// Add a coefficient to an existing generator.
+    ///
+    /// # Panics
+    /// Panics if the sum overflows i64.
     pub fn add_coeff(&mut self, gen_idx: usize, delta: i64) {
-        let new_coeff = self.coeff(gen_idx) + delta;
+        let new_coeff = self.coeff(gen_idx).checked_add(delta).expect("chain coefficient overflow");
         self.set_coeff(gen_idx, new_coeff);
+    }
+
+    /// Whether every generator in the support is a generator of C_n in
+    /// `shape` (its index is below the rank at this element's degree).
+    pub fn fits_shape(&self, shape: &ChainComplexShape) -> bool {
+        let rank = shape.rank_at(self.degree);
+        self.coefficients.keys().all(|&gen_idx| gen_idx < rank)
     }
 
     /// Check if this is the zero element.
@@ -88,12 +101,15 @@ impl ChainElement {
     }
 
     /// Scalar multiply this chain element by c.
+    ///
+    /// # Panics
+    /// Panics if a product overflows i64.
     pub fn scalar_mul(&mut self, c: i64) {
         if c == 0 {
             self.coefficients.clear();
         } else {
             for coeff in self.coefficients.values_mut() {
-                *coeff *= c;
+                *coeff = coeff.checked_mul(c).expect("chain coefficient overflow");
             }
         }
     }
@@ -200,6 +216,11 @@ impl Chain {
     /// Number of nonzero degrees.
     pub fn support_size(&self) -> usize {
         self.elements.len()
+    }
+
+    /// Whether every element of the chain fits `shape`.
+    pub fn fits_shape(&self, shape: &ChainComplexShape) -> bool {
+        self.elements.values().all(|elem| elem.fits_shape(shape))
     }
 
     /// Scalar multiply the entire chain.
@@ -331,5 +352,25 @@ mod tests {
         chain.add_element(ChainElement::from_generator(-1, 0, 1));
         let degrees = chain.support_degrees();
         assert_eq!(degrees, vec![-1, 0, 2]);
+    }
+
+    #[test]
+    fn fits_shape_checks_generator_ranks() {
+        let shape = ChainComplexShape::from_ranks(vec![(0, 2), (1, 1)]);
+        let mut chain = Chain::new();
+        chain.add_element(ChainElement::from_generator(0, 1, 3));
+        chain.add_element(ChainElement::from_generator(1, 0, 1));
+        assert!(chain.fits_shape(&shape));
+        chain.add_element(ChainElement::from_generator(1, 1, 1));
+        assert!(!chain.fits_shape(&shape));
+        assert!(!ChainElement::from_generator(2, 0, 1).fits_shape(&shape));
+        assert!(ChainElement::new(2).fits_shape(&shape), "the zero element fits every degree");
+    }
+
+    #[test]
+    #[should_panic(expected = "chain coefficient overflow")]
+    fn coefficient_overflow_is_an_error() {
+        let mut elem = ChainElement::from_generator(0, 0, i64::MAX);
+        elem.add_coeff(0, 1);
     }
 }

@@ -1,18 +1,32 @@
-# multiplicity_arena_deallocation (C017)
+# `multiplicity_arena_deallocation` (C017)
 
-**Status: unimplemented scaffold.** The crate is currently only a stub — `src/lib.rs` is 7 lines: a module doc comment, `#![warn(missing_docs)]`, and a `// Scaffold: Add your code here.` marker. It compiles (empty lib) but exports nothing.
+Tier 1 — multiplicity arena. *Generated from the crate source; regenerate after API changes.*
 
-## Intended purpose
+Region drain and reset with rollback. Draining Nil-fills a region and
+returns a  of its previous contents;  restores
+it. A region cannot be drained while any lease on it is outstanding, and
+ is all-or-nothing.
 
-Deallocation logic for arenas — expected to formalize/extend the destroy()/Drop pairing in multiplicity_arena_core.
+## Dependencies
 
-## Pipeline role
+- [C011 `multiplicity_arena_core`](../C011/README.md)
+- [C012 `multiplicity_arena_layout`](../C012/README.md)
+- [C016 `multiplicity_arena_ownership`](../C016/README.md)
 
-Part of the multiplicity_arena_* family rooted at `gap_tensor_core` (C001) and `multiplicity_arena_core` (C011). No `[dependencies]` are declared in `Cargo.toml` yet, so even the expected dependency on C001/C011 has not been wired up.
+## Public API
 
-## Gaps / TODOs
+| Item | Description |
+|---|---|
+| `struct Checkpoint` | Saved contents of one region. |
+| `fn Checkpoint::region(&self) -> Region` | The region saved. |
+| `fn Checkpoint::nodes(&self) -> &[GapTensorNode]` | The saved nodes. |
+| `enum DeallocError` | Errors from drain, reset and rollback. |
+| `fn checkpoint(arena: &MultiplicityArena, layout: &ArenaLayout, region: Region) -> Result<Checkpoint, DeallocError>` | Save the contents of `region`. |
+| `fn drain_region(arena: &mut MultiplicityArena, layout: &ArenaLayout, region: Region, tracker: &OwnershipTracker) -> Result<Checkpoint, DeallocError>` | Nil-fill `region`, returning a checkpoint of what was there. |
+| `fn rollback(arena: &mut MultiplicityArena, layout: &ArenaLayout, checkpoint: &Checkpoint) -> Result<(), DeallocError>` | Restore a region from a checkpoint. |
+| `fn reset_all(arena: &mut MultiplicityArena, layout: &ArenaLayout, tracker: &OwnershipTracker) -> Result<Vec<Checkpoint>, DeallocError>` | Drain every region. |
+| `fn with_rollback<T, E, F>(arena: &mut MultiplicityArena, layout: &ArenaLayout, f: F) -> Result<Result<T, E>, DeallocError> where` | Run `f` on the arena. |
 
-- No implementation: this is a pure placeholder crate.
-- No dependency on `gap_tensor_core`/`multiplicity_arena_core` declared, despite the name implying it operates on `GapTensorNode`/`MultiplicityArena`.
-- No tests.
-- `#![warn(missing_docs)]` is present but moot with no public items to document.
+## Tests
+
+`cargo test -p multiplicity_arena_deallocation` runs 4 unit tests.

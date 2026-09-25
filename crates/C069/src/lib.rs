@@ -11,19 +11,27 @@ use spectrum_chains::MaximalChains;
 use krull_dimension_definition::KrullDim;
 use dimension_upper_bounds::BoundCollection;
 
-/// Proof that a dimension computation is correct
+/// Proof that a dimension computation is correct: the exhaustive chain
+/// enumeration's longest chains, checked to be strictly increasing and of
+/// length `dim + 1`, plus (optionally) upper bounds.
 #[derive(Clone, Debug)]
 pub struct DimensionProof {
     /// Computed dimension
     pub dimension: KrullDim,
-    /// All bounds satisfied
+    /// Result of the last [`Self::check_bounds`] (`false` until bounds are
+    /// checked — see `bounds_checked`)
     pub bounds_satisfied: bool,
+    /// Whether [`Self::check_bounds`] has been run
+    pub bounds_checked: bool,
     /// Longest chain achieving dimension
     pub longest_chain: Vec<u64>,
-    /// All maximal chains
+    /// All chains of maximal length
     pub maximal_chains: Vec<Vec<u64>>,
-    /// Chain length verification
+    /// The longest chains have `dim + 1` elements
     pub chain_length_ok: bool,
+    /// Every maximal-length chain is strictly increasing in the
+    /// specialization order
+    pub chains_strictly_increasing: bool,
 }
 
 impl DimensionProof {
@@ -34,47 +42,46 @@ impl DimensionProof {
         let chains = MaximalChains::find_all(spec, &preorder);
 
         let maximal_chains = dimension_chains(&chains);
-        let longest_chain = maximal_chains
-            .first()
-            .cloned()
-            .unwrap_or_default();
-
-        let chain_length_ok = if !maximal_chains.is_empty() {
-            // For a chain with n elements, dimension is n-1
-            maximal_chains[0].len() == dimension.dim() + 1
-        } else {
-            dimension.dim() == 0
+        let longest_chain = maximal_chains.first().cloned().unwrap_or_default();
+        let chain_length_ok = match maximal_chains.first() {
+            Some(chain) => chain.len() == dimension.dim() + 1,
+            None => dimension.dim() == 0,
         };
-
-        let bounds_satisfied = true; // Will verify below
+        let chains_strictly_increasing = maximal_chains.iter().all(|c| {
+            c.windows(2)
+                .all(|w| w[0] != w[1] && preorder.le(w[0], w[1]) && !preorder.le(w[1], w[0]))
+        });
 
         Self {
             dimension,
-            bounds_satisfied,
+            bounds_satisfied: false,
+            bounds_checked: false,
             longest_chain,
             maximal_chains,
             chain_length_ok,
+            chains_strictly_increasing,
         }
     }
 
-    /// Verify proof is valid
+    /// The chain witness is valid, and any checked bounds hold.
     pub fn verify(&self) -> bool {
-        self.chain_length_ok && self.bounds_satisfied && self.verify_chain_ordering()
+        self.chain_length_ok
+            && self.chains_strictly_increasing
+            && self.verify_chain_lengths()
+            && (!self.bounds_checked || self.bounds_satisfied)
     }
 
-    /// Verify that longest chain is actually ordered
-    fn verify_chain_ordering(&self) -> bool {
-        for chain in &self.maximal_chains {
-            if chain.len() != self.dimension.dim() + 1 {
-                return false;
-            }
-        }
-        true
+    /// Every recorded maximal chain has `dim + 1` elements.
+    fn verify_chain_lengths(&self) -> bool {
+        self.maximal_chains
+            .iter()
+            .all(|chain| chain.len() == self.dimension.dim() + 1)
     }
 
     /// Check dimension against upper bounds
     pub fn check_bounds(&mut self, bounds: &BoundCollection) {
         self.bounds_satisfied = bounds.all_satisfied(self.dimension);
+        self.bounds_checked = true;
     }
 }
 
@@ -104,39 +111,22 @@ impl CertificationChecker {
         Self { spec, proof }
     }
 
-    /// Run all certification checks
+    /// Run all certification checks. Bound checks are included only if
+    /// bounds have been verified with [`Self::verify_bounds`].
     pub fn check_all(&mut self) -> CertificationResult {
         let mut results = CertificationResult::new();
+        let dim = self.proof.dimension.dim();
 
-        // Check 1: Chain ordering
-        results.add_check(
-            "chain_ordering",
-            self.proof.verify_chain_ordering(),
-        );
-
-        // Check 2: Dimension is non-negative
-        results.add_check("non_negative", self.proof.dimension.dim() < usize::MAX);
-
-        // Check 3: All maximal chains have same length (catenarity)
-        let same_length = self
-            .proof
-            .maximal_chains
-            .iter()
-            .all(|c| c.len() == self.proof.dimension.dim() + 1);
-        results.add_check("catenary_property", same_length);
-
-        // Check 4: Longest chain achieves dimension
-        if !self.proof.maximal_chains.is_empty() {
-            let longest_len = self.proof.maximal_chains[0].len();
-            results.add_check("longest_chain_ok", longest_len == self.proof.dimension.dim() + 1);
-        }
-
-        // Check 5: Dimension bounded by spectrum size
+        results.add_check("chain_ordering", self.proof.chains_strictly_increasing);
+        results.add_check("chain_witness", self.proof.chain_length_ok && self.proof.verify_chain_lengths());
+        results.add_check("catenary_property", KrullDim::is_catenary(&self.spec));
         results.add_check(
             "bounded_by_spectrum_size",
-            self.proof.dimension.dim() <= self.spec.len(),
+            dim + 1 <= self.spec.len().max(1),
         );
-
+        if self.proof.bounds_checked {
+            results.add_check("upper_bounds", self.proof.bounds_satisfied);
+        }
         results
     }
 
@@ -233,12 +223,33 @@ mod tests {
 
     #[test]
     fn test_certification_checker() {
-        let spec = Spectrum::new(vec![2, 3, 5]);
-        let mut checker = CertificationChecker::new(spec);
-        let result = checker.check_all();
+        for primes in [vec![2, 3, 5], vec![0, 2, 3, 5, 7]] {
+            let spec = Spectrum::new(primes);
+            let mut checker = CertificationChecker::new(spec);
+            let result = checker.check_all();
+            assert!(result.all_passed(), "failed: {:?}", result.failed_checks());
+            assert_eq!(result.check("upper_bounds"), None);
+        }
+    }
 
-        assert!(result.total_count() > 0);
-        assert!(!result.failed_checks().is_empty() || result.all_passed());
+    #[test]
+    fn spec_z_proof_has_strict_chains() {
+        let proof = DimensionProof::from_spectrum(&Spectrum::new(vec![0, 2, 3]));
+        assert_eq!(proof.dimension.dim(), 1);
+        assert!(proof.chains_strictly_increasing);
+        assert_eq!(proof.maximal_chains, vec![vec![0, 2], vec![0, 3]]);
+        assert!(proof.verify());
+    }
+
+    #[test]
+    fn violated_bounds_fail_verification() {
+        let mut checker = CertificationChecker::new(Spectrum::new(vec![0, 2, 3]));
+        let mut bounds = BoundCollection::new();
+        bounds.add_generator_bound(0);
+        assert!(!checker.verify_bounds(&bounds));
+        assert!(checker.proof().bounds_checked);
+        assert!(!checker.proof().verify());
+        assert_eq!(checker.check_all().check("upper_bounds"), Some(false));
     }
 
     #[test]

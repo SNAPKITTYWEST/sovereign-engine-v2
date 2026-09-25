@@ -1,18 +1,30 @@
-# gap_tensor_spectral (C003)
+# `gap_tensor_spectral` (C003)
 
-**Status: unimplemented scaffold.** The crate is currently only a stub — `src/lib.rs` is 7 lines: a module doc comment, `#![warn(missing_docs)]`, and a `// Scaffold: Add your code here.` marker. It compiles (empty lib) but exports nothing.
+Tier 0 — gap tensor primitives. *Generated from the crate source; regenerate after API changes.*
 
-## Intended purpose
+Spectral decomposition of a set of gap tensor nodes: resonance per
+candidate-prime axis, dominant prime, normalized spectrum and spectral
+entropy.
 
-Spectral analysis of gap tensors — operations over the spectral_weight field (resonance/energy computations at the tensor, not single-node, level).
+## Dependencies
 
-## Pipeline role
+- [C001 `gap_tensor_core`](../C001/README.md)
+- [C002 `gap_tensor_primes`](../C002/README.md)
 
-Part of the gap_tensor_* family rooted at `gap_tensor_core` (C001) and `multiplicity_arena_core` (C011). No `[dependencies]` are declared in `Cargo.toml` yet, so even the expected dependency on C001/C011 has not been wired up.
+## Public API
 
-## Gaps / TODOs
+| Item | Description |
+|---|---|
+| `type Spectrum = [f32` | Resonance per candidate-prime axis, indexed like `CANDIDATE_PRIMES`. |
+| `struct SpectralDecomposition` | Resonance of a node set, split by candidate-prime axis. |
+| `fn decompose(nodes: &[GapTensorNode]) -> SpectralDecomposition` | Decompose the resonance of `nodes` onto the candidate-prime axes. |
+| `fn SpectralDecomposition::total(&self) -> f32` | Total resonance, on-axis plus off-axis. |
+| `fn SpectralDecomposition::on_axis_total(&self) -> f32` | Resonance carried by the candidate axes only. |
+| `fn SpectralDecomposition::dominant_prime(&self) -> Option<u32>` | The candidate prime with the largest positive, finite resonance. |
+| `fn SpectralDecomposition::normalized(&self) -> Option<Spectrum>` | The on-axis spectrum scaled to sum to 1. |
+| `fn SpectralDecomposition::entropy(&self) -> Option<f32>` | Shannon entropy (bits) of the normalized spectrum. |
+| `fn participating(nodes: &[GapTensorNode]) -> Vec<GapTensorNode>` | Nodes whose resonance reaches `GapTensorNode::RESONANCE_MIN`. |
 
-- No implementation: this is a pure placeholder crate.
-- No dependency on `gap_tensor_core`/`multiplicity_arena_core` declared, despite the name implying it operates on `GapTensorNode`/`MultiplicityArena`.
-- No tests.
-- `#![warn(missing_docs)]` is present but moot with no public items to document.
+## Tests
+
+`cargo test -p gap_tensor_spectral` runs 5 unit tests.

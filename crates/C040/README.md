@@ -1,23 +1,43 @@
-# recursive_solver_trace (C040)
+# `recursive_solver_trace` (C040)
 
-## What it does
-Full execution-trace recorder for the solver: timestamped `ExecutionEvent`s (8 event types), solution-path collection, replay-by-event-id, time-range queries, and derived statistics (success rate, contradiction rate, avg time/transition). Terminal crate of the recursive-solver sub-layer.
+Tier 3 — recursive solver. *Generated from the crate source; regenerate after API changes.*
+
+Complete trace reconstruction for recursive solver execution.
+Provides full execution logs, replay capability, and trace analysis.
+
+## Dependencies
+
+- [C010 `gap_tensor_trace`](../C010/README.md)
+- [C031 `recursive_solver_state`](../C031/README.md)
+- [C035 `recursive_solver_transition`](../C035/README.md)
+- [C039 `recursion_solution_path`](../C039/README.md)
 
 ## Public API
-- `ExecutionEvent { event_id, timestamp_ms, event_type, message, depth, cursor_position }`.
-- `EventType` enum (8 variants: `Start`, `Transition`, `ConstraintCheck`, `Backtrack`, `Solution`, `Contradiction`, `BaseCase`, `End`) — implements `Display`.
-- `ExecutionTrace::new()` — `record_event(...)`, `record_transition(&TransitionResult, depth, cursor)` (convenience wrapper), `record_solution(SolutionPath)`.
-- `events()`, `event_count()`, `events_by_type(EventType)`, `solution_paths()`.
-- `set_total_time_ms()`/`total_time_ms()`.
-- `stats() -> TraceStats`, `format_trace() -> String` (full human-readable report with events + solutions section).
-- `replay_until(event_id)`, `events_in_time_range(start_ms, end_ms)`.
-- `TraceStats { total_events, total_transitions, total_backtracks, total_contradictions, solutions_found, total_time_ms }` with `success_rate()`, `contradiction_rate()`, `avg_time_per_transition()`.
 
-## Pipeline position
-Depends on `gap_tensor_trace` (C010, declared, unused), `recursive_solver_state` (C031, declared, unused), `recursive_solver_transition` (C035) for `TransitionResult`, and `recursion_solution_path` (C039) for `SolutionPath`. This is the terminal aggregation point of the recursive-solver layer (C031–C040) — nothing downstream in this range consumes it, so it's presumably read by the runtime-binding/certification layer (C0??, outside this range) to produce final certified traces.
+| Item | Description |
+|---|---|
+| `struct ExecutionEvent` | An execution event in the solver trace. |
+| `enum EventType` | Types of events in the execution trace. |
+| `struct ExecutionTrace` | Complete execution trace of solver. |
+| `fn ExecutionTrace::new() -> Self` | Create a new execution trace. |
+| `fn ExecutionTrace::record_event(&mut self, event_type: EventType, message: String, depth: u32, cursor_position: usize)` | Record an execution event. |
+| `fn ExecutionTrace::record_transition(&mut self, result: &TransitionResult, depth: u32, cursor: usize)` | Record a transition event from result. |
+| `fn ExecutionTrace::record_solution(&mut self, path: SolutionPath)` | Add a completed solution path, recording a Solution event at the path's final depth and position (0 and 0 for an empty path). |
+| `fn ExecutionTrace::events(&self) -> &[ExecutionEvent]` | Get all events in the trace. |
+| `fn ExecutionTrace::event_count(&self) -> usize` | Get event count. |
+| `fn ExecutionTrace::events_by_type(&self, event_type: EventType) -> Vec<&ExecutionEvent>` | Get events of a specific type. |
+| `fn ExecutionTrace::solution_paths(&self) -> &[SolutionPath]` | Get solution paths found. |
+| `fn ExecutionTrace::set_total_time_ms(&mut self, time: u128)` | Set total execution time. |
+| `fn ExecutionTrace::total_time_ms(&self) -> u128` | Get total execution time. |
+| `fn ExecutionTrace::stats(&self) -> TraceStats` | Get trace statistics. |
+| `fn ExecutionTrace::format_trace(&self) -> String` | Generate a formatted trace report. |
+| `fn ExecutionTrace::replay_until(&self, event_id: u64) -> Vec<&ExecutionEvent>` | Replay trace up to a specific event ID. |
+| `fn ExecutionTrace::events_in_time_range(&self, start_ms: u128, end_ms: u128) -> Vec<&ExecutionEvent>` | Get events within a time range (milliseconds). |
+| `struct TraceStats` | Statistics about the execution trace. |
+| `fn TraceStats::success_rate(&self) -> f64` | Get the success rate (solutions / transitions). |
+| `fn TraceStats::contradiction_rate(&self) -> f64` | Get the contradiction rate. |
+| `fn TraceStats::avg_time_per_transition(&self) -> f64` | Get average time per transition (ms). |
 
-## Notes / gaps
-- **Note:** `timestamp_ms` uses `SystemTime::now()` (wall-clock), not a monotonic clock or logical step counter — traces are not reproducible/deterministic across runs purely from timestamps; `event_id` (a simple counter) is the actual reliable ordering key, and `format_trace()`'s printed `@{}ms` is `timestamp_ms % 1000`, i.e. only the sub-second component, which is fine for relative ordering within a run but would look nonsensical read out of context (e.g. two events an hour apart could print similar `@Xms` values).
-- **Gap:** `success_rate()` divides `solutions_found` by `total_transitions`, not by total *attempts* or *base cases reached* — this is a debatable metric name; "success rate" here really measures solutions per transition step, not a win/loss ratio over recursion branches.
-- Two dead dependencies (C010, C031).
-- 6 unit tests, including one that hand-constructs a `TraceStats` to test the rate formulas directly (good — decouples stat-math testing from trace-building).
+## Tests
+
+`cargo test -p recursive_solver_trace` runs 10 unit tests.

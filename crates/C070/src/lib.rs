@@ -1,184 +1,200 @@
 //! krull_spectrum_tests_integration
 //!
-//! Full integration tests for Krull dimension computation across spectrum ordering,
-//! chains, dimension definition, bounds, and certification.
+//! Integration scenarios for the Krull tier (C061–C069) on Spec(Z) and its
+//! subspaces, each checked against known mathematics: `dim Spec(Z) = 1` via
+//! the chains `(0) ⊂ (p)`, closed points form a 0-dimensional space, the
+//! generic point `(0)` is dense, and ideal arithmetic follows gcd/lcm.
 
 #![warn(missing_docs)]
 
+use dimension_upper_bounds::{BoundCollection, DimensionUpperBound};
+use ideal_interface::Ideal;
+use krull_certification::CertificationChecker;
+use krull_dimension_definition::{DimensionCalculator, DimensionStrategy, KrullDim};
+use maximal_ideal_predicate::is_maximal_ideal;
+use prime_ideal_predicate::is_prime_ideal;
+use spectrum_chains::{MaximalChains, PrimeChain};
 use spectrum_definition::Spectrum;
 use spectrum_order::{SpecializationPreorder, ZariskiTopology};
-use spectrum_chains::{PrimeChain, MaximalChains};
-use krull_dimension_definition::{KrullDim, DimensionCalculator, DimensionStrategy};
-use dimension_upper_bounds::{DimensionUpperBound, BoundCollection};
-use krull_certification::CertificationChecker;
 use std::collections::BTreeSet;
+
+const SMALL_PRIMES: [u64; 15] = [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47];
+
+fn spec_z() -> Spectrum {
+    let mut points = vec![0];
+    points.extend(SMALL_PRIMES);
+    Spectrum::new(points)
+}
+
+fn closed_points() -> Spectrum {
+    Spectrum::new(SMALL_PRIMES.to_vec())
+}
 
 /// Full integration test suite
 #[derive(Clone, Debug)]
 pub struct KrullIntegrationSuite;
 
 impl KrullIntegrationSuite {
-    /// Test empty spectrum
+    /// The empty spectrum has dimension 0 and no chains.
     pub fn test_empty_spectrum() -> bool {
         let spec = Spectrum::empty();
-        let dim = KrullDim::from_spectrum(&spec);
-        dim.dim() == 0
+        KrullDim::from_spectrum(&spec) == KrullDim(0) && KrullDim::maximal_chains(&spec).is_empty()
     }
 
-    /// Test single prime
+    /// A single closed point has dimension 0.
     pub fn test_single_prime() -> bool {
         let spec = Spectrum::new(vec![2]);
-        let dim = KrullDim::from_spectrum(&spec);
-        dim.is_zero_dimensional() && dim.dim() == 0
+        KrullDim::from_spectrum(&spec).is_zero_dimensional() && spec.len() == 1
     }
 
-    /// Test two primes
+    /// Finitely many closed points: dimension 0, one singleton chain each.
     pub fn test_two_primes() -> bool {
-        let spec = Spectrum::new(vec![2, 3]);
-        let dim = KrullDim::from_spectrum(&spec);
-        let preorder = SpecializationPreorder::from_spectrum(&spec);
-
-        // Check consistency
-        !spec.is_empty() && dim.dim() <= spec.len()
+        let spec = closed_points();
+        let chains = KrullDim::maximal_chains(&spec);
+        KrullDim::from_spectrum(&spec) == KrullDim(0)
+            && chains.len() == SMALL_PRIMES.len()
+            && chains.iter().all(|c| c.len() == 1)
     }
 
-    /// Test divisibility chain (simulated)
+    /// Spec(Z) truncated to small primes has dimension 1, and every longest
+    /// chain is `(0) ⊂ (p)`.
     pub fn test_divisibility_chain() -> bool {
-        let spec = Spectrum::new(vec![2, 4, 6]);
-        let _preorder = SpecializationPreorder::from_spectrum(&spec);
-        let chains = MaximalChains::find_all(&spec, &_preorder);
-
-        chains.longest_length() > 0
+        let spec = spec_z();
+        let chains = KrullDim::maximal_chains(&spec);
+        KrullDim::from_spectrum(&spec) == KrullDim(1)
+            && chains.len() == SMALL_PRIMES.len()
+            && chains.iter().all(|c| c.len() == 2 && c[0] == 0 && SMALL_PRIMES.contains(&c[1]))
     }
 
-    /// Test topology consistency
+    /// The generic point is dense; closed points are closed.
     pub fn test_zariski_topology_consistency() -> bool {
-        let spec = Spectrum::new(vec![2, 3, 5]);
-        let _topo = ZariskiTopology::from_spectrum(&spec);
-
-        let mut _open_set = BTreeSet::new();
-        _open_set.insert(2);
-
-        // Must have well-defined open/closed distinction
-        !spec.is_empty()
+        let spec = spec_z();
+        let topo = ZariskiTopology::from_spectrum(&spec);
+        let everything: BTreeSet<u64> = spec.primes.iter().copied().collect();
+        let generic: BTreeSet<u64> = [0].into_iter().collect();
+        topo.closure(&generic, &spec) == everything
+            && SMALL_PRIMES
+                .iter()
+                .all(|&p| topo.is_closed(&[p].into_iter().collect(), &spec))
+            && !topo.is_closed(&generic, &spec)
     }
 
-    /// Test specialization preorder properties
+    /// The specialization order on Spec(Z) is a partial order with (0) at the
+    /// bottom.
     pub fn test_specialization_properties() -> bool {
-        let spec = Spectrum::new(vec![2, 3, 5, 6]);
-        let preorder = SpecializationPreorder::from_spectrum(&spec);
-
-        // Reflexivity: p ≤ p
-        let reflexive = preorder.le(2, 2) && preorder.le(3, 3);
-
-        // Transitivity: p ≤ q ∧ q ≤ r ⟹ p ≤ r
-        let transitive = if preorder.le(2, 6) && preorder.le(6, 2) {
-            preorder.le(2, 2)
-        } else {
-            true
-        };
-
-        reflexive && transitive
-    }
-
-    /// Test dimension computation strategies
-    pub fn test_dimension_strategies() -> bool {
-        let spec = Spectrum::new(vec![2, 3, 5, 7, 11]);
-
-        let calc_enum = DimensionCalculator::new(DimensionStrategy::ChainEnumeration);
-        let calc_bound = DimensionCalculator::new(DimensionStrategy::GeneratorBound);
-        let calc_sat = DimensionCalculator::new(DimensionStrategy::SaturationBound);
-
-        let dim_enum = calc_enum.compute(&spec);
-        let dim_bound = calc_bound.compute(&spec);
-        let dim_sat = calc_sat.compute(&spec);
-
-        // All strategies should produce valid dimensions
-        dim_enum.dim() <= spec.len() && dim_bound.dim() <= spec.len() && dim_sat.dim() <= spec.len()
-    }
-
-    /// Test upper bounds computation
-    pub fn test_upper_bounds() -> bool {
-        let spec = Spectrum::new(vec![2, 3, 5]);
-        let dim = KrullDim::from_spectrum(&spec);
-
-        let mut bounds = BoundCollection::new();
-        bounds.add_generator_bound(4);
-        bounds.add_krull_pit_bound(2);
-
-        if let Some(tightest) = bounds.tightest() {
-            tightest.satisfies(dim)
-        } else {
-            false
-        }
-    }
-
-    /// Test certification of dimension
-    pub fn test_dimension_certification() -> bool {
-        let spec = Spectrum::new(vec![2, 3, 5]);
-        let mut checker = CertificationChecker::new(spec.clone());
-        let result = checker.check_all();
-
-        result.total_count() > 0
-    }
-
-    /// Test catenary property
-    pub fn test_catenary_property() -> bool {
-        let spec = Spectrum::new(vec![2, 3, 5, 7]);
-        KrullDim::is_catenary(&spec) || !KrullDim::is_catenary(&spec) // Just compute
-    }
-
-    /// Test chain extension
-    pub fn test_chain_extension() -> bool {
-        let spec = Spectrum::new(vec![2, 4, 6, 12]);
-        let preorder = SpecializationPreorder::from_spectrum(&spec);
-        let chain = PrimeChain::singleton(2);
-
-        if let Some(extended) = chain.extend(4, &preorder) {
-            extended.len() >= chain.len()
-        } else {
-            true // Extend not applicable, still OK
-        }
-    }
-
-    /// Test maximal chains consistency
-    pub fn test_maximal_chains_consistency() -> bool {
-        let spec = Spectrum::new(vec![2, 3, 5, 7, 11]);
-        let preorder = SpecializationPreorder::from_spectrum(&spec);
-        let chains = MaximalChains::find_all(&spec, &preorder);
-
-        let longest_len = chains.longest_length();
-        chains
-            .chains()
+        let spec = spec_z();
+        let order = SpecializationPreorder::from_spectrum(&spec);
+        let points: Vec<u64> = spec.primes.iter().copied().collect();
+        let reflexive = points.iter().all(|&p| order.le(p, p));
+        let antisymmetric = points
             .iter()
-            .all(|c| c.len() <= longest_len)
+            .all(|&p| points.iter().all(|&q| p == q || !(order.le(p, q) && order.le(q, p))));
+        let transitive = points.iter().all(|&p| {
+            points.iter().all(|&q| {
+                points
+                    .iter()
+                    .all(|&r| !(order.le(p, q) && order.le(q, r)) || order.le(p, r))
+            })
+        });
+        reflexive && antisymmetric && transitive && spec.minimal_primes() == vec![0]
     }
 
-    /// Test localization behavior
+    /// Upper-bound strategies never undercut the exact dimension.
+    pub fn test_dimension_strategies() -> bool {
+        [closed_points(), spec_z(), Spectrum::empty()].iter().all(|spec| {
+            let exact = DimensionCalculator::new(DimensionStrategy::ChainEnumeration).compute(spec);
+            [DimensionStrategy::GeneratorBound, DimensionStrategy::SaturationBound]
+                .into_iter()
+                .all(|s| DimensionCalculator::new(s).compute(spec) >= exact)
+        })
+    }
+
+    /// Bounds are checked honestly: a true bound passes, a false one fails.
+    pub fn test_upper_bounds() -> bool {
+        let dim = KrullDim::from_spectrum(&spec_z());
+        let mut good = BoundCollection::new();
+        good.add_generator_bound(3);
+        good.add_krull_pit_bound(1);
+        let mut bad = BoundCollection::new();
+        bad.add_krull_pit_bound(0);
+        good.tightest() == Some(DimensionUpperBound(1)) && good.all_satisfied(dim) && !bad.all_satisfied(dim)
+    }
+
+    /// Certification passes for both spectra and catches a violated bound.
+    pub fn test_dimension_certification() -> bool {
+        let passes = [closed_points(), spec_z()]
+            .into_iter()
+            .all(|spec| CertificationChecker::new(spec).check_all().all_passed());
+        let mut checker = CertificationChecker::new(spec_z());
+        let mut bad = BoundCollection::new();
+        bad.add_generator_bound(0);
+        passes && !checker.verify_bounds(&bad) && !checker.check_all().all_passed()
+    }
+
+    /// Both model spectra are catenary.
+    pub fn test_catenary_property() -> bool {
+        KrullDim::is_catenary(&spec_z()) && KrullDim::is_catenary(&closed_points())
+    }
+
+    /// Chains extend only strictly upward.
+    pub fn test_chain_extension() -> bool {
+        let spec = spec_z();
+        let order = SpecializationPreorder::from_spectrum(&spec);
+        let generic = PrimeChain::singleton(0);
+        let up = generic.extend(7, &order);
+        up.as_ref().map(|c| c.elements() == [0, 7]).unwrap_or(false)
+            && generic.extend(0, &order).is_none()
+            && PrimeChain::singleton(7).extend(0, &order).is_none()
+            && PrimeChain::singleton(7).extend(11, &order).is_none()
+            && up.map(|c| c.is_valid(&order)).unwrap_or(false)
+    }
+
+    /// Every maximal chain is valid and none is longer than the dimension
+    /// allows.
+    pub fn test_maximal_chains_consistency() -> bool {
+        let spec = spec_z();
+        let order = SpecializationPreorder::from_spectrum(&spec);
+        let chains = MaximalChains::find_all(&spec, &order);
+        chains.longest_length() == 2
+            && chains.chains().iter().all(|c| c.is_valid(&order) && c.len() <= 2)
+    }
+
+    /// Ideal arithmetic in Z: membership by gcd, intersection by lcm, prime
+    /// and maximal ideals.
     pub fn test_localization_behavior() -> bool {
-        let dim_before = KrullDim(3);
-        let dim_after = KrullDim(2);
-
-        // After localization, dimension should not increase
-        KrullDim::localization_respects_dimension(dim_before, dim_after)
+        let membership = (1..=24u64).all(|a| {
+            (1..=24u64).all(|b| {
+                let (i, j) = (Ideal::principal(a), Ideal::principal(b));
+                let meet = i.intersection(&j).expect("small lcm");
+                let sum = i.sum(&j);
+                (0..=48u64).all(|x| {
+                    meet.contains(x) == (i.contains(x) && j.contains(x))
+                        && sum.contains(x) == (x % sum.gcd() == 0)
+                })
+            })
+        });
+        let primes = is_prime_ideal(&Ideal::zero())
+            && !is_maximal_ideal(&Ideal::zero())
+            && SMALL_PRIMES.iter().all(|&p| is_maximal_ideal(&Ideal::principal(p)))
+            && !is_prime_ideal(&Ideal::principal(4))
+            && is_prime_ideal(&Ideal::new(vec![6, 10]));
+        membership && primes && KrullDim::localization_respects_dimension(KrullDim(1), KrullDim(0))
     }
 
-    /// Test integral extension
+    /// An integral-extension bound equals the dimension it is built from.
     pub fn test_integral_extension() -> bool {
-        let dim_base = KrullDim(2);
-        let bound = DimensionUpperBound::integral_extension_bound(dim_base);
-
-        bound.bound() >= dim_base.dim()
+        let dim = KrullDim::from_spectrum(&spec_z());
+        let bound = DimensionUpperBound::integral_extension_bound(dim);
+        bound.bound() == dim.dim() && bound.satisfies(dim) && !DimensionUpperBound(0).satisfies(dim)
     }
 
     /// Run all integration tests
     pub fn run_all() -> IntegrationTestResult {
         let mut result = IntegrationTestResult::new();
-
         result.add_test("empty_spectrum", Self::test_empty_spectrum());
         result.add_test("single_prime", Self::test_single_prime());
-        result.add_test("two_primes", Self::test_two_primes());
-        result.add_test("divisibility_chain", Self::test_divisibility_chain());
+        result.add_test("closed_points", Self::test_two_primes());
+        result.add_test("spec_z_dimension_one", Self::test_divisibility_chain());
         result.add_test("zariski_topology", Self::test_zariski_topology_consistency());
         result.add_test("specialization_properties", Self::test_specialization_properties());
         result.add_test("dimension_strategies", Self::test_dimension_strategies());
@@ -187,9 +203,8 @@ impl KrullIntegrationSuite {
         result.add_test("catenary", Self::test_catenary_property());
         result.add_test("chain_extension", Self::test_chain_extension());
         result.add_test("maximal_chains", Self::test_maximal_chains_consistency());
-        result.add_test("localization", Self::test_localization_behavior());
+        result.add_test("ideal_arithmetic", Self::test_localization_behavior());
         result.add_test("integral_extension", Self::test_integral_extension());
-
         result
     }
 }
@@ -254,28 +269,10 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_empty_spectrum_integration() {
-        assert!(KrullIntegrationSuite::test_empty_spectrum());
-    }
-
-    #[test]
-    fn test_single_prime_integration() {
-        assert!(KrullIntegrationSuite::test_single_prime());
-    }
-
-    #[test]
-    fn test_two_primes_integration() {
-        assert!(KrullIntegrationSuite::test_two_primes());
-    }
-
-    #[test]
     fn test_all_integration_suite() {
         let result = KrullIntegrationSuite::run_all();
-        assert!(result.total_count() > 0);
-        println!("Passed: {}/{}", result.passed_count(), result.total_count());
-        if !result.all_passed() {
-            println!("Failed: {:?}", result.failed_tests());
-        }
+        assert_eq!(result.total_count(), 14);
+        assert!(result.all_passed(), "failed: {:?}", result.failed_tests());
     }
 
     #[test]
@@ -284,9 +281,9 @@ mod tests {
         result.add_test("test1", true);
         result.add_test("test2", true);
         result.add_test("test3", false);
-
         assert_eq!(result.passed_count(), 2);
         assert_eq!(result.total_count(), 3);
         assert!(!result.all_passed());
+        assert_eq!(result.failed_tests(), vec!["test3".to_string()]);
     }
 }

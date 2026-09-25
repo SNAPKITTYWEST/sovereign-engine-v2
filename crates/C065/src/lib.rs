@@ -1,8 +1,11 @@
 //! spectrum_order
 //!
 //! Topological ordering on prime spectra.
-//! Specialization preorder: P ≤ Q iff P ⊇ Q (reverse inclusion).
-//! Used for Zariski topology on Spec(R).
+//! Specialization order: `P ≤ Q` iff `P ⊆ Q` (Q is a specialization of P,
+//! i.e. Q lies in the closure of {P}). For Spec(Z) this is exact:
+//! `(p) ⊆ (q)` iff `q | p`, so `(0)` lies below every point.
+//! Used for the Zariski topology, whose closed sets are the sets closed
+//! under specialization.
 
 #![warn(missing_docs)]
 
@@ -22,8 +25,6 @@ impl SpecializationPreorder {
         let mut order = BTreeSet::new();
         let primes: Vec<u64> = spec.primes.iter().copied().collect();
 
-        // P ≤ Q iff P ⊇ Q (specialization)
-        // For this simplified model: use divisibility as inclusion proxy
         for &p in &primes {
             for &q in &primes {
                 if spec.specializes(p, q) {
@@ -35,7 +36,7 @@ impl SpecializationPreorder {
         Self { order }
     }
 
-    /// Check if p ≤ q (p specializes to q, i.e., P ⊇ Q)
+    /// `p ≤ q`: `(p) ⊆ (q)`, i.e. `q` is a specialization of `p`.
     pub fn le(&self, p: u64, q: u64) -> bool {
         self.order.contains(&(p, q))
     }
@@ -99,7 +100,8 @@ impl ZariskiTopology {
         }
     }
 
-    /// Closed sets are down-sets: if P ∈ U and P ≤ Q, then Q ∈ U
+    /// Closed sets are closed under specialization: if `P ∈ U` and `P ≤ Q`
+    /// then `Q ∈ U`.
     pub fn is_closed(&self, subset: &BTreeSet<u64>, spectrum: &Spectrum) -> bool {
         for &p in subset {
             if !spectrum.contains_prime(p) {
@@ -181,26 +183,29 @@ mod tests {
 
     #[test]
     fn test_specialization_preorder() {
-        let spec = Spectrum::new(vec![2, 3, 5, 6]);
+        let spec = Spectrum::new(vec![0, 2, 3, 5, 6]);
         let preorder = SpecializationPreorder::from_spectrum(&spec);
-
-        // 6 specializes to 2 (since 6 % 2 == 0)
-        assert!(preorder.le(6, 2) || !preorder.le(6, 2));
-        // Reflexivity
         assert!(preorder.le(2, 2));
+        assert!(preorder.le(0, 2) && preorder.le(0, 5));
+        assert!(!preorder.le(2, 0));
+        assert!(!preorder.le(2, 3));
+        assert!(!preorder.le(6, 2), "6 is not prime, so it is not in the spectrum");
+        let everything: BTreeSet<u64> = spec.primes.iter().copied().collect();
+        assert_eq!(preorder.minimal_elements(&everything), [0].into_iter().collect());
+        assert_eq!(preorder.maximal_elements(&everything), [2, 3, 5].into_iter().collect());
     }
 
     #[test]
     fn test_zariski_topology() {
-        let spec = Spectrum::new(vec![2, 3, 5]);
+        let spec = Spectrum::new(vec![0, 2, 3, 5]);
         let topo = ZariskiTopology::from_spectrum(&spec);
-
-        let mut subset = BTreeSet::new();
-        subset.insert(2);
-        subset.insert(3);
-
-        // Test basic topology properties
-        assert!(topo.is_open(&subset, &spec) || !topo.is_open(&subset, &spec));
+        let set = |xs: &[u64]| xs.iter().copied().collect::<BTreeSet<u64>>();
+        assert!(topo.is_closed(&set(&[2]), &spec), "closed points are closed");
+        assert!(!topo.is_closed(&set(&[0]), &spec), "the generic point is not closed");
+        assert_eq!(topo.closure(&set(&[0]), &spec), set(&[0, 2, 3, 5]));
+        assert!(topo.is_open(&set(&[0, 3, 5]), &spec));
+        assert!(!topo.is_open(&set(&[2]), &spec), "a non-empty open set contains the generic point");
+        assert_eq!(topo.interior(&set(&[0, 2]), &spec), set(&[2]));
     }
 
     #[test]

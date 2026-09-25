@@ -11,20 +11,14 @@ pub use prime_enumeration::{nth_prime, primes_up_to};
 #[derive(Clone, Debug)]
 pub struct GapCandidateSet {
     primes: BTreeSet<u64>,
-    min_gap: u64,
 }
 
 impl GapCandidateSet {
-    /// Create a new candidate set from a list of primes.
+    /// Create a new candidate set from a list of primes (in any order;
+    /// duplicates are dropped).
     pub fn new(primes: Vec<u64>) -> Self {
-        let min_gap = primes.windows(2)
-            .map(|w| w[1] - w[0])
-            .min()
-            .unwrap_or(1);
-
         Self {
             primes: primes.into_iter().collect(),
-            min_gap,
         }
     }
 
@@ -69,12 +63,12 @@ impl GapCandidateSet {
         gaps.len()
     }
 
-    /// Get minimum gap size.
+    /// Get minimum gap size (0 when there are fewer than two primes).
     pub fn min_gap(&self) -> u64 {
-        self.min_gap
+        self.gaps().into_iter().min().unwrap_or(0)
     }
 
-    /// Get maximum gap size.
+    /// Get maximum gap size (0 when there are fewer than two primes).
     pub fn max_gap(&self) -> u64 {
         self.gaps().into_iter().max().unwrap_or(0)
     }
@@ -122,6 +116,15 @@ mod tests {
         let set = GapCandidateSet::new(vec![2, 3, 5, 7, 11, 13]);
         assert_eq!(set.min_gap(), 1);
         assert_eq!(set.max_gap(), 4);
+    }
+
+    #[test]
+    fn gaps_use_the_sorted_set() {
+        let set = GapCandidateSet::new(vec![7, 3, 5, 3, 2]);
+        assert_eq!(set.gaps(), vec![1, 2, 2]);
+        assert_eq!((set.min_gap(), set.max_gap()), (1, 2));
+        let single = GapCandidateSet::new(vec![7]);
+        assert_eq!((single.min_gap(), single.max_gap()), (0, 0));
     }
 
     #[test]

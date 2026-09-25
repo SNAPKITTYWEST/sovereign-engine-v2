@@ -27,7 +27,7 @@ impl HomologicalTestSuite {
         shape.add_degree(ChainDegreeShape::new(2, 1));
 
         if shape.len() != 3 || shape.total_rank() != 6 {
-            return TestResult::failed("Chain complex shape creation failed");
+            return TestResult::failed("Chain complex creation", "shape has wrong length or rank");
         }
 
         TestResult::passed("Chain complex creation")
@@ -40,12 +40,12 @@ impl HomologicalTestSuite {
         e1.add(&e2);
 
         if e1.support_size() != 2 || e1.coeff(0) != 2 || e1.coeff(1) != 3 {
-            return TestResult::failed("Chain element addition failed");
+            return TestResult::failed("Chain element operations", "addition gave wrong coefficients");
         }
 
         let neg = e1.neg();
         if neg.coeff(0) != -2 {
-            return TestResult::failed("Chain element negation failed");
+            return TestResult::failed("Chain element operations", "negation gave wrong coefficient");
         }
 
         TestResult::passed("Chain element operations")
@@ -65,7 +65,7 @@ impl HomologicalTestSuite {
         let image = diff.apply_to_element(&elem);
 
         if image.degree != 0 || image.coeff(0) != 2 {
-            return TestResult::failed("Differential application failed");
+            return TestResult::failed("Differential application", "d(2·g_0) ≠ 2·g_0");
         }
 
         TestResult::passed("Differential application")
@@ -84,43 +84,53 @@ impl HomologicalTestSuite {
         let cert = SquaredZeroVerifier::verify_at_degree(&diff, 2);
 
         if !cert.is_valid {
-            return TestResult::failed("d² = 0 verification failed");
+            return TestResult::failed("d² = 0 verification", "verifier rejected a valid complex");
         }
 
         TestResult::passed("d² = 0 verification")
     }
 
-    /// Test 5: Global exactness check.
+    /// Test 5: Global exactness check. `0 → Z --id--> Z → 0` is exact;
+    /// `0 → Z --0--> Z → 0` is not (both homology groups are Z).
     pub fn test_global_exactness() -> TestResult {
-        let shape = ChainComplexShape::from_ranks(vec![(0, 1), (1, 1)]);
-        let mut diff = DifferentialOperator::new(shape);
-        diff.set_generator_image(1, 0, 0, vec![]);
-
-        let proof = ExactnessPredicateChecker::check_global_exactness(&diff);
-
-        if !proof.is_exact {
-            return TestResult::failed("Global exactness check failed");
+        let name = "Global exactness check";
+        let mut identity = DifferentialOperator::new(ChainComplexShape::from_ranks(vec![(0, 1), (1, 1)]));
+        identity.set_generator_image(1, 0, 0, vec![(0, 1)]);
+        if !ExactnessPredicateChecker::check_global_exactness(&identity).is_exact {
+            return TestResult::failed(name, "identity complex reported non-exact");
         }
 
-        TestResult::passed("Global exactness check")
+        let mut zero = DifferentialOperator::new(ChainComplexShape::from_ranks(vec![(0, 1), (1, 1)]));
+        zero.set_generator_image(1, 0, 0, vec![]);
+        if ExactnessPredicateChecker::check_global_exactness(&zero).is_exact {
+            return TestResult::failed(name, "zero differential reported exact");
+        }
+
+        TestResult::passed(name)
     }
 
-    /// Test 6: Homology computation.
+    /// Test 6: Homology computation, including torsion.
     pub fn test_homology_computation() -> TestResult {
-        let shape = ChainComplexShape::from_ranks(vec![(0, 2), (1, 2)]);
+        let name = "Homology computation";
+        let shape = ChainComplexShape::from_ranks(vec![(0, 1), (1, 1)]);
         let mut diff = DifferentialOperator::new(shape);
-        diff.set_generator_image(1, 0, 0, vec![(0, 1)]);
-        diff.set_generator_image(1, 1, 0, vec![(1, 1)]);
+        diff.set_generator_image(1, 0, 0, vec![(0, 3)]);
 
         match HomologyComputer::compute_all(&diff) {
-            Ok(_result) => {
-                if !_result.verified {
-                    TestResult::failed("Homology computation not verified")
+            Ok(result) => {
+                let h0 = result.group_at(0);
+                let h1 = result.group_at(1);
+                if !result.verified {
+                    TestResult::failed(name, "result not verified")
+                } else if h0.map(|g| (g.rank, g.torsion.clone())) != Some((0, vec![3])) {
+                    TestResult::failed(name, "H_0 of Z --3--> Z should be Z/3")
+                } else if !h1.map_or(false, |g| g.is_trivial()) {
+                    TestResult::failed(name, "H_1 of Z --3--> Z should be 0")
                 } else {
-                    TestResult::passed("Homology computation")
+                    TestResult::passed(name)
                 }
             }
-            Err(e) => TestResult::failed(&format!("Homology computation error: {}", e)),
+            Err(e) => TestResult::failed(name, &e),
         }
     }
 
@@ -133,37 +143,38 @@ impl HomologicalTestSuite {
         let hom = ProjectiveModuleHomomorphism::new(p, q, matrix);
 
         if hom.rank() != 2 {
-            return TestResult::failed("Projective module homomorphism rank computation failed");
+            return TestResult::failed("Projective modules", "rank of [[1,2,3],[4,5,6]] should be 2");
         }
 
         TestResult::passed("Projective modules")
     }
 
-    /// Test 8: Projective resolution creation.
+    /// Test 8: Projective resolutions are verified exact, not just marked.
     pub fn test_projective_resolution() -> TestResult {
-        let res = ProjectiveResolution::free_of_rank_one();
-
-        if res.len() != 1 {
-            return TestResult::failed("Projective resolution creation failed");
+        let name = "Projective resolution";
+        let mut free = ProjectiveResolution::free_of_rank_one();
+        if free.len() != 1 || !free.verify_exactness() {
+            return TestResult::failed(name, "resolution of Z is not exact");
         }
-
-        if !res.is_marked_exact() {
-            return TestResult::failed("Projective resolution exactness marking failed");
+        let cyclic = ProjectiveResolution::cyclic_resolution(4);
+        match cyclic.resolved_module() {
+            Ok(m) if m.free_rank == 0 && m.torsion == vec![4] && cyclic.is_marked_exact() => {
+                TestResult::passed(name)
+            }
+            other => TestResult::failed(name, &format!("resolution of Z/4 wrong: {other:?}")),
         }
-
-        TestResult::passed("Projective resolution")
     }
 
-    /// Test 9: Resolution certification.
+    /// Test 9: Full resolution certification.
     pub fn test_resolution_certification() -> TestResult {
-        let res = ProjectiveResolution::free_of_rank_one();
-        let cert = ResolutionCertifier::check_basic(&res);
-
-        if cert.modules_checked == 0 {
-            return TestResult::failed("Resolution certification module counting failed");
+        let name = "Resolution certification";
+        for res in [ProjectiveResolution::free_of_rank_one(), ProjectiveResolution::cyclic_resolution(6)] {
+            let cert = ResolutionCertifier::certify_fully(&res);
+            if !cert.level.is_fully_certified() {
+                return TestResult::failed(name, &cert.message);
+            }
         }
-
-        TestResult::passed("Resolution certification")
+        TestResult::passed(name)
     }
 
     /// Test 10: End-to-end chain complex workflow.
@@ -176,25 +187,30 @@ impl HomologicalTestSuite {
         diff.set_generator_image(1, 0, 0, vec![(0, 1)]);
         diff.set_generator_image(1, 1, 0, vec![(1, 1)]);
 
+        let name = "End-to-end workflow";
+
         // 1. Verify d² = 0
         let proof = SquaredZeroVerifier::verify_global(&diff);
         if !proof.is_valid {
-            return TestResult::failed("Step 1: d² = 0 verification failed");
+            return TestResult::failed(name, "step 1: d² = 0 verification failed");
         }
 
-        // 2. Compute homology
+        // 2. Compute homology: the identity complex is acyclic.
         let homology = match HomologyComputer::compute_all(&diff) {
             Ok(h) => h,
-            Err(e) => return TestResult::failed(&format!("Step 2: Homology computation failed: {}", e)),
+            Err(e) => return TestResult::failed(name, &format!("step 2: {e}")),
         };
-
-        // 3. Check exactness
-        let exactness = ExactnessPredicateChecker::check_global_exactness(&diff);
-        if !exactness.is_exact {
-            return TestResult::failed("Step 3: Exactness check failed");
+        if !homology.support_degrees().is_empty() {
+            return TestResult::failed(name, "step 2: identity complex has non-zero homology");
         }
 
-        TestResult::passed("End-to-end workflow")
+        // 3. Exactness agrees with homology.
+        let exactness = ExactnessPredicateChecker::check_global_exactness(&diff);
+        if exactness.is_exact != ExactnessPredicateChecker::check_from_homology(&homology) {
+            return TestResult::failed(name, "step 3: exactness disagrees with homology");
+        }
+
+        TestResult::passed(name)
     }
 
     /// Run all tests and return summary.
@@ -219,8 +235,11 @@ impl HomologicalTestSuite {
 /// Result of a single test.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TestResult {
+    /// Test name.
     pub name: String,
+    /// Did it pass?
     pub passed: bool,
+    /// "OK" or the failure reason.
     pub message: String,
 }
 
@@ -234,10 +253,10 @@ impl TestResult {
         }
     }
 
-    /// Create a failed test.
-    pub fn failed(message: &str) -> Self {
+    /// Create a failed test, keeping its name.
+    pub fn failed(name: &str, message: &str) -> Self {
         Self {
-            name: "unknown".to_string(),
+            name: name.to_string(),
             passed: false,
             message: message.to_string(),
         }
@@ -247,9 +266,13 @@ impl TestResult {
 /// Summary of all test runs.
 #[derive(Debug, Clone)]
 pub struct TestSummary {
+    /// Number of tests run.
     pub total: usize,
+    /// Number passed.
     pub passed: usize,
+    /// Number failed.
     pub failed: usize,
+    /// Individual results.
     pub results: Vec<TestResult>,
 }
 
@@ -320,8 +343,8 @@ mod tests {
     #[test]
     fn test_suite_run_all() {
         let summary = HomologicalTestSuite::run_all();
-        // At least some tests should pass
-        assert!(summary.passed > 0);
+        assert_eq!(summary.total, 10);
+        assert!(summary.all_passed(), "{}", summary.report());
     }
 
     #[test]
@@ -333,8 +356,9 @@ mod tests {
 
     #[test]
     fn test_result_failed() {
-        let result = TestResult::failed("error message");
+        let result = TestResult::failed("some test", "error message");
         assert!(!result.passed);
+        assert_eq!(result.name, "some test");
         assert!(result.message.contains("error"));
     }
 

@@ -44,16 +44,15 @@ pub struct RecursiveSolverCursor {
 }
 
 impl RecursiveSolverCursor {
-    /// Create a new cursor from a candidate gap set.
+    /// A cursor over every consecutive-prime gap of the set (every gap is
+    /// at least 1).
     pub fn new(gap_set: GapCandidateSet) -> Self {
-        let candidates = gap_set.candidates_with_gap(1);
-        let len = candidates.len();
-        Self {
-            candidate_gaps: candidates,
-            position: 0,
-            visited: vec![false; len],
-            valid: vec![true; len], // All gaps in candidates_with_gap are valid
-        }
+        Self::with_min_gap(gap_set, 1)
+    }
+
+    /// A cursor over the consecutive-prime gaps of size at least `min_gap`.
+    pub fn with_min_gap(gap_set: GapCandidateSet, min_gap: u64) -> Self {
+        Self::from_gaps(gap_set.candidates_with_gap(min_gap))
     }
 
     /// Create a cursor from a pre-computed list of gaps.

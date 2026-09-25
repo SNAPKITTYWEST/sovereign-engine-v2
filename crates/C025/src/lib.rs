@@ -54,7 +54,8 @@ pub fn average_gap(candidates: &[(u64, u64, u64)]) -> f64 {
     sum as f64 / candidates.len() as f64
 }
 
-/// Calculate standard deviation of gap sizes.
+/// Sample standard deviation of gap sizes (divide by n − 1; 0 for fewer
+/// than two gaps).
 pub fn gap_std_dev(candidates: &[(u64, u64, u64)]) -> f64 {
     if candidates.len() < 2 {
         return 0.0;

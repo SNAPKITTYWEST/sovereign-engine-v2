@@ -1,17 +1,33 @@
-# end_to_end_trace_verification — UNIMPLEMENTED SCAFFOLD
+# `end_to_end_trace_verification` (C097)
 
-`src/lib.rs` is a 7-line stub with no types, functions, or tests.
+Tier 9 — cross-layer certification. *Generated from the crate source; regenerate after API changes.*
 
-## Intended purpose (inferred from name + dependencies)
+End-to-end check of a whole runtime execution: the standard execution of
+all four bindings is certified and recorded in one trace; every state in
+the trace must replay to exactly the binding's recorded snapshot, the
+certificate entry must equal the issued certificate, and every kind of
+tampering (payload bit flip, label edit, deletion, reordering) must be
+detected.
 
-Depends on `runtime_state_snapshot` (C081), `trace_recording_runtime`
-(C086), `certificate_generation` (C087), `runtime_bridge_tests_integration`
-(C090), and `rust_lean_correspondence` (C093). Presumably meant to verify a
-complete runtime trace (from initial snapshot through certificate
-generation) against its Lean correspondence, end to end — the runtime
-analogue of `krull_spectrum_tests_integration` (C070) but for the whole
-pipeline rather than one layer.
+## Dependencies
 
-## Status
+- [C081 `runtime_state_snapshot`](../C081/README.md)
+- [C086 `trace_recording_runtime`](../C086/README.md)
+- [C087 `certificate_generation`](../C087/README.md)
+- [C090 `runtime_bridge_tests_integration`](../C090/README.md)
+- [C093 `rust_lean_correspondence`](../C093/README.md)
 
-Empty. All five dependencies are also unimplemented scaffolds.
+## Re-exports
+
+- `rust_lean_correspondence::CorrespondenceReport`
+
+## Public API
+
+| Item | Description |
+|---|---|
+| `fn check_trace_replay_matches_execution() -> CorrespondenceReport` | Replay the standard execution's trace and try to tamper with it. |
+| `fn run_end_to_end() -> Vec<CorrespondenceReport>` | All end-to-end checks: trace replay and certificate correspondence. |
+
+## Tests
+
+`cargo test -p end_to_end_trace_verification` runs 1 unit test.

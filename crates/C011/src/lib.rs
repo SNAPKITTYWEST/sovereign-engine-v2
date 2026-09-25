@@ -5,7 +5,7 @@
 
 #![warn(missing_docs)]
 
-use gap_tensor_core::GapTensorNode;
+pub use gap_tensor_core::GapTensorNode;
 use std::alloc::{alloc, dealloc, Layout};
 use std::ptr;
 
@@ -66,7 +66,7 @@ impl MultiplicityArena {
     }
 
     /// Immutably iterate over all nodes in the arena.
-    pub fn iter(&self) -> ArenaIter {
+    pub fn iter(&self) -> ArenaIter<'_> {
         ArenaIter {
             arena: self,
             index: 0,

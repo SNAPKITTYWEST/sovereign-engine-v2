@@ -53,8 +53,13 @@ impl PrimeChain {
         true
     }
 
-    /// Try to extend chain with p
+    /// Try to extend the chain with `p`. Chains are strictly increasing, so
+    /// `p` must not already be in the chain: the preorder is reflexive, and
+    /// without this check `[p, p, p, …]` extends forever.
     pub fn extend(&self, p: u64, preorder: &SpecializationPreorder) -> Option<Self> {
+        if self.chain.contains(&p) {
+            return None;
+        }
         if self.chain.is_empty() {
             return Some(Self::singleton(p));
         }
@@ -200,6 +205,16 @@ mod tests {
 
         assert!(!chains.chains().is_empty());
         assert!(chains.longest_length() > 0);
+    }
+
+    #[test]
+    fn extend_rejects_repeated_primes() {
+        let spec = Spectrum::new(vec![2, 3, 5]);
+        let preorder = SpecializationPreorder::from_spectrum(&spec);
+        assert!(preorder.le(2, 2));
+        assert_eq!(PrimeChain::singleton(2).extend(2, &preorder), None);
+        let chains = MaximalChains::find_all(&spec, &preorder);
+        assert!(chains.chains().iter().all(|c| c.len() <= spec.len()));
     }
 
     #[test]

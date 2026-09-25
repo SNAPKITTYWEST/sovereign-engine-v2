@@ -7,6 +7,12 @@
 
 use std::collections::BTreeMap;
 
+pub use chain_complex_shape::integer_matrix;
+pub use homology_computation::{HomologyComputer, HomologyGroup};
+pub use projective_resolution::{
+    ProjectiveModule, ProjectiveModuleHomomorphism, ProjectiveResolution, ResolutionHomology,
+};
+
 /// Tor functor computation index
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct TorIndex {
@@ -31,8 +37,10 @@ impl TorIndex {
     }
 }
 
-/// A Tor group: Tor_i(M, N) as a module representation
-#[derive(Clone, Debug)]
+/// A Tor group: Tor_i(M, N) ≅ Z^rank ⊕ ⊕ (Z/order)^multiplicity.
+///
+/// Generators are ordered torsion first (by ascending order), then free.
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct TorGroup {
     /// Index i (which Tor we're computing)
     pub index: TorIndex,
@@ -52,9 +60,35 @@ impl TorGroup {
         }
     }
 
-    /// Add a torsion element of order d
+    /// Build from free rank and a list of torsion orders (orders ≤ 1 are
+    /// trivial and skipped).
+    pub fn from_invariants(index: TorIndex, rank: usize, torsion: &[u64]) -> Self {
+        let mut group = Self::new(index, rank);
+        for &order in torsion {
+            group.add_torsion(order, 1);
+        }
+        group
+    }
+
+    /// Build from a homology group.
+    pub fn from_homology(index: TorIndex, homology: &HomologyGroup) -> Self {
+        Self::from_invariants(index, homology.rank, &homology.torsion)
+    }
+
+    /// Add `multiplicity` torsion summands of order `order`. Orders ≤ 1 are
+    /// trivial and ignored.
     pub fn add_torsion(&mut self, order: u64, multiplicity: usize) {
-        *self.torsion.entry(order).or_insert(0) += multiplicity;
+        if order > 1 && multiplicity > 0 {
+            *self.torsion.entry(order).or_insert(0) += multiplicity;
+        }
+    }
+
+    /// Order of each torsion generator, in generator order.
+    pub fn torsion_orders(&self) -> Vec<u64> {
+        self.torsion
+            .iter()
+            .flat_map(|(&order, &count)| std::iter::repeat(order).take(count))
+            .collect()
     }
 
     /// Is this Tor group trivial?
@@ -67,13 +101,14 @@ impl TorGroup {
         self.rank + self.torsion.values().sum::<usize>()
     }
 
-    /// Exponent of torsion (LCM of all torsion orders)
+    /// Exponent of torsion (LCM of all torsion orders), saturating at
+    /// `u64::MAX`.
     pub fn torsion_exponent(&self) -> u64 {
         fn gcd(a: u64, b: u64) -> u64 {
             if b == 0 { a } else { gcd(b, a % b) }
         }
         fn lcm(a: u64, b: u64) -> u64 {
-            a / gcd(a, b) * b
+            (a / gcd(a, b)).saturating_mul(b)
         }
 
         self.torsion
@@ -84,7 +119,7 @@ impl TorGroup {
 }
 
 /// Tor computation result for a pair of modules
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct TorComputation {
     /// Tor groups indexed by degree
     pub groups: BTreeMap<usize, TorGroup>,
@@ -170,6 +205,19 @@ mod tests {
         group2.add_torsion(4, 1);
         group2.add_torsion(6, 1);
         assert_eq!(group2.torsion_exponent(), 12);
+    }
+
+    #[test]
+    fn invariants_and_generator_order() {
+        let g = TorGroup::from_invariants(TorIndex::new(1), 2, &[1, 6, 2, 6]);
+        assert_eq!(g.rank, 2);
+        assert_eq!(g.torsion_orders(), vec![2, 6, 6]);
+        assert_eq!(g.num_generators(), 5);
+        let h = HomologyGroup { degree: 0, rank: 0, torsion: vec![3] };
+        assert_eq!(TorGroup::from_homology(TorIndex::new(0), &h).torsion_orders(), vec![3]);
+        let mut trivial = TorGroup::new(TorIndex::new(0), 0);
+        trivial.add_torsion(1, 3);
+        assert!(trivial.is_trivial());
     }
 
     #[test]

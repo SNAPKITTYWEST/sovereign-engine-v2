@@ -1,18 +1,27 @@
-# gap_tensor_equality (C005)
+# `gap_tensor_equality` (C005)
 
-**Status: unimplemented scaffold.** The crate is currently only a stub — `src/lib.rs` is 7 lines: a module doc comment, `#![warn(missing_docs)]`, and a `// Scaffold: Add your code here.` marker. It compiles (empty lib) but exports nothing.
+Tier 0 — gap tensor primitives. *Generated from the crate source; regenerate after API changes.*
 
-## Intended purpose
+Equality semantics for gap tensor nodes and tensors: exact (bitwise on
+spectral weight), approximate (weight tolerance) and structural (weight
+ignored).
 
-Equality/comparison semantics for gap tensors as aggregates, layered on GapTensorNode's existing PartialEq/Ord.
+## Dependencies
 
-## Pipeline role
+- [C001 `gap_tensor_core`](../C001/README.md)
+- [C004 `gap_tensor_shape`](../C004/README.md)
 
-Part of the gap_tensor_* family rooted at `gap_tensor_core` (C001) and `multiplicity_arena_core` (C011). No `[dependencies]` are declared in `Cargo.toml` yet, so even the expected dependency on C001/C011 has not been wired up.
+## Public API
 
-## Gaps / TODOs
+| Item | Description |
+|---|---|
+| `enum EqualityMode` | How spectral weights are compared. |
+| `enum EqualityError` | Errors from tensor comparison. |
+| `fn nodes_equal(a: &GapTensorNode, b: &GapTensorNode, mode: EqualityMode) -> bool` | Compare two nodes under `mode`. |
+| `fn first_difference(a: &GapTensor, b: &GapTensor, mode: EqualityMode) -> Result<Option<usize>, EqualityError>` | Flat index of the first node that differs under `mode`, or `None` if the tensors are equal. |
+| `fn count_differences(a: &GapTensor, b: &GapTensor, mode: EqualityMode) -> Result<usize, EqualityError>` | Number of nodes that differ under `mode`. |
+| `fn tensors_equal(a: &GapTensor, b: &GapTensor, mode: EqualityMode) -> bool` | True iff the tensors have the same shape and all nodes are equal under `mode`. |
 
-- No implementation: this is a pure placeholder crate.
-- No dependency on `gap_tensor_core`/`multiplicity_arena_core` declared, despite the name implying it operates on `GapTensorNode`/`MultiplicityArena`.
-- No tests.
-- `#![warn(missing_docs)]` is present but moot with no public items to document.
+## Tests
+
+`cargo test -p gap_tensor_equality` runs 5 unit tests.

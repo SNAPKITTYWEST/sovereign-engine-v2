@@ -1,24 +1,48 @@
-# prime_gap_tests_integration (C030)
+# `prime_gap_tests_integration` (C030)
 
-The capstone integration crate for Tier 2: re-exports the full prime/gap API surface and provides `tier2_integration_test()`, an end-to-end smoke test exercised as a library function (not just a `#[test]`).
+Tier 2 — prime/gap engine. *Generated from the crate source; regenerate after API changes.*
+
+End-to-end scenarios across the Tier 2 prime/gap engine (C021–C029),
+checked against exact facts about the 25 primes up to 100: π(100) = 25,
+gap counts {1: 1, 2: 8, 4: 7, 6: 7, 8: 1}, and gaps summing to
+97 − 2 = 95.  returns a per-scenario report
+so a failure says which scenario broke and why.
+
+## Dependencies
+
+- [C021 `prime_predicate`](../C021/README.md)
+- [C022 `prime_enumeration`](../C022/README.md)
+- [C023 `gap_candidate_set`](../C023/README.md)
+- [C024 `gap_ordering`](../C024/README.md)
+- [C025 `gap_multiplicity`](../C025/README.md)
+- [C026 `gap_absolute_difference`](../C026/README.md)
+- [C027 `gap_constraint_satisfaction`](../C027/README.md)
+- [C028 `gap_verification`](../C028/README.md)
+- [C029 `prime_gap_relationship`](../C029/README.md)
+
+## Re-exports
+
+- `prime_predicate::is_prime`
+- `prime_enumeration::{primes_up_to, nth_prime, prime_count}`
+- `gap_candidate_set::GapCandidateSet`
+- `gap_ordering::{order_gaps, GapOrdering}`
+- `gap_multiplicity::analyze_gaps`
+- `gap_constraint_satisfaction::GapConstraint`
+- `gap_verification::{verify_all_gaps, VerificationResult}`
+- `prime_gap_relationship::{prime_gap_pairs, maximal_gaps, PrimeGapPair}`
 
 ## Public API
 
-- Re-exports from every Tier 2 crate: `is_prime`; `primes_up_to`, `nth_prime`, `prime_count`; `GapCandidateSet`; `order_gaps`, `GapOrdering`; `analyze_gaps`; `GapConstraint`; `verify_all_gaps`, `VerificationResult`; `prime_gap_pairs`, `maximal_gaps`, `PrimeGapPair`.
-- `tier2_integration_test() -> bool` — a 6-step pipeline run as a plain function returning a bool (not `Result`, no error detail on failure): generate primes → build candidate set → verify against a `[1,10]` range constraint (requires `is_good()`, i.e. ≥90% pass rate) → analyze multiplicity → build prime-gap pairs → compute maximal gaps.
+| Item | Description |
+|---|---|
+| `struct ScenarioResult` | Outcome of one scenario. |
+| `fn ScenarioResult::passed(&self) -> bool` | Did the scenario pass? |
+| `struct IntegrationReport` | Outcome of all scenarios. |
+| `fn IntegrationReport::all_passed(&self) -> bool` | True iff every scenario passed. |
+| `fn IntegrationReport::failures(&self) -> Vec<&ScenarioResult>` | The failed scenarios. |
+| `fn run_prime_gap_integration() -> IntegrationReport` | Run every scenario. |
+| `fn tier2_integration_test() -> bool` | True iff every scenario of `run_prime_gap_integration` passes. |
 
-## Pipeline role
+## Tests
 
-Depends on nearly the entire Tier 2 family: `prime_predicate`, `prime_enumeration`, `gap_candidate_set`, `gap_ordering`, `gap_multiplicity`, `gap_constraint_satisfaction`, `gap_verification`, `prime_gap_relationship` (C021-C029, excluding none). It is the terminal crate of Tier 2 — nothing in the C021-C030 range depends on it, and it's the natural place a Tier 3 (Krull dimension / commutative algebra layer, per the workspace's stated architecture) would pull a single "is Tier 2 healthy" check from.
-
-## Invariants / design notes
-
-- `tier2_integration_test` returns a bare `bool` and early-returns `false` at the first failing step, discarding which step failed — a caller (or CI) gets no diagnostic beyond pass/fail. Given this crate's role as an integration gate before certification (Tier 4 presumably consumes a signal like this), that's a real observability gap.
-- The `90%` pass-rate threshold (via `VerificationResult::is_good()`) means this integration test can pass even with up to 10% of candidate gaps failing the `[1,10]` range constraint — a deliberately soft gate rather than a strict all-or-nothing check.
-- Uses `GapCandidateSet::from_limit(100).candidates_with_gap(1)`, which (per C023) consumes the set — consistent usage, no misuse here.
-
-## Gaps / TODOs
-
-- `tier2_integration_test`'s bool-only return discards failure diagnostics — worth upgrading to a `Result<(), String>` or a step-tagged enum if this is meant to gate certification decisions in Tier 4.
-- No test in this crate exercises the `false`-returning paths of `tier2_integration_test` (e.g. by feeding a limit too small to have 10 primes) — only the happy path is verified.
-- This crate inherits the `is_first_occurrence` concern from C029 by re-exporting `maximal_gaps`/`PrimeGapPair` without re-testing that specific method.
+`cargo test -p prime_gap_tests_integration` runs 7 unit tests.

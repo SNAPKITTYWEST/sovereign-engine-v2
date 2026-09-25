@@ -53,35 +53,16 @@ impl SquaredZeroVerifier {
     /// Returns a certificate with the result.
     pub fn verify_at_degree(diff: &DifferentialOperator, degree: i32) -> SquaredZeroCertificate {
         let mut cert = SquaredZeroCertificate::new(degree);
-
-        // Early exit if target degree doesn't exist
-        let source_rank = diff.source_rank(degree);
-
-        // Check all generators at this degree
-        let mut all_zero = true;
-
-        for gen_idx in 0..source_rank {
+        // Every generator is checked (no early exit), so test_cases_passed
+        // counts exactly the generators with d(d(g)) = 0.
+        for gen_idx in 0..diff.source_rank(degree) {
             cert.generators_checked += 1;
-
-            // Apply d twice: d(d(gen))
             let first_image = diff.apply_to_generator(degree, gen_idx);
-
-            // Now apply d to the result (at degree - 1)
-            let second_image = diff.apply_to_element(&first_image);
-
-            // Check if d(d(gen)) = 0
-            if !second_image.is_zero() {
-                all_zero = false;
-                break;
+            if diff.apply_to_element(&first_image).is_zero() {
+                cert.test_cases_passed += 1;
             }
-
-            cert.test_cases_passed += 1;
         }
-
-        if all_zero {
-            cert.is_valid = true;
-        }
-
+        cert.is_valid = cert.test_cases_passed == cert.generators_checked;
         cert
     }
 
@@ -213,6 +194,19 @@ mod tests {
         // Now d² = 0 because d(d(x)) = d(0) = 0 for all x
         let cert = SquaredZeroVerifier::verify_at_degree(&diff, 2);
         assert!(cert.is_valid);
+    }
+
+    #[test]
+    fn failures_are_counted_not_short_circuited() {
+        let shape = ChainComplexShape::from_ranks(vec![(0, 1), (1, 1), (2, 3)]);
+        let mut diff = DifferentialOperator::new(shape);
+        diff.set_generator_image(1, 0, 0, vec![(0, 1)]);
+        diff.set_generator_image(2, 0, 1, vec![(0, 1)]);
+        diff.set_generator_image(2, 1, 1, vec![]);
+        diff.set_generator_image(2, 2, 1, vec![(0, 2)]);
+        let cert = SquaredZeroVerifier::verify_at_degree(&diff, 2);
+        assert!(!cert.is_valid);
+        assert_eq!((cert.generators_checked, cert.test_cases_passed), (3, 1));
     }
 
     #[test]

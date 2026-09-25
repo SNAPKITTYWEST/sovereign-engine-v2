@@ -1,42 +1,39 @@
-# spectrum_order
+# `spectrum_order` (C065)
 
-The specialization preorder on `Spec(R)` and the Zariski topology derived
-from it.
+Tier 6 — Krull dimension. *Generated from the crate source; regenerate after API changes.*
 
-## What it does
+Topological ordering on prime spectra.
+Specialization order: `P ≤ Q` iff `P ⊆ Q` (Q is a specialization of P,
+i.e. Q lies in the closure of {P}). For Spec(Z) this is exact:
+`(p) ⊆ (q)` iff `q | p`, so `(0)` lies below every point.
+Used for the Zariski topology, whose closed sets are the sets closed
+under specialization.
 
-`SpecializationPreorder::from_spectrum` materializes the full preorder as a
-`BTreeSet<(u64, u64)>` of pairs `p ≤ q` (i.e. `spec.specializes(p, q)`),
-computed by brute-force over all pairs in the spectrum (O(n^2)). Exposes
-`le`, `upper_set`, `lower_set`, and `minimal_elements`/`maximal_elements` of
-an arbitrary subset. `ZariskiTopology` builds on the preorder to define
-closed sets (down-sets under specialization), open sets (complements of
-closed), `neighborhood`, `closure` (iterative fixed-point over the down-set
-closure), and `interior`.
+## Dependencies
+
+- [C008 `gap_tensor_ordering`](../C008/README.md)
+- [C064 `spectrum_definition`](../C064/README.md)
 
 ## Public API
 
-- `SpecializationPreorder::from_spectrum(&Spectrum)`, `le`, `upper_set`,
-  `lower_set`, `minimal_elements`, `maximal_elements`
-- `ZariskiTopology::from_spectrum(&Spectrum)`, `is_closed`, `is_open`,
-  `neighborhood`, `closure`, `interior`, `preorder()`
+| Item | Description |
+|---|---|
+| `struct SpecializationPreorder` | Specialization preorder on spectrum |
+| `fn SpecializationPreorder::from_spectrum(spec: &Spectrum) -> Self` | Create preorder from spectrum |
+| `fn SpecializationPreorder::le(&self, p: u64, q: u64) -> bool` | `p ≤ q`: `(p) ⊆ (q)`, i.e. |
+| `fn SpecializationPreorder::upper_set(&self, p: u64) -> BTreeSet<u64>` | Get all elements ≥ p |
+| `fn SpecializationPreorder::lower_set(&self, q: u64) -> BTreeSet<u64>` | Get all elements ≤ q |
+| `fn SpecializationPreorder::minimal_elements(&self, subset: &BTreeSet<u64>) -> BTreeSet<u64>` | Get minimal elements of a subset |
+| `fn SpecializationPreorder::maximal_elements(&self, subset: &BTreeSet<u64>) -> BTreeSet<u64>` | Get maximal elements of a subset |
+| `struct ZariskiTopology` | Zariski topology on spectrum |
+| `fn ZariskiTopology::from_spectrum(spec: &Spectrum) -> Self` | Create Zariski topology from spectrum |
+| `fn ZariskiTopology::is_closed(&self, subset: &BTreeSet<u64>, spectrum: &Spectrum) -> bool` | Closed sets are closed under specialization: if `P ∈ U` and `P ≤ Q` then `Q ∈ U`. |
+| `fn ZariskiTopology::is_open(&self, subset: &BTreeSet<u64>, spectrum: &Spectrum) -> bool` | Open sets are complements of closed sets |
+| `fn ZariskiTopology::neighborhood(&self, p: u64) -> BTreeSet<u64>` | Get neighborhood of point p |
+| `fn ZariskiTopology::closure(&self, subset: &BTreeSet<u64>, spectrum: &Spectrum) -> BTreeSet<u64>` | Get closure of a subset |
+| `fn ZariskiTopology::interior(&self, subset: &BTreeSet<u64>, spectrum: &Spectrum) -> BTreeSet<u64>` | Get interior of a subset |
+| `fn ZariskiTopology::preorder(&self) -> &SpecializationPreorder` | Get the specialization preorder |
 
-## Pipeline role
+## Tests
 
-Depends on `spectrum_definition` (C064) and, oddly, `gap_tensor_ordering`
-(C008) — a Tier-1 gap-combinatorics crate — though nothing in this file
-visibly uses it; likely dead/aspirational wiring for a future ordering
-compatibility check. Consumed by `spectrum_chains` (C066), which needs `le`
-to test whether a candidate chain is totally ordered.
-
-## Gaps / weak spots
-
-- `from_spectrum` is quadratic in spectrum size with no caching; fine at toy
-  scale, a bottleneck if `Spectrum` ever grows large.
-- `closure`'s fixed-point loop is O(n^2) per iteration and re-scans the
-  whole spectrum each pass — correct but not efficient.
-- Several tests assert `cond || !cond` (`test_specialization_preorder`,
-  `test_zariski_topology`) — they check the call doesn't panic, not that the
-  topology/order is actually correct on that input.
-- The `gap_tensor_ordering` dependency (C008) appears unused in this file;
-  worth confirming intent or removing.
+`cargo test -p spectrum_order` runs 4 unit tests.

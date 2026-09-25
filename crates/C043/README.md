@@ -1,21 +1,36 @@
-# differential_operator (C043)
+# `differential_operator` (C043)
 
-## What it does
-Represents the differential `d: C_n -> C_{n-1}` of a chain complex as a sparse matrix per source degree, and applies it to generators, `ChainElement`s, and full `Chain`s. Does **not** itself verify `d² = 0` — that's delegated to C044 by design (see its own doc comment: "verified separately").
+Tier 4 — homological algebra. *Generated from the crate source; regenerate after API changes.*
+
+The differential operator d: C_n -> C_{n-1} in a chain complex.
+The core operator of homological algebra: d² = 0 is verified separately in C044.
+
+## Dependencies
+
+- [C041 `chain_complex_shape`](../C041/README.md)
+- [C042 `chain_complex_types`](../C042/README.md)
+
+## Re-exports
+
+- `chain_complex_shape::{ChainComplexShape, ChainDegreeShape, MAX_CHAIN_RANK}`
 
 ## Public API
-- `DifferentialOperator::new(ChainComplexShape)`.
-- `set_generator_image(source_degree, source_gen, target_degree, target_image: Vec<(usize, i64)>)` — panics unless `source_degree - 1 == target_degree`; silently drops zero-coefficient entries.
-- `apply_to_generator(degree, gen_idx) -> ChainElement`, `apply_to_element(&ChainElement) -> ChainElement`, `apply(&Chain) -> Chain`.
-- `matrix_at(degree)`, `source_rank(degree)`, `target_rank(degree)` (= `source_rank(degree - 1)`).
-- `is_consistent()` — necessary-but-not-sufficient sanity check that all stored images land at the expected target degree (a bookkeeping check, not an algebraic one).
-- `to_dense_matrix(degree) -> Vec<Vec<i64>>` — dense `target_rank × source_rank` matrix.
-- `support_degrees()` — sorted list of degrees with a nonzero matrix set.
 
-## Pipeline position
-Depends on `chain_complex_shape` (C041) and `chain_complex_types` (C042). Central to the homological layer: consumed by `differential_squared_zero` (C044), `homology_computation` (C048), `exactness_predicate` (C047), and `resolution_tensored` (C053) in the Tor sub-layer.
+| Item | Description |
+|---|---|
+| `struct DifferentialOperator` | Represents the differential operator d in a chain complex. |
+| `fn DifferentialOperator::new(shape: ChainComplexShape) -> Self` | Create a new differential operator for a given chain complex shape. |
+| `fn DifferentialOperator::set_generator_image(&mut self, source_degree: i32, source_gen: usize, target_degree: i32, target_image: Vec<(usize, i64)>)` | Set the image of a single generator under the differential. |
+| `fn DifferentialOperator::apply_to_generator(&self, degree: i32, gen_idx: usize) -> ChainElement` | Apply the differential to a single generator. |
+| `fn DifferentialOperator::apply_to_element(&self, elem: &ChainElement) -> ChainElement` | Apply the differential to a chain element. |
+| `fn DifferentialOperator::apply(&self, chain: &Chain) -> Chain` | Apply the differential to a general chain. |
+| `fn DifferentialOperator::matrix_at(&self, degree: i32) -> Option<&HashMap<usize, Vec<(i32, usize, i64)>>>` | Get the matrix of the differential at a specific degree. |
+| `fn DifferentialOperator::source_rank(&self, degree: i32) -> usize` | Get the rank of the source module C_n. |
+| `fn DifferentialOperator::target_rank(&self, degree: i32) -> usize` | Get the rank of the target module C_{n-1}. |
+| `fn DifferentialOperator::is_consistent(&self) -> bool` | Check that the differential is "locally" consistent with the current shape: every image lies at degree n-1 and every source and target generator index is below the rank of its degree. |
+| `fn DifferentialOperator::to_dense_matrix(&self, degree: i32) -> Vec<Vec<i64>>` | Compute the matrix representation as nested vectors. |
+| `fn DifferentialOperator::support_degrees(&self) -> Vec<i32>` | Get all degrees where the differential is nontrivial (has nonzero matrix). |
 
-## Notes / gaps
-- **Gap — silent truncation:** `to_dense_matrix` skips any `target_gen >= target_rank` (`if target_gen < target_rank`) rather than panicking or returning an error — an out-of-range image set via `set_generator_image` (which does *not* validate against `shape.rank_at`) will silently vanish from the dense matrix. `set_generator_image` has no bounds check against the shape's declared rank at all, so it's possible to define a differential inconsistent with its own `ChainComplexShape` and only discover it (partially) when converting to dense form.
-- `is_consistent()` only checks recorded target degrees match `source_degree - 1`; since `set_generator_image` already asserts this at insertion time, `is_consistent()` is currently unreachable-false in normal use — it would only catch a bug if the internal `matrices` map were mutated some other way (it can't be, being private). Essentially a defensive check against future internal changes rather than something a caller needs today.
-- 5 unit tests covering construction, application, consistency, and dense-matrix conversion.
+## Tests
+
+`cargo test -p differential_operator` runs 9 unit tests.

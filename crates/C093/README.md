@@ -1,22 +1,44 @@
-# rust_lean_correspondence — UNIMPLEMENTED SCAFFOLD
+# `rust_lean_correspondence` (C093)
 
-`src/lib.rs` is a 7-line stub with no types, functions, or tests.
+Tier 9 — cross-layer certification. *Generated from the crate source; regenerate after API changes.*
 
-## Intended purpose (inferred from name + dependencies)
+The correspondence between runtime claims (Rust) and proof obligations
+(the Lean-style layer). For every runtime claim, a certificate must hold
+exactly one obligation whose statement is the claim's statement. The
+obligation is closed if and only if an independent re-check of the claim
+succeeds; a closed obligation's proof must type-check against its
+statement with `Computed` evidence; a failed one carries no proof; and the
+certificate's digests must match the sources' histories.
 
-Depends on `type_checking_interface` (C071, the Lean-vocabulary crate),
-all four runtime-binding crates (`tensor_runtime_binding` C082,
-`prime_state_binding` C083, `multiplicity_state_binding` C084,
-`recursion_runtime_binding` C085), `certificate_generation` (C087), and
-`cross_layer_types` (C091). This is the crate name that most directly
-matches the workspace's stated purpose ("ties Rust execution traces back to
-the Lean proofs for certification") — presumably meant to define the
-mapping from a Rust runtime certificate to the corresponding Lean
-`ProofTerm`/`Obligation` it discharges.
+ checks this over real
+executions that deliberately include failing claims.
 
-## Status
+## Dependencies
 
-Empty, and arguably the single most architecturally important stub in the
-whole assigned range: it is the crate the entire four-stage pipeline's
-"formal verification" claim depends on, and none of its six dependencies
-(C082-C085, C087, C091) are implemented either.
+- [C071 `type_checking_interface`](../C071/README.md)
+- [C082 `tensor_runtime_binding`](../C082/README.md)
+- [C083 `prime_state_binding`](../C083/README.md)
+- [C084 `multiplicity_state_binding`](../C084/README.md)
+- [C085 `recursion_runtime_binding`](../C085/README.md)
+- [C087 `certificate_generation`](../C087/README.md)
+- [C091 `cross_layer_types`](../C091/README.md)
+
+## Re-exports
+
+- `certificate_generation::{certify, claim_obligation_id, ExecutionCertificate, ObligationStatus}`
+- `cross_layer_types::CorrespondenceReport`
+
+## Public API
+
+| Item | Description |
+|---|---|
+| `fn lean_statement(source: &str, statement: &str) -> LeanType` | Lean statement of a runtime claim, as written into certificates. |
+| `fn check_certificate_against_sources(cert: &ExecutionCertificate, sources: &[&dyn ClaimSource], report: &mut CorrespondenceReport)` | Check `cert` against the sources it was issued for. |
+| `struct Executions` | Real executions, some with deliberately failing claims. |
+| `fn Executions::sources(&self) -> Vec<&dyn ClaimSource>` | All executions as claim sources. |
+| `fn standard_executions() -> Result<Executions, String>` | Build the executions. |
+| `fn check_certificates_discharge_obligations() -> CorrespondenceReport` | Certificates close exactly the claims that hold, per source and for all sources together. |
+
+## Tests
+
+`cargo test -p rust_lean_correspondence` runs 2 unit tests.

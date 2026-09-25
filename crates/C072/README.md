@@ -1,46 +1,50 @@
-# obligation_management
+# `obligation_management` (C072)
 
-Generic proof-obligation tracking: create obligations, mark them proven,
-track dependencies, and topologically order them.
+Tier 7 — proof obligations. *Generated from the crate source; regenerate after API changes.*
 
-## What it does
+Proof obligations and their bookkeeping. An obligation is closed only by
+a proof that type-checks against its proposition
+(`type_checking_interface`), and — when discharged through the manager —
+only after every dependency is closed. Dependency cycles and references to
+unknown obligations are detected, not silently ignored.
 
-`Obligation { id, proposition: LeanType, status: ObligationStatus, proof:
-Option<ProofTerm>, dependencies: BTreeSet<String> }`.
-`ObligationStatus` is `Open | InProgress | Closed | Failed` (note:
-`InProgress` and `Failed` are never actually set anywhere in this crate —
-`prove()` only ever transitions `Open -> Closed`, nothing sets `InProgress`
-or `Failed`). `dependencies_satisfied` checks all named dependencies are
-`Closed` in a given obligation list (linear scan per dependency).
-`ObligationManager` holds a `BTreeMap<String, Obligation>` plus a shared
-`TypeContext`, with counts and a `topological_order()` (recursive DFS,
-dependencies emitted before dependents; silently ignores dependencies that
-don't exist in the map, and does not detect cycles — a cyclic dependency
-graph would still terminate because of the `visited` set, but would produce
-a silently incomplete/incorrect order rather than an error).
+## Dependencies
+
+- [C010 `gap_tensor_trace`](../C010/README.md)
+- [C071 `type_checking_interface`](../C071/README.md)
+
+## Re-exports
+
+- `type_checking_interface::{ DecisionCertificate, Evidence, LeanType, ProofTerm, TypeContext, TypeError, }`
 
 ## Public API
 
-- `ObligationStatus`, `Obligation` (+ `new`, `add_dependency`,
-  `dependencies_satisfied`, `prove`)
-- `ObligationManager::new`, `add_obligation`, `get_obligation[_mut]`,
-  `count_open`, `count_closed`, `topological_order`
+| Item | Description |
+|---|---|
+| `enum ObligationStatus` | Status of a proof obligation |
+| `struct Obligation` | A single proof obligation |
+| `fn Obligation::new(id: String, proposition: LeanType) -> Self` | Create a new open obligation |
+| `fn Obligation::add_dependency(&mut self, dep_id: String)` | Add a dependency |
+| `fn Obligation::dependencies_satisfied(&self, obligations: &[Obligation]) -> bool` | Check if all dependencies are closed |
+| `fn Obligation::prove(&mut self, proof: ProofTerm) -> Result<(), TypeError>` | Close with a self-contained proof (checked in an empty context: only `Trivial` for `True` and decided statements qualify). |
+| `fn Obligation::evidence(&self) -> Option<Evidence>` | Evidence grade of the closing proof, if closed. |
+| `enum DischargeError` | Why an obligation could not be discharged. |
+| `struct ObligationManager` | Manager for a collection of proof obligations |
+| `fn ObligationManager::new() -> Self` | Create a new obligation manager |
+| `fn ObligationManager::add_obligation(&mut self, obligation: Obligation)` | Add an obligation |
+| `fn ObligationManager::get_obligation(&self, id: &str) -> Option<&Obligation>` | Get an obligation by ID |
+| `fn ObligationManager::get_obligation_mut(&mut self, id: &str) -> Option<&mut Obligation>` | Get mutable obligation |
+| `fn ObligationManager::discharge(&mut self, id: &str, proof: ProofTerm) -> Result<(), DischargeError>` | Close obligation `id` with `proof`, checked in this manager's context. |
+| `fn ObligationManager::mark_failed(&mut self, id: &str) -> Result<(), DischargeError>` | Mark obligation `id` as refuted. |
+| `fn ObligationManager::count_open(&self) -> usize` | Count open obligations |
+| `fn ObligationManager::count_closed(&self) -> usize` | Count closed obligations |
+| `fn ObligationManager::count_status(&self, status: ObligationStatus) -> usize` | Count obligations with a given status |
+| `fn ObligationManager::evidence_counts(&self) -> BTreeMap<Evidence, usize>` | Closed obligations grouped by the evidence grade of their proofs. |
+| `fn ObligationManager::missing_dependencies(&self) -> Vec<(String, String)>` | Dependencies that name no obligation, as `(obligation, missing id)`. |
+| `fn ObligationManager::find_cycle(&self) -> Option<Vec<String>>` | A dependency cycle, if any, as the ids along it (first id repeated at the end). |
+| `fn ObligationManager::try_topological_order(&self) -> Result<Vec<String>, Vec<String>>` | Obligations with dependencies first, or the cycle that prevents such an order. |
+| `fn ObligationManager::topological_order(&self) -> Vec<String>` | Obligations with dependencies first. |
 
-## Pipeline role
+## Tests
 
-Depends on `gap_tensor_trace` (C010, unused in this file) and
-`type_checking_interface` (C071). This is the generic obligation-tracking
-engine that `lean_obligation_aggregator` (C080) wraps with tier-grouping and
-reporting; the seven domain-specific lemma libraries (C073-C079) each define
-their own parallel lemma/status types rather than reusing `Obligation`
-directly.
-
-## Gaps / weak spots
-
-- `topological_order` doesn't detect or report cycles — a self-referential
-  or mutually-dependent obligation set would silently produce an order that
-  is not actually a valid topological sort of the intended DAG (each id is
-  visited once via the `visited` guard, so it terminates, but the emitted
-  order can violate a dependency edge inside a cycle).
-- `ObligationStatus::InProgress` and `::Failed` are declared but unreachable
-  through the public API in this crate — no method ever sets them.
+`cargo test -p obligation_management` runs 6 unit tests.

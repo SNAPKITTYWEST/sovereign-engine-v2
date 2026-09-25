@@ -1,46 +1,55 @@
-# gap_lemmas_library
+# `gap_lemmas_library` (C073)
 
-First of six parallel "domain lemma library" crates (C073-C078), each a
-near-identical template around a `BTreeMap<String, XLemma>` plus a
-domain-specific tag field. This one tags lemmas with `gap_size: Option<usize>`.
+Tier 7 — proof obligations. *Generated from the crate source; regenerate after API changes.*
 
-## What it does
+Lemmas about primes and prime gaps that the Tier 2 engine relies on.
 
-`GapLemma { name, statement: LeanType, status: LemmaStatus, proof:
-Option<ProofTerm>, gap_size: Option<usize> }`, builder-style
-`with_gap_size(size)`, `prove(proof)` (Open -> Closed only if
-`proof.is_complete()`), `is_proven()`. `GapLemmasLibrary` wraps a
-`BTreeMap<String, GapLemma>` plus its own `TypeContext`, with add/get,
-`count_proven`/`count_open`, and `lemmas_for_gap(size)` filtering by tag.
+ registers each lemma with a precise
+statement. Lemmas over a finite domain are *decided*: a decision procedure
+runs the real Tier 2 code over every case and the lemma is closed with a
+ (evidence grade `Computed`), or marked `Failed`
+with the counterexample. Unbounded statements stay `Open` — they need a
+Lean proof, which this crate does not claim.
+
+## Dependencies
+
+- [C021 `prime_predicate`](../C021/README.md)
+- [C022 `prime_enumeration`](../C022/README.md)
+- [C023 `gap_candidate_set`](../C023/README.md)
+- [C028 `gap_verification`](../C028/README.md)
+- [C029 `prime_gap_relationship`](../C029/README.md)
+- [C071 `type_checking_interface`](../C071/README.md)
+
+## Re-exports
+
+- `type_checking_interface::{DecisionCertificate, Evidence, LeanType, ProofTerm, TypeContext, TypeError}`
 
 ## Public API
 
-- `LemmaStatus` (Open/InProgress/Closed/Failed — same caveat as C072:
-  InProgress/Failed unreachable via this API)
-- `GapLemma` (+ `new`, `with_gap_size`, `prove`, `is_proven`)
-- `GapLemmasLibrary` (+ `new`, `add_lemma`, `get_lemma[_mut]`,
-  `count_proven`, `count_open`, `lemmas_for_gap`)
+| Item | Description |
+|---|---|
+| `const DECIDED_LIMIT: u64 = 10_000` | Upper bound of the decided prime lemmas. |
+| `enum LemmaStatus` | Status of a lemma proof |
+| `struct GapLemma` | A gap lemma statement and its proof |
+| `fn GapLemma::new(name: String, statement: LeanType) -> Self` | Create a new open lemma |
+| `fn GapLemma::with_gap_size(mut self, size: usize) -> Self` | Set the gap size this lemma applies to |
+| `fn GapLemma::with_note(mut self, note: impl Into<String>) -> Self` | Attach a note |
+| `fn GapLemma::prove(&mut self, proof: ProofTerm) -> Result<(), TypeError>` | Close with a self-contained proof (checked in an empty context). |
+| `fn GapLemma::is_proven(&self) -> bool` | Check if lemma is proven |
+| `fn GapLemma::evidence(&self) -> Option<Evidence>` | Evidence grade, if proven |
+| `struct GapLemmasLibrary` | Library of gap lemmas |
+| `fn GapLemmasLibrary::new() -> Self` | Create an empty library |
+| `fn GapLemmasLibrary::standard() -> Self` | The Tier 2 lemma set, with every finite lemma decided. |
+| `fn GapLemmasLibrary::decide(&mut self, mut lemma: GapLemma, procedure: &str, check: impl FnOnce() -> Result<u64, String>)` | Register `lemma` and run its decision procedure: closed with a certificate on success, marked failed with the counterexample otherwise. |
+| `fn GapLemmasLibrary::prove_lemma(&mut self, name: &str, proof: ProofTerm) -> Result<(), TypeError>` | Close lemma `name` with `proof`, checked in this library's context. |
+| `fn GapLemmasLibrary::add_lemma(&mut self, lemma: GapLemma)` | Add a lemma to the library |
+| `fn GapLemmasLibrary::get_lemma(&self, name: &str) -> Option<&GapLemma>` | Get a lemma by name |
+| `fn GapLemmasLibrary::get_lemma_mut(&mut self, name: &str) -> Option<&mut GapLemma>` | Get mutable lemma |
+| `fn GapLemmasLibrary::count_proven(&self) -> usize` | Count proven lemmas |
+| `fn GapLemmasLibrary::count_open(&self) -> usize` | Count open lemmas |
+| `fn GapLemmasLibrary::count_failed(&self) -> usize` | Count refuted lemmas |
+| `fn GapLemmasLibrary::lemmas_for_gap(&self, size: usize) -> Vec<&GapLemma>` | Get all lemmas for a specific gap size |
 
-## Pipeline role
+## Tests
 
-Depends on `type_checking_interface` (C071) plus five Tier-2/3 gap crates
-(`prime_predicate` C021, `prime_enumeration` C022, `gap_candidate_set` C023,
-`gap_verification` C028, `prime_gap_relationship` C029) — all listed as
-dependencies but none actually imported/used in this file; the intent is
-presumably that this library's (currently unwritten) lemma *statements*
-would reference types from those crates once populated, but as shipped the
-library is an empty, generic bookkeeping shell with no gap-specific lemma
-content. Feeds `cross_layer_lemmas_library` (C079) and
-`lean_obligation_aggregator` (C080).
-
-## Gaps / weak spots
-
-- No actual lemma statements about prime gaps are defined anywhere in this
-  crate — it's pure infrastructure (a lemma registry), not a populated
-  library. The five upstream Tier-2/3 dependencies are unused, so the
-  crate's real content (what claims does it prove?) is entirely absent;
-  this is the most significant gap in the layer: the "library" has no
-  books.
-- This is the template every other `*_lemmas_library` crate (C074-C078)
-  copies; see those READMEs for their domain-specific tag field, but the
-  same "no populated content" gap applies to all of them.
+`cargo test -p gap_lemmas_library` runs 4 unit tests.

@@ -1,19 +1,46 @@
-# functoriality_of_tor (C057)
+# `functoriality_of_tor` (C057)
 
-## What it does
-Models functoriality of Tor: a module homomorphism `f: M -> M'` should induce a map on `Tor_i(M,N) -> Tor_i(M',N)`. Provides `ModuleMap` (dense integer matrix) and functions to induce/compose such maps — though the induced-map construction is explicitly a placeholder, not a real functorial construction.
+Tier 5 — Tor functor. *Generated from the crate source; regenerate after API changes.*
+
+Functoriality of Tor in its first argument. A homomorphism `f: M → M'`,
+given on generators by a matrix `F_0: P_0 → P'_0` between presentations,
+is lifted to a chain map `F_k: P_k → P'_k` (solving `d'_k F_k = F_{k-1} d_k`
+over Z), tensored with a resolution `Q` of `N`, and pushed to homology:
+`f_*: Tor_n(M, N) → Tor_n(M', N)`.
+
+Homology classes are expressed in explicit generators obtained from the
+Smith decomposition of `d_{n+1}` in kernel coordinates, ordered torsion
+first (ascending order) then free — the same order as `TorGroup`.
+
+## Dependencies
+
+- [C051 `tor_functor_definition`](../C051/README.md)
+- [C054 `derived_homology`](../C054/README.md)
+
+## Re-exports
+
+- `derived_homology::verify_tor_computation`
+- `tor_functor_definition::{ProjectiveResolution, TorComputation, TorGroup, TorIndex}`
 
 ## Public API
-- Re-exports `TorGroup`/`TorComputation` (C051), `verify_tor_computation` (C054, unused in this crate's own code — re-export only).
-- `ModuleMap { source_rank, target_rank, matrix: Vec<i32> }` (row-major, flattened) — `new()`, `set(i,j,val)`/`get(i,j)` (bounds-checked, silently no-op/return-0 out of range), `is_injective()` (see gap — not a real injectivity check), `is_surjective()` (see gap).
-- `induced_tor_map(&TorGroup, &TorGroup, &ModuleMap) -> ModuleMap` — see gap, does not actually compose with the Tor functor.
-- `compose_tor_maps(&ModuleMap, &ModuleMap) -> Option<ModuleMap>` — real matrix multiplication, `None` on dimension mismatch (`f.target_rank != g.source_rank`).
 
-## Pipeline position
-Depends on `tor_functor_definition` (C051) and `derived_homology` (C054, re-export only). Consumed by `tor_tests_integration` (C060).
+| Item | Description |
+|---|---|
+| `struct ModuleMap` | A homomorphism between modules on fixed generators: entry `(i, j)` is the coefficient of target generator `j` in the image of source generator `i`. |
+| `fn ModuleMap::new(source_rank: usize, target_rank: usize) -> Self` | The zero map. |
+| `fn ModuleMap::set(&mut self, i: usize, j: usize, val: i32)` | Set entry `(i, j)`; out-of-range indices are ignored. |
+| `fn ModuleMap::get(&self, i: usize, j: usize) -> i32` | Entry `(i, j)` (0 out of range). |
+| `fn ModuleMap::to_columns(&self) -> Vec<Vec<i64>>` | The map as a matrix acting on column vectors (`target_rank` rows, `source_rank` columns). |
+| `fn ModuleMap::rank(&self) -> Option<usize>` | Rank of the map between free modules. |
+| `fn ModuleMap::is_injective(&self) -> bool` | Injective as a map `Z^source → Z^target` (full column rank). |
+| `fn ModuleMap::is_surjective(&self) -> bool` | Surjective as a map `Z^source → Z^target` (full row rank and a torsion-free cokernel). |
+| `fn ModuleMap::is_zero(&self) -> bool` | Is every entry zero? |
+| `fn compose_tor_maps(f: &ModuleMap, g: &ModuleMap) -> Option<ModuleMap>` | `g ∘ f` (apply `f`, then `g`). |
+| `fn reduce_mod_target(map: &ModuleMap, target: &TorGroup) -> ModuleMap` | Reduce each column of `map` modulo the order of the corresponding generator of `target` (torsion generators first, then free). |
+| `fn lift_chain_map(p: &ProjectiveResolution, target: &ProjectiveResolution, f0: &[Vec<i64>]) -> Result<Vec<Vec<Vec<i64>>>, String>` | Lift `f0: P_0 → P'_0` (rows `P'_0`, columns `P_0`) to a chain map between presentations/resolutions. |
+| `struct InducedTorMap` | `f_*: Tor_n(M, N) → Tor_n(M', N)` in explicit generators. |
+| `fn induced_tor_map(p: &ProjectiveResolution, p_prime: &ProjectiveResolution, q: &ProjectiveResolution, f0: &[Vec<i64>], degree: usize) -> Result<InducedTorMap, String>` | Compute `f_*` on `Tor_degree(M, N)` for `f: M → M'` given on generators by `f0` (rows `P'_0`, columns `P_0`). |
 
-## Notes / gaps
-- **Gap — `is_injective`/`is_surjective` are not real linear-algebra checks:** `is_injective()` returns `true` if *any* matrix entry is nonzero (`self.matrix.iter().any(|&e| e != 0)`) — this is true for almost any nontrivial map regardless of actual injectivity (e.g., a map with a huge kernel but one stray nonzero entry would report "injective"). `is_surjective()` compounds this by additionally requiring `source_rank >= target_rank`, a necessary-but-far-from-sufficient dimension condition. Both are explicitly labeled "Simplified" in their own comments.
-- **Gap — `induced_tor_map` does not implement functoriality:** per its own comment, "In a real implementation, this would compose the resolution map with Tor functor. For now, create a compatible map." The actual body: if `f.is_injective()` (using the weak check above), it sets a partial identity matrix (`induced.set(i, i, 1)` for `i` up to `min(source_gens, target_gens)`) and otherwise returns the zero map. This is a placeholder shape-compatible stand-in, not a computation derived from `f`'s actual entries or from the resolution structure — the *values* of `f`'s matrix beyond "any nonzero entry present" play no role in the result.
-- `compose_tor_maps` is the one genuinely complete piece of math in this crate: real triple-loop matrix multiplication with correct dimension-mismatch handling via `Option`.
-- 5 unit tests — `test_module_map_injective` only checks the (weak) "any nonzero entry" condition and would pass under the current implementation even for a rank-deficient map, so it doesn't catch the gap above (nor is it expected to, since it's testing the code as written).
+## Tests
+
+`cargo test -p functoriality_of_tor` runs 7 unit tests.

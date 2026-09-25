@@ -1,18 +1,42 @@
-# multiplicity_arena_allocation (C013)
+# `multiplicity_arena_allocation` (C013)
 
-**Status: unimplemented scaffold.** The crate is currently only a stub — `src/lib.rs` is 7 lines: a module doc comment, `#![warn(missing_docs)]`, and a `// Scaffold: Add your code here.` marker. It compiles (empty lib) but exports nothing.
+Tier 1 — multiplicity arena. *Generated from the crate source; regenerate after API changes.*
 
-## Intended purpose
+O(1) bump allocation of node ranges within one arena region. Allocation
+only moves a cursor; `mark`/`release_to` give stack-discipline rollback
+and `reset` frees the whole region in O(1).
 
-Allocation strategy/policy for arenas — likely sizing heuristics or pooling on top of MultiplicityArena::build_spine's raw alloc call.
+## Dependencies
 
-## Pipeline role
+- [C011 `multiplicity_arena_core`](../C011/README.md)
+- [C012 `multiplicity_arena_layout`](../C012/README.md)
+- [C015 `multiplicity_arena_pointers`](../C015/README.md)
 
-Part of the multiplicity_arena_* family rooted at `gap_tensor_core` (C001) and `multiplicity_arena_core` (C011). No `[dependencies]` are declared in `Cargo.toml` yet, so even the expected dependency on C001/C011 has not been wired up.
+## Re-exports
 
-## Gaps / TODOs
+- `multiplicity_arena_core::{GapTensorNode, MultiplicityArena}`
+- `multiplicity_arena_layout::{ArenaLayout, Region}`
+- `multiplicity_arena_pointers::{ArenaPtr, NodeRange, PtrError}`
 
-- No implementation: this is a pure placeholder crate.
-- No dependency on `gap_tensor_core`/`multiplicity_arena_core` declared, despite the name implying it operates on `GapTensorNode`/`MultiplicityArena`.
-- No tests.
-- `#![warn(missing_docs)]` is present but moot with no public items to document.
+## Public API
+
+| Item | Description |
+|---|---|
+| `enum AllocError` | Errors from allocation. |
+| `struct AllocMark(usize)` | A saved cursor position for `BumpAllocator::release_to`. |
+| `struct BumpAllocator` | Bump allocator over one region. |
+| `fn BumpAllocator::new(layout: &ArenaLayout, region: Region) -> Self` | An empty allocator over `region` of `layout`. |
+| `fn BumpAllocator::region(&self) -> Region` | Region served. |
+| `fn BumpAllocator::capacity(&self) -> usize` | Region capacity in nodes. |
+| `fn BumpAllocator::used(&self) -> usize` | Nodes handed out since the last reset. |
+| `fn BumpAllocator::remaining(&self) -> usize` | Nodes still available. |
+| `fn BumpAllocator::allocation_count(&self) -> u64` | Successful allocations over the allocator's lifetime. |
+| `fn BumpAllocator::alloc(&mut self, layout: &ArenaLayout, len: usize) -> Result<NodeRange, AllocError>` | Allocate `len` nodes. |
+| `fn BumpAllocator::alloc_zeroed(&mut self, arena: &mut MultiplicityArena, layout: &ArenaLayout, len: usize) -> Result<NodeRange, AllocError>` | Allocate `len` nodes and Nil-fill them. |
+| `fn BumpAllocator::mark(&self) -> AllocMark` | Current cursor position. |
+| `fn BumpAllocator::release_to(&mut self, mark: AllocMark) -> Result<(), AllocError>` | Free everything allocated after `mark`. |
+| `fn BumpAllocator::reset(&mut self)` | Free everything. |
+
+## Tests
+
+`cargo test -p multiplicity_arena_allocation` runs 4 unit tests.

@@ -1,24 +1,53 @@
-# resolution_certification (C049)
+# `resolution_certification` (C049)
 
-## What it does
-A staged certification pipeline for `ProjectiveResolution`s: `Basic -> SquaredZeroVerified -> ExactnessVerified -> FullyCertified`, each stage gated on the previous one, producing a `ResolutionCertificate` with a human-readable trail. **Most of the actual verification logic in this crate is a stub** — see gaps.
+Tier 4 — homological algebra. *Generated from the crate source; regenerate after API changes.*
+
+Certification that a projective resolution is valid. Each level is only
+granted after the corresponding check actually passes:
+
+1. **Basic** — one differential per adjacent pair of modules, with source
+   and target ranks matching the modules.
+2. **SquaredZeroVerified** — every composite `d_i ∘ d_{i+1}` (and
+   `ε ∘ d_1`) is the zero matrix, computed exactly.
+3. **ExactnessVerified** — the augmented complex has zero homology at
+   every `P_i` (ranks and torsion via Smith normal form).
+4. **FullyCertified** — the augmentation is surjective (or implicit: the
+   quotient map onto `coker d_1`).
+
+## Dependencies
+
+- [C044 `differential_squared_zero`](../C044/README.md)
+- [C046 `projective_resolution`](../C046/README.md)
+- [C047 `exactness_predicate`](../C047/README.md)
+- [C048 `homology_computation`](../C048/README.md)
+
+## Re-exports
+
+- `projective_resolution::{ProjectiveModule, ProjectiveModuleHomomorphism, ProjectiveResolution}`
 
 ## Public API
-- `CertificationLevel` enum (5 levels, ordered informally by the builder chain) — `is_fully_certified()`, `to_string()`.
-- `ResolutionCertificate { resolution_len, level, modules_checked, differentials_checked, squared_zero_verified, exactness_verified, augmentation_valid, message }` — `new()`, and chained builder methods `mark_basic()`, `mark_squared_zero_verified()`, `mark_exactness_verified()`, `mark_augmentation_valid()` (each only advances `level` if the prior level matches exactly — a state machine encoded as guarded field mutation), `summary()`.
-- `ResolutionCertifier` (unit struct), staged checks each calling the previous stage internally:
-  - `check_basic()` — verifies non-empty and that `differential_at(0)` exists if `len() > 1`.
-  - `verify_squared_zero()` — **does not actually verify d²=0** (see gap).
-  - `verify_exactness()` — **does not actually verify exactness** (see gap).
-  - `verify_augmentation()` — the one stage that does a real check: `resolution.augmentation.is_some()`.
-  - `certify_fully()`, `certify_batch()`, `batch_summary()`.
 
-## Pipeline position
-Depends only on `projective_resolution` (C046). Notably does **not** depend on `differential_squared_zero` (C044) or `exactness_predicate` (C047) despite its stated job being exactly what those crates already implement — this crate reinvents (and stubs out) checks that real implementations already exist for elsewhere in the same layer.
+| Item | Description |
+|---|---|
+| `enum CertificationLevel` | Certification level for a projective resolution. |
+| `fn CertificationLevel::is_fully_certified(self) -> bool` | Check if this level includes full certification. |
+| `fn CertificationLevel::to_string(self) -> &'static str` | Pretty-print the level. |
+| `struct ResolutionCertificate` | Certification report for a projective resolution. |
+| `fn ResolutionCertificate::new(resolution_len: usize) -> Self` | Create a new certificate. |
+| `fn ResolutionCertificate::mark_basic(mut self) -> Self` | Mark as basic certified. |
+| `fn ResolutionCertificate::mark_squared_zero_verified(mut self) -> Self` | Mark d² = 0 as verified. |
+| `fn ResolutionCertificate::mark_exactness_verified(mut self) -> Self` | Mark exactness as verified. |
+| `fn ResolutionCertificate::mark_augmentation_valid(mut self) -> Self` | Mark augmentation as valid. |
+| `fn ResolutionCertificate::summary(&self) -> String` | Generate a full summary. |
+| `struct ResolutionCertifier` | Resolution certifier: verifies that a projective resolution is valid. |
+| `fn ResolutionCertifier::check_basic(resolution: &ProjectiveResolution) -> ResolutionCertificate` | Structural checks: modules present, one differential per adjacent pair, ranks consistent. |
+| `fn ResolutionCertifier::verify_squared_zero(resolution: &ProjectiveResolution) -> ResolutionCertificate` | Verify that every composite through a module is exactly zero. |
+| `fn ResolutionCertifier::verify_exactness(resolution: &ProjectiveResolution) -> ResolutionCertificate` | Verify that the augmented complex has zero homology at every module. |
+| `fn ResolutionCertifier::verify_augmentation(resolution: &ProjectiveResolution) -> ResolutionCertificate` | Verify that the augmentation is surjective. |
+| `fn ResolutionCertifier::certify_fully(resolution: &ProjectiveResolution) -> ResolutionCertificate` | Perform full certification. |
+| `fn ResolutionCertifier::certify_batch(resolutions: &[ProjectiveResolution]) -> Vec<ResolutionCertificate>` | Batch certification of multiple resolutions. |
+| `fn ResolutionCertifier::batch_summary(certs: &[ResolutionCertificate]) -> String` | Generate a certification report for a batch. |
 
-## Notes / gaps
-- **Major gap — `verify_squared_zero` is a no-op wearing a verification's clothes:** the loop `for i in 0..resolution.differentials_len().saturating_sub(1)` fetches `d_i` and `d_{i+1}` but the body is entirely comments: `// Check: d_i ∘ d_{i+1} = 0 ... For now, we assume it's valid if the structure is right`. `all_squared_zero` is a `let` binding hardcoded to `true` that's never reassigned. This stage **always** reports success regardless of the actual resolution content, provided `check_basic` passed.
-- **Major gap — `verify_exactness` is likewise unconditional:** its comment says "For now, mark as verified if d² = 0 and we have the right structure" and it always calls `mark_exactness_verified()` once the (already-fake) squared-zero stage passed. There is no actual kernel/image computation here at all — contrast with C046's `is_exact_at`, which is at least a weak real check, or C047's `ExactnessPredicateChecker`, which does real (if approximate) rank-based checking. This crate's exactness stage is strictly weaker than both.
-- **Consequence:** `certify_fully()` will report `FullyCertified` for essentially any resolution that has an augmentation set and passes the cheap structural `check_basic` — it is not currently a meaningful correctness gate despite its name and staged-level design suggesting otherwise. This is the most consequential gap found in the C031-C060 range for anyone trusting "FullyCertified" as a real guarantee.
-- **Recommendation:** wire `verify_squared_zero`/`verify_exactness` to actually call `differential_squared_zero::SquaredZeroVerifier` and `exactness_predicate::ExactnessPredicateChecker` (both already exist and do real work) via a `DifferentialOperator` view of the resolution, e.g. through `ProjectiveResolution::to_chain_shape()` (C046) plus a differential built from its `ProjectiveModuleHomomorphism`s.
-- 7 unit tests — all pass trivially given the stub logic above; none would fail even against a deliberately non-exact or non-d²=0 resolution, since no test constructs one.
+## Tests
+
+`cargo test -p resolution_certification` runs 11 unit tests.

@@ -1,38 +1,52 @@
-# memory_lemmas_library
+# `memory_lemmas_library` (C074)
 
-Same template as `gap_lemmas_library` (C073), retargeted at memory-arena
-correctness (allocation/deallocation safety), tagged with a free-text
-`category: String` instead of a numeric size.
+Tier 7 — proof obligations. *Generated from the crate source; regenerate after API changes.*
 
-## What it does
+Lemmas about the multiplicity arena (Tier 1): layout partitioning, Nil
+initialization, bump allocation, reset and rollback, and sealing.
 
-`MemoryLemma { name, statement, status, proof, category }` — `category` is
-a free-form string (constructor requires it directly, no builder pattern
-like C073's `with_gap_size`). `MemoryLemmasLibrary` mirrors
-`GapLemmasLibrary`'s `BTreeMap` + add/get/count API, with
-`lemmas_by_category(category)` in place of `lemmas_for_gap`.
+ decides every lemma over a finite
+family of configurations by running the Tier 1 code (evidence grade
+`Computed`). Soundness of the `unsafe` blocks themselves is stated but left
+`Open`: it needs a separation-logic proof, not testing.
+
+## Dependencies
+
+- [C011 `multiplicity_arena_core`](../C011/README.md)
+- [C012 `multiplicity_arena_layout`](../C012/README.md)
+- [C013 `multiplicity_arena_allocation`](../C013/README.md)
+- [C071 `type_checking_interface`](../C071/README.md)
+
+## Re-exports
+
+- `type_checking_interface::{DecisionCertificate, Evidence, LeanType, ProofTerm, TypeContext, TypeError}`
 
 ## Public API
 
-- `LemmaStatus`, `MemoryLemma::new(name, statement, category)`, `prove`,
-  `is_proven`
-- `MemoryLemmasLibrary::new`, `add_lemma`, `get_lemma[_mut]`,
-  `count_proven`, `count_open`, `lemmas_by_category`
+| Item | Description |
+|---|---|
+| `enum MemoryLemmaStatus` | Status of a memory lemma |
+| `struct MemoryLemma` | A memory safety lemma |
+| `fn MemoryLemma::new(name: String, statement: LeanType, category: String) -> Self` | Create a new open lemma |
+| `fn MemoryLemma::with_note(mut self, note: impl Into<String>) -> Self` | Attach a note |
+| `fn MemoryLemma::prove(&mut self, proof: ProofTerm) -> Result<(), TypeError>` | Close with a self-contained proof (checked in an empty context). |
+| `fn MemoryLemma::is_proven(&self) -> bool` | Check if lemma is proven |
+| `fn MemoryLemma::evidence(&self) -> Option<Evidence>` | Evidence grade, if proven |
+| `struct MemoryLemmasLibrary` | Library of memory lemmas |
+| `fn MemoryLemmasLibrary::new() -> Self` | Create an empty library |
+| `fn MemoryLemmasLibrary::standard() -> Self` | The Tier 1 lemma set, with every finite lemma decided. |
+| `fn MemoryLemmasLibrary::decide(&mut self, mut lemma: MemoryLemma, procedure: &str, check: impl FnOnce() -> Result<u64, String>)` | Register `lemma` and run its decision procedure. |
+| `fn MemoryLemmasLibrary::prove_lemma(&mut self, name: &str, proof: ProofTerm) -> Result<(), TypeError>` | Close lemma `name` with `proof`, checked in this library's context. |
+| `fn MemoryLemmasLibrary::add_lemma(&mut self, lemma: MemoryLemma)` | Add a lemma |
+| `fn MemoryLemmasLibrary::get_lemma(&self, name: &str) -> Option<&MemoryLemma>` | Get a lemma by name |
+| `fn MemoryLemmasLibrary::get_lemma_mut(&mut self, name: &str) -> Option<&mut MemoryLemma>` | Get mutable lemma |
+| `fn MemoryLemmasLibrary::count_proven(&self) -> usize` | Count proven lemmas |
+| `fn MemoryLemmasLibrary::count_open(&self) -> usize` | Count open lemmas |
+| `fn MemoryLemmasLibrary::count_failed(&self) -> usize` | Count refuted lemmas |
+| `fn MemoryLemmasLibrary::lemmas_by_category(&self, category: &str) -> Vec<&MemoryLemma>` | Lemmas in a category |
+| `fn MemoryLemmasLibrary::allocation_lemmas(&self) -> Vec<&MemoryLemma>` | Allocation lemmas |
+| `fn MemoryLemmasLibrary::deallocation_lemmas(&self) -> Vec<&MemoryLemma>` | Deallocation lemmas |
 
-## Pipeline role
+## Tests
 
-Depends on `type_checking_interface` (C071) and three Tier-2 arena crates
-(`multiplicity_arena_core` C011, `multiplicity_arena_layout` C012,
-`multiplicity_arena_allocation` C013), none of which are actually referenced
-in the file body — same pattern as C073. Feeds `cross_layer_lemmas_library`
-(C079) and `lean_obligation_aggregator` (C080).
-
-## Gaps / weak spots
-
-- Same core gap as C073: no memory-safety lemma statements are actually
-  populated; this is a generic registry, and the three upstream arena
-  crates it depends on are unused here.
-- Unlike C073's `Option<usize>` tag (absent by default), `category` is a
-  required constructor argument with no default/`Option`, so every
-  `MemoryLemma` must be tagged at creation — a minor API inconsistency
-  across the six sibling crates worth normalizing if this pattern is kept.
+`cargo test -p memory_lemmas_library` runs 3 unit tests.

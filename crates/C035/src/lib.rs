@@ -26,6 +26,21 @@ pub enum TransitionOperator {
     Terminal,
 }
 
+/// A transition together with the data it needs.
+#[derive(Debug, Clone)]
+pub enum TransitionStep {
+    /// Advance to the next position.
+    Advance,
+    /// Retreat to the previous position.
+    Retreat,
+    /// Apply this constraint to the gap at the current position.
+    ApplyConstraint(GapConstraint),
+    /// Backtrack to the last checkpoint.
+    Backtrack,
+    /// Mark the state terminal with this node.
+    Terminal(GapTensorNode),
+}
+
 /// Result of a transition operation.
 #[derive(Debug, Clone)]
 pub struct TransitionResult {
@@ -211,26 +226,42 @@ impl SolverTransitionEngine {
         result
     }
 
-    /// Execute a sequence of transitions.
-    pub fn execute_transitions(&mut self, ops: &[TransitionOperator]) -> Vec<TransitionResult> {
-        let mut results = Vec::new();
-        for &op in ops {
-            let result = match op {
-                TransitionOperator::Advance => self.transition_advance(),
-                TransitionOperator::Retreat => self.transition_retreat(),
-                TransitionOperator::ApplyConstraint => {
-                    let constraint = GapConstraint::unbounded();
-                    self.transition_apply_constraint(&constraint)
-                }
-                TransitionOperator::Backtrack => self.transition_backtrack(),
-                TransitionOperator::Terminal => {
-                    let node = GapTensorNode::NIL;
-                    self.transition_terminal(node)
-                }
-            };
-            results.push(result);
+    /// Execute one step.
+    pub fn execute_step(&mut self, step: &TransitionStep) -> TransitionResult {
+        match step {
+            TransitionStep::Advance => self.transition_advance(),
+            TransitionStep::Retreat => self.transition_retreat(),
+            TransitionStep::ApplyConstraint(constraint) => self.transition_apply_constraint(constraint),
+            TransitionStep::Backtrack => self.transition_backtrack(),
+            TransitionStep::Terminal(node) => self.transition_terminal(*node),
         }
-        results
+    }
+
+    /// Execute a sequence of steps, each carrying its own data.
+    pub fn execute_steps(&mut self, steps: &[TransitionStep]) -> Vec<TransitionResult> {
+        steps.iter().map(|step| self.execute_step(step)).collect()
+    }
+
+    /// Execute bare operators. Operators that need data take it from the
+    /// state at the moment they run: `ApplyConstraint` applies the unbounded
+    /// constraint (every gap satisfies it, so it records the current gap),
+    /// and `Terminal` marks the node on top of the current path (Nil if the
+    /// path is empty). Use [`Self::execute_steps`] to supply explicit data.
+    pub fn execute_transitions(&mut self, ops: &[TransitionOperator]) -> Vec<TransitionResult> {
+        ops.iter()
+            .map(|&op| {
+                let step = match op {
+                    TransitionOperator::Advance => TransitionStep::Advance,
+                    TransitionOperator::Retreat => TransitionStep::Retreat,
+                    TransitionOperator::ApplyConstraint => TransitionStep::ApplyConstraint(GapConstraint::unbounded()),
+                    TransitionOperator::Backtrack => TransitionStep::Backtrack,
+                    TransitionOperator::Terminal => TransitionStep::Terminal(
+                        self.state.peek_state().map_or(GapTensorNode::NIL, |&(_, _, node)| node),
+                    ),
+                };
+                self.execute_step(&step)
+            })
+            .collect()
     }
 
     /// Get the current state.
@@ -273,6 +304,33 @@ mod tests {
             (7, 11, 4),
         ]);
         SolverTransitionEngine::new(state, depth_manager, cursor)
+    }
+
+    #[test]
+    fn steps_carry_their_data() {
+        let mut engine = create_test_engine();
+        let results = engine.execute_steps(&[
+            TransitionStep::ApplyConstraint(GapConstraint::range(2, 2)),
+            TransitionStep::Advance,
+            TransitionStep::ApplyConstraint(GapConstraint::range(2, 2)),
+            TransitionStep::Terminal(GapTensorNode::new(5, 1, 1.0)),
+        ]);
+        assert!(!results[0].success, "gap 1 at position 0 violates [2, 2]");
+        assert!(results[2].success, "gap 2 at position 1 satisfies [2, 2]");
+        assert_eq!(engine.state().terminal_node().unwrap().prime_val, 5);
+    }
+
+    #[test]
+    fn bare_terminal_uses_the_current_path() {
+        let mut engine = create_test_engine();
+        engine.execute_transitions(&[TransitionOperator::Terminal]);
+        assert!(engine.state().terminal_node().unwrap().is_nil());
+        let mut state = RecursiveSolverState::new();
+        state.push_state(GapTensorNode::new(7, 1, 1.0));
+        let cursor = RecursiveSolverCursor::from_gaps(vec![(2, 3, 1)]);
+        let mut engine = SolverTransitionEngine::new(state, DepthManager::new(), cursor);
+        engine.execute_transitions(&[TransitionOperator::Terminal]);
+        assert_eq!(engine.state().terminal_node().unwrap().prime_val, 7);
     }
 
     #[test]

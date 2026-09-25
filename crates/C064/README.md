@@ -1,36 +1,36 @@
-# spectrum_definition
+# `spectrum_definition` (C064)
 
-`Spec(R)`: the set of prime ideals of the ring, represented here as a
-`BTreeSet<u64>` of prime numbers (each standing in for its principal ideal).
+Tier 6 — Krull dimension. *Generated from the crate source; regenerate after API changes.*
 
-## What it does
+Prime spectrum Spec(R) — set of all prime ideals.
 
-`Spectrum { primes: BTreeSet<u64> }`. `Spectrum::new(list)` filters the input
-through `is_prime_ideal` (C062) so only genuine primes are retained.
-Provides membership/insertion, conversion back to `Ideal`s
-(`as_ideals`), a `specializes(p, q)` check (`p % q == 0 || p == q`, standing
-in for `P ⊆ Q` inclusion), and `minimal_primes` / `maximal_primes` — the
-primes with no other spectrum element dividing/dividing-into them
-respectively.
+## Dependencies
+
+- [C061 `ideal_interface`](../C061/README.md)
+- [C062 `prime_ideal_predicate`](../C062/README.md)
+
+## Re-exports
+
+- `ideal_interface::Ideal`
+- `prime_ideal_predicate::{is_prime_ideal, PrimePoint}`
 
 ## Public API
 
-- `Spectrum::empty()`, `Spectrum::new(primes)`, `add_prime`, `len`,
-  `is_empty`, `contains_prime`, `as_ideals`
-- `specializes(p, q) -> bool`
-- `minimal_primes() -> Vec<u64>`, `maximal_primes() -> Vec<u64>`
+| Item | Description |
+|---|---|
+| `struct Spectrum` | The prime spectrum of a ring |
+| `fn Spectrum::empty() -> Self` | Create an empty spectrum |
+| `fn Spectrum::new(primes: Vec<u64>) -> Self` | Create spectrum from a list of primes |
+| `fn Spectrum::add_prime(&mut self, p: u64)` | Add a prime to the spectrum |
+| `fn Spectrum::len(&self) -> usize` | Number of primes in the spectrum |
+| `fn Spectrum::is_empty(&self) -> bool` | Check if spectrum is empty |
+| `fn Spectrum::as_ideals(&self) -> Vec<Ideal>` | Get all primes as ideals |
+| `fn Spectrum::contains_prime(&self, p: u64) -> bool` | Check if spectrum contains a prime |
+| `fn Spectrum::specializes(&self, p: u64, q: u64) -> bool` | Specialization: `(p) ⊆ (q)` for two points of the spectrum. |
+| `fn Spectrum::minimal_primes(&self) -> Vec<u64>` | Minimal primes: no other point of the spectrum is strictly contained in them (in Z: `(0)` if present). |
+| `fn Spectrum::maximal_primes(&self) -> Vec<u64>` | Maximal primes: no other point of the spectrum strictly contains them (in Z: the non-zero primes). |
+| `fn principal_contained(a: u64, b: u64) -> bool` | `(a) ⊆ (b)` in Z: `b \| a`, where `(0)` is contained in every ideal and only `(0)` is contained in `(0)`. |
 
-## Pipeline role
+## Tests
 
-Depends on `ideal_interface` (C061) and `prime_ideal_predicate` (C062).
-Feeds `spectrum_order` (C065, builds the specialization preorder from this
-set), `spectrum_chains` (C066), and every downstream Krull-dimension crate —
-this is the object whose "size" everything else measures.
-
-## Non-obvious design decisions
-
-- The spectrum is stored flat as prime *numbers*, not as `Ideal` structs,
-  even though `as_ideals` can reconstruct them — a memory/simplicity
-  tradeoff appropriate for Z but another spot that wouldn't generalize.
-- `specializes` reuses plain divisibility as a proxy for ideal containment,
-  consistent with `Ideal::contains`'s simplification in C061.
+`cargo test -p spectrum_definition` runs 7 unit tests.

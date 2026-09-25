@@ -1,14 +1,20 @@
 //! resolution_certification
 //!
-//! Certification that a projective resolution is valid.
-//! A valid resolution must be:
-//! 1. Exact (kernel = image at each degree)
-//! 2. All differentials satisfy d² = 0
-//! 3. The augmentation map is correct
+//! Certification that a projective resolution is valid. Each level is only
+//! granted after the corresponding check actually passes:
+//!
+//! 1. **Basic** — one differential per adjacent pair of modules, with source
+//!    and target ranks matching the modules.
+//! 2. **SquaredZeroVerified** — every composite `d_i ∘ d_{i+1}` (and
+//!    `ε ∘ d_1`) is the zero matrix, computed exactly.
+//! 3. **ExactnessVerified** — the augmented complex has zero homology at
+//!    every `P_i` (ranks and torsion via Smith normal form).
+//! 4. **FullyCertified** — the augmentation is surjective (or implicit: the
+//!    quotient map onto `coker d_1`).
 
 #![warn(missing_docs)]
 
-use projective_resolution::ProjectiveResolution;
+pub use projective_resolution::{ProjectiveModule, ProjectiveModuleHomomorphism, ProjectiveResolution};
 
 /// Certification level for a projective resolution.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -130,91 +136,93 @@ impl ResolutionCertificate {
 pub struct ResolutionCertifier;
 
 impl ResolutionCertifier {
-    /// Perform basic structural checks.
+    /// Structural checks: modules present, one differential per adjacent
+    /// pair, ranks consistent.
     pub fn check_basic(resolution: &ProjectiveResolution) -> ResolutionCertificate {
         let mut cert = ResolutionCertificate::new(resolution.len());
-
-        // Check that we have modules and differentials
-        if resolution.is_empty() {
-            cert.message = "Resolution is empty".to_string();
+        if let Err(problem) = resolution.check_structure() {
+            cert.message = format!("Structure check failed: {problem}");
             return cert;
         }
-
         cert.modules_checked = resolution.len();
-        cert.differentials_checked = (resolution.len() as i32 - 1).max(0) as usize;
-
-        if resolution.len() > 1 && resolution.differential_at(0).is_none() {
-            cert.message = "Missing some differentials".to_string();
-            return cert;
-        }
-
+        cert.differentials_checked = resolution.differentials_len();
         cert.message = "Basic structure is sound".to_string();
         cert.mark_basic()
     }
 
-    /// Verify d² = 0 for a resolution.
+    /// Verify that every composite through a module is exactly zero.
     pub fn verify_squared_zero(resolution: &ProjectiveResolution) -> ResolutionCertificate {
         let mut cert = Self::check_basic(resolution);
-
-        if cert.level == CertificationLevel::Uncertified {
+        if cert.level != CertificationLevel::Basic {
             return cert;
         }
-
-        // For each differential, verify it composes with the next to zero
-        // This is a simplified check; full verification would use the differential_operator crate
-
-        let all_squared_zero = true;
-        for i in 0..resolution.differentials_len().saturating_sub(1) {
-            let _d_i = match resolution.differential_at(i) {
-                Some(d) => d,
-                None => continue,
-            };
-            let _d_i1 = match resolution.differential_at(i + 1) {
-                Some(d) => d,
-                None => continue,
-            };
-
-            // Check: d_i ∘ d_{i+1} = 0
-            // This requires matrix multiplication
-            // For now, we assume it's valid if the structure is right
+        let mut failures = Vec::new();
+        for i in 0..resolution.len() {
+            match resolution.composition_is_zero(i) {
+                Ok(true) => {}
+                Ok(false) => failures.push(format!("composite through P_{i} is non-zero")),
+                Err(e) => failures.push(e),
+            }
         }
-
-        if all_squared_zero {
-            cert.message = "d² = 0 verified".to_string();
+        if failures.is_empty() {
+            cert.message = "d² = 0 verified at every module".to_string();
             cert.mark_squared_zero_verified()
         } else {
-            cert.message = "d² ≠ 0: not a chain complex".to_string();
+            cert.message = format!("d² ≠ 0: {}", failures.join("; "));
             cert
         }
     }
 
-    /// Verify exactness of the resolution.
+    /// Verify that the augmented complex has zero homology at every module.
     pub fn verify_exactness(resolution: &ProjectiveResolution) -> ResolutionCertificate {
         let mut cert = Self::verify_squared_zero(resolution);
-
-        if cert.level == CertificationLevel::Uncertified || cert.level == CertificationLevel::Basic {
+        if cert.level != CertificationLevel::SquaredZeroVerified {
             return cert;
         }
-
-        // For a resolution to be exact, we need ker(d_i) = im(d_{i+1}) at each i
-        // This is a deep check requiring Gaussian elimination
-
-        // For now, mark as verified if d² = 0 and we have the right structure
-        cert.message = "Exactness verified (simplified)".to_string();
-        cert.mark_exactness_verified()
+        let mut failures = Vec::new();
+        for i in 0..resolution.len() {
+            match resolution.homology_at(i) {
+                Ok(h) if h.is_zero() => {}
+                Ok(h) => failures.push(format!(
+                    "homology at P_{i} is Z^{} with torsion {:?}",
+                    h.free_rank, h.torsion
+                )),
+                Err(e) => failures.push(e),
+            }
+        }
+        if failures.is_empty() {
+            cert.message = "Exact at every module".to_string();
+            cert.mark_exactness_verified()
+        } else {
+            cert.message = format!("Not exact: {}", failures.join("; "));
+            cert
+        }
     }
 
-    /// Verify the augmentation map.
+    /// Verify that the augmentation is surjective.
     pub fn verify_augmentation(resolution: &ProjectiveResolution) -> ResolutionCertificate {
         let mut cert = Self::verify_exactness(resolution);
-
-        if resolution.augmentation.is_some() {
-            cert.augmentation_valid = true;
-            cert.message = format!("{}\nAugmentation is valid", cert.message);
-            cert.mark_augmentation_valid()
-        } else {
-            cert.message = format!("{}\nNo augmentation set", cert.message);
-            cert
+        if cert.level != CertificationLevel::ExactnessVerified {
+            return cert;
+        }
+        match resolution.augmentation_is_surjective() {
+            Ok(true) => {
+                let kind = if resolution.augmentation.is_some() {
+                    "Augmentation is surjective"
+                } else {
+                    "Augmentation is the quotient map onto coker(d_1)"
+                };
+                cert.message = format!("{}\n{kind}", cert.message);
+                cert.mark_augmentation_valid()
+            }
+            Ok(false) => {
+                cert.message = format!("{}\nAugmentation is not surjective", cert.message);
+                cert
+            }
+            Err(e) => {
+                cert.message = format!("{}\nAugmentation check failed: {e}", cert.message);
+                cert
+            }
         }
     }
 
@@ -243,12 +251,15 @@ impl ResolutionCertifier {
     pub fn batch_summary(certs: &[ResolutionCertificate]) -> String {
         let fully_certified = certs.iter().filter(|c| c.level.is_fully_certified()).count();
         let total = certs.len();
+        let rate = if total == 0 {
+            0.0
+        } else {
+            fully_certified as f64 / total as f64 * 100.0
+        };
 
         format!(
             "Batch Certification Report\n  Total: {}\n  Fully certified: {}\n  Success rate: {:.1}%\n",
-            total,
-            fully_certified,
-            (fully_certified as f64 / total as f64) * 100.0
+            total, fully_certified, rate
         )
     }
 }
@@ -303,8 +314,64 @@ mod tests {
     #[test]
     fn test_certifier_batch() {
         let res1 = ProjectiveResolution::free_of_rank_one();
-        let res2 = ProjectiveResolution::free_of_rank_one();
+        let res2 = ProjectiveResolution::cyclic_resolution(6);
         let certs = ResolutionCertifier::certify_batch(&[res1, res2]);
         assert_eq!(certs.len(), 2);
+        assert!(certs.iter().all(|c| c.level.is_fully_certified()), "{:?}", certs);
+        assert!(ResolutionCertifier::batch_summary(&certs).contains("100.0%"));
+        assert!(ResolutionCertifier::batch_summary(&[]).contains("0.0%"));
+    }
+
+
+    fn two_step(d1: i64, d2: i64) -> ProjectiveResolution {
+        let (p0, p1, p2) = (
+            ProjectiveModule::new(1, 0),
+            ProjectiveModule::new(1, 1),
+            ProjectiveModule::new(1, 2),
+        );
+        let mut res = ProjectiveResolution::new();
+        res.add_module(p0.clone());
+        res.add_module(p1.clone());
+        res.add_module(p2.clone());
+        res.add_differential(ProjectiveModuleHomomorphism::new(p1.clone(), p0, vec![vec![d1]]));
+        res.add_differential(ProjectiveModuleHomomorphism::new(p2, p1, vec![vec![d2]]));
+        res
+    }
+
+    #[test]
+    fn non_complex_stops_at_basic() {
+        let cert = ResolutionCertifier::certify_fully(&two_step(2, 3));
+        assert_eq!(cert.level, CertificationLevel::Basic);
+        assert!(!cert.squared_zero_verified);
+        assert!(cert.message.contains("d² ≠ 0"));
+    }
+
+    #[test]
+    fn non_exact_stops_at_squared_zero() {
+        let cert = ResolutionCertifier::certify_fully(&two_step(0, 0));
+        assert_eq!(cert.level, CertificationLevel::SquaredZeroVerified);
+        assert!(!cert.exactness_verified);
+        assert!(cert.message.contains("Not exact"));
+    }
+
+    #[test]
+    fn broken_structure_is_uncertified() {
+        let (p0, p1) = (ProjectiveModule::new(1, 0), ProjectiveModule::new(1, 1));
+        let mut res = ProjectiveResolution::new();
+        res.add_module(p0);
+        res.add_module(p1);
+        let cert = ResolutionCertifier::certify_fully(&res);
+        assert_eq!(cert.level, CertificationLevel::Uncertified);
+        assert!(cert.message.contains("Structure check failed"));
+    }
+
+    #[test]
+    fn non_surjective_augmentation_is_not_fully_certified() {
+        let p0 = ProjectiveModule::new(1, 0);
+        let mut res = ProjectiveResolution::new();
+        res.add_module(p0.clone());
+        res.set_augmentation(ProjectiveModuleHomomorphism::new(p0.clone(), p0, vec![vec![3]]));
+        let cert = ResolutionCertifier::certify_fully(&res);
+        assert!(!cert.level.is_fully_certified());
     }
 }

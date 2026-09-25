@@ -5,7 +5,7 @@
 
 #![warn(missing_docs)]
 
-use spectrum_definition::Spectrum;
+pub use spectrum_definition::Spectrum;
 use spectrum_order::SpecializationPreorder;
 use spectrum_chains::MaximalChains;
 
@@ -106,11 +106,11 @@ impl std::fmt::Display for KrullDim {
 /// Dimension computation strategy
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum DimensionStrategy {
-    /// Compute from explicit chain enumeration
+    /// Exact: enumerate prime chains
     ChainEnumeration,
-    /// Use upper bound from generators
+    /// Upper bound: the number of points of the spectrum
     GeneratorBound,
-    /// Use saturation bounds
+    /// Upper bound: a chain has at most |Spec| points, so dim ≤ |Spec| − 1
     SaturationBound,
 }
 
@@ -130,15 +130,8 @@ impl DimensionCalculator {
     pub fn compute(&self, spec: &Spectrum) -> KrullDim {
         match self.strategy {
             DimensionStrategy::ChainEnumeration => KrullDim::from_spectrum(spec),
-            DimensionStrategy::GeneratorBound => {
-                // Use spectrum size as upper bound
-                KrullDim(spec.len())
-            }
-            DimensionStrategy::SaturationBound => {
-                // Use more refined bound
-                let bound = (spec.len() as f64).sqrt().ceil() as usize;
-                KrullDim(bound)
-            }
+            DimensionStrategy::GeneratorBound => KrullDim(spec.len()),
+            DimensionStrategy::SaturationBound => KrullDim(spec.len().saturating_sub(1)),
         }
     }
 }
@@ -165,8 +158,29 @@ mod tests {
     #[test]
     fn test_krull_dim_two_points() {
         let spec = Spectrum::new(vec![2, 3]);
+        assert_eq!(KrullDim::from_spectrum(&spec), KrullDim(0));
+    }
+
+    #[test]
+    fn spec_z_has_dimension_one() {
+        let spec = Spectrum::new(vec![0, 2, 3, 5, 7]);
         let dim = KrullDim::from_spectrum(&spec);
-        assert!(dim.dim() <= 1);
+        assert!(dim.is_one_dimensional());
+        let chains = KrullDim::maximal_chains(&spec);
+        assert_eq!(chains.len(), 4);
+        assert!(chains.iter().all(|c| c.len() == 2 && c[0] == 0));
+        assert!(KrullDim::is_catenary(&spec));
+    }
+
+    #[test]
+    fn strategies_bound_the_exact_dimension() {
+        for primes in [vec![], vec![2], vec![0, 2], vec![0, 2, 3, 5, 7, 11]] {
+            let spec = Spectrum::new(primes);
+            let exact = DimensionCalculator::new(DimensionStrategy::ChainEnumeration).compute(&spec);
+            for s in [DimensionStrategy::GeneratorBound, DimensionStrategy::SaturationBound] {
+                assert!(DimensionCalculator::new(s).compute(&spec) >= exact);
+            }
+        }
     }
 
     #[test]
@@ -177,17 +191,15 @@ mod tests {
 
     #[test]
     fn test_catenary() {
-        let spec = Spectrum::new(vec![2, 3, 5]);
-        let is_catenary = KrullDim::is_catenary(&spec);
-        assert!(is_catenary || !is_catenary); // Just check it computes
+        assert!(KrullDim::is_catenary(&Spectrum::new(vec![2, 3, 5])));
+        assert!(KrullDim::is_catenary(&Spectrum::empty()));
     }
 
     #[test]
     fn test_dimension_calculator() {
         let spec = Spectrum::new(vec![2, 3, 5]);
         let calc = DimensionCalculator::new(DimensionStrategy::ChainEnumeration);
-        let dim = calc.compute(&spec);
-        assert!(dim.dim() <= 3);
+        assert_eq!(calc.compute(&spec), KrullDim(0));
     }
 
     #[test]

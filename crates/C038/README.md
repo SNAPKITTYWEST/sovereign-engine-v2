@@ -1,22 +1,38 @@
-# recursion_contradiction_detection (C038)
+# `recursion_contradiction_detection` (C038)
 
-## What it does
-Detects four classes of solver contradictions beyond simple constraint failure: unsatisfiable/range/modular constraint violations on a single gap, conflicting constraints within a state, dead ends (no unvisited positions with unsatisfied constraints remaining), and inconsistent state (contradictory + terminal + unsatisfied simultaneously).
+Tier 3 — recursive solver. *Generated from the crate source; regenerate after API changes.*
+
+Detect contradictions in gap constraints during recursive solving.
+Identifies unsatisfiable constraints and marks branches as failed.
+
+## Dependencies
+
+- [C027 `gap_constraint_satisfaction`](../C027/README.md)
+- [C031 `recursive_solver_state`](../C031/README.md)
+- [C033 `recursive_solver_cursor`](../C033/README.md)
 
 ## Public API
-- `Contradiction { contradiction_type, position, gap_value, constraint }`.
-- `ContradictionType` enum: `UnsatisfiableConstraint`, `RangeViolation`, `ModularViolation`, `ConflictingConstraints`, `DeadEnd`, `InconsistentState` — implements `Display`.
-- `ContradictionDetector::new()` — seeded with one `GapConstraint::unbounded()`.
-- `add_constraint()`, `check_gap(position, gap) -> Option<Contradiction>` — classifies violation type.
-- Associated fns (no `&self`): `check_conflicting_constraints(state)`, `check_dead_end(cursor, state)`, `check_inconsistent_state(state)`.
-- `full_check(state, cursor) -> Vec<Contradiction>` — runs the three structural checks (not `check_gap`) and aggregates.
-- `contradictions()`, `contradiction_count()`, `clear()`, `has_contradiction()`.
-- `ContradictionStats` — tally by type name with `most_common_type`.
 
-## Pipeline position
-Depends on `gap_constraint_satisfaction` (C027, the modulus-bearing `GapConstraint` — same name collision as flagged in C031/C035), `recursive_solver_state` (C031), `recursive_solver_cursor` (C033). Complements C036 (base-case detection) as the other half of "when does the solver need to stop/retry" logic; feeds into C040's trace via `EventType::Contradiction`.
+| Item | Description |
+|---|---|
+| `struct Contradiction` | A contradiction found during constraint analysis. |
+| `enum ContradictionType` | Types of contradictions that can occur. |
+| `struct ContradictionDetector` | Detects contradictions in the solving process. |
+| `fn ContradictionDetector::new() -> Self` | Create a new contradiction detector. |
+| `fn ContradictionDetector::add_constraint(&mut self, constraint: GapConstraint)` | Add a constraint to check against. |
+| `fn ContradictionDetector::check_gap(&mut self, position: usize, gap: u64) -> Option<Contradiction>` | Check a gap against all constraints. |
+| `fn ContradictionDetector::check_conflicting_constraints(state: &RecursiveSolverState) -> Option<Contradiction>` | Check for conflicting constraints within state. |
+| `fn ContradictionDetector::check_dead_end(cursor: &RecursiveSolverCursor, state: &RecursiveSolverState) -> Option<Contradiction>` | Check for dead ends (no valid moves). |
+| `fn ContradictionDetector::check_inconsistent_state(state: &RecursiveSolverState) -> Option<Contradiction>` | Check for inconsistent state. |
+| `fn ContradictionDetector::contradictions(&self) -> &[Contradiction]` | Get all detected contradictions. |
+| `fn ContradictionDetector::contradiction_count(&self) -> usize` | Get contradiction count. |
+| `fn ContradictionDetector::clear(&mut self)` | Clear all detected contradictions. |
+| `fn ContradictionDetector::full_check(&mut self, state: &RecursiveSolverState, cursor: &RecursiveSolverCursor) -> Vec<Contradiction>` | Comprehensive contradiction check. |
+| `fn ContradictionDetector::has_contradiction(&self) -> bool` | Check if any contradiction exists. |
+| `struct ContradictionStats` | Statistics about contradictions. |
+| `fn ContradictionStats::new() -> Self` | Create empty stats. |
+| `fn ContradictionStats::record(&mut self, contradiction: &Contradiction)` | Record a contradiction. |
 
-## Notes / gaps
-- **Note:** `check_gap`'s classification logic is a chain of `if`/`else if` that infers *why* a constraint failed after the fact (range vs. modular vs. generic unsatisfiable) rather than having `GapConstraint::satisfies` itself report the failure reason — this reconstruction can misclassify if a gap fails both a range and modulus check simultaneously (range wins by branch order).
-- `full_check` does *not* call `check_gap` — it only aggregates the three structural checks. A caller wanting single-gap constraint violations must call `check_gap` separately; this split isn't documented and could surprise someone expecting `full_check` to be exhaustive.
-- 6 unit tests; `check_conflicting_constraints`'s O(n²) pairwise scan over `state.constraints()` is fine at expected scale but worth knowing if constraint counts grow large.
+## Tests
+
+`cargo test -p recursion_contradiction_detection` runs 6 unit tests.

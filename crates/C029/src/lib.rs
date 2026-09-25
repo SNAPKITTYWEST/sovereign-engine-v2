@@ -20,12 +20,12 @@ pub struct PrimeGapPair {
 }
 
 impl PrimeGapPair {
-    /// Check if gap is "first occurrence" of this size.
-    pub fn is_first_occurrence(&self, all_gaps: &[u64]) -> bool {
-        all_gaps.iter().take_while(|&&g| g != self.gap).all(|&g| g != self.gap)
+    /// Is this the first pair (smallest prime) in `pairs` with this gap?
+    pub fn is_first_occurrence(&self, pairs: &[PrimeGapPair]) -> bool {
+        !pairs.iter().any(|q| q.prime < self.prime && q.gap == self.gap)
     }
 
-    /// Get normalized gap (gap / sqrt(prime) ≈ expected growth)
+    /// Gap normalized by `ln(prime)`, the average gap size near `prime`.
     pub fn normalized_gap(&self) -> f64 {
         self.gap as f64 / (self.prime as f64).ln()
     }
@@ -100,6 +100,19 @@ mod tests {
         };
         let normalized = pair.normalized_gap();
         assert!(normalized > 0.0);
+    }
+
+    #[test]
+    fn first_occurrence_of_gaps() {
+        let pairs = prime_gap_pairs(100);
+        let find = |p: u64| pairs.iter().find(|x| x.prime == p).unwrap().clone();
+        assert!(find(2).is_first_occurrence(&pairs));
+        assert!(find(3).is_first_occurrence(&pairs));
+        assert!(!find(5).is_first_occurrence(&pairs));
+        assert!(find(7).is_first_occurrence(&pairs));
+        assert!(!find(13).is_first_occurrence(&pairs));
+        assert!(find(23).is_first_occurrence(&pairs));
+        assert!(find(89).is_first_occurrence(&pairs));
     }
 
     #[test]

@@ -5,9 +5,9 @@
 
 #![warn(missing_docs)]
 
-use chain_complex_shape::ChainComplexShape;
+pub use chain_complex_shape::{ChainComplexShape, ChainDegreeShape, MAX_CHAIN_RANK};
 use chain_complex_types::{Chain, ChainElement};
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 
 /// Represents the differential operator d in a chain complex.
 /// For each degree n, stores the matrix of d: C_n -> C_{n-1}.
@@ -32,7 +32,8 @@ impl DifferentialOperator {
     }
 
     /// Set the image of a single generator under the differential.
-    /// d(source_gen) = formal sum at target_degree.
+    /// d(source_gen) = formal sum at target_degree. Repeated target
+    /// generators are summed and zero coefficients dropped.
     ///
     /// # Arguments
     /// * `source_degree` - Degree n of source generator
@@ -41,7 +42,10 @@ impl DifferentialOperator {
     /// * `target_image` - ChainElement at target_degree giving d(source_gen)
     ///
     /// # Panics
-    /// Panics if source_degree != target_degree + 1 (differential must decrease degree by 1).
+    /// Panics if source_degree != target_degree + 1 (differential must decrease
+    /// degree by 1), if `source_gen` is not a generator of C_n or a target
+    /// generator is not a generator of C_{n-1} in the shape, or if summing
+    /// repeated coefficients overflows i64.
     pub fn set_generator_image(
         &mut self,
         source_degree: i32,
@@ -54,19 +58,31 @@ impl DifferentialOperator {
             target_degree,
             "differential must decrease degree by exactly 1"
         );
+        let source_rank = self.source_rank(source_degree);
+        assert!(
+            source_gen < source_rank,
+            "source generator {source_gen} out of range: C_{source_degree} has rank {source_rank}"
+        );
+        let target_rank = self.target_rank(source_degree);
 
-        let matrix = self
-            .matrices
-            .entry(source_degree)
-            .or_insert_with(HashMap::new);
-
-        let mut image = Vec::new();
+        let mut merged: BTreeMap<usize, i64> = BTreeMap::new();
         for (target_gen, coeff) in target_image {
-            if coeff != 0 {
-                image.push((target_degree, target_gen, coeff));
-            }
+            assert!(
+                target_gen < target_rank,
+                "target generator {target_gen} out of range: C_{target_degree} has rank {target_rank}"
+            );
+            let sum = merged.entry(target_gen).or_insert(0);
+            *sum = sum.checked_add(coeff).expect("differential coefficient overflow");
         }
-        matrix.insert(source_gen, image);
+        let image = merged
+            .into_iter()
+            .filter(|&(_, coeff)| coeff != 0)
+            .map(|(target_gen, coeff)| (target_degree, target_gen, coeff))
+            .collect();
+        self.matrices
+            .entry(source_degree)
+            .or_insert_with(HashMap::new)
+            .insert(source_gen, image);
     }
 
     /// Apply the differential to a single generator.
@@ -87,6 +103,9 @@ impl DifferentialOperator {
     }
 
     /// Apply the differential to a chain element.
+    ///
+    /// # Panics
+    /// Panics if a coefficient of the result overflows i64.
     pub fn apply_to_element(&self, elem: &ChainElement) -> ChainElement {
         let target_degree = elem.degree - 1;
         let mut result = ChainElement::new(target_degree);
@@ -97,7 +116,8 @@ impl DifferentialOperator {
 
             for &tgt_gen in &gen_image.support() {
                 let tgt_coeff = gen_image.coeff(tgt_gen);
-                result.add_coeff(tgt_gen, coeff * tgt_coeff);
+                let term = coeff.checked_mul(tgt_coeff).expect("differential coefficient overflow");
+                result.add_coeff(tgt_gen, term);
             }
         }
 
@@ -132,24 +152,30 @@ impl DifferentialOperator {
         self.shape.rank_at(degree - 1)
     }
 
-    /// Check if the differential is "locally" consistent (all generator images are at correct degree).
-    /// This is a necessary but not sufficient check; d² = 0 is verified separately.
+    /// Check that the differential is "locally" consistent with the current
+    /// shape: every image lies at degree n-1 and every source and target
+    /// generator index is below the rank of its degree. Images are validated
+    /// when set, so this fails only if the public `shape` was replaced
+    /// afterwards. This is a necessary but not sufficient check; d² = 0 is
+    /// verified separately.
     pub fn is_consistent(&self) -> bool {
-        for (&degree, matrix) in &self.matrices {
-            let target_degree = degree - 1;
-            for (_source_gen, image) in matrix {
-                for &(tgt_deg, _tgt_gen, _coeff) in image {
-                    if tgt_deg != target_degree {
-                        return false;
-                    }
-                }
-            }
-        }
-        true
+        self.matrices.iter().all(|(&degree, matrix)| {
+            let (source_rank, target_rank) = (self.source_rank(degree), self.target_rank(degree));
+            matrix.iter().all(|(&source_gen, image)| {
+                source_gen < source_rank
+                    && image
+                        .iter()
+                        .all(|&(tgt_deg, tgt_gen, _)| tgt_deg == degree - 1 && tgt_gen < target_rank)
+            })
+        })
     }
 
     /// Compute the matrix representation as nested vectors.
     /// Returns a 2D matrix where matrix[i][j] = coefficient of generator i in d(generator j).
+    ///
+    /// # Panics
+    /// Panics if a stored entry lies outside the current shape (the public
+    /// `shape` was replaced after images were set) rather than dropping it.
     pub fn to_dense_matrix(&self, degree: i32) -> Vec<Vec<i64>> {
         let source_rank = self.source_rank(degree);
         let target_rank = self.target_rank(degree);
@@ -159,9 +185,11 @@ impl DifferentialOperator {
         if let Some(mat) = self.matrix_at(degree) {
             for (&source_gen, image) in mat {
                 for &(_tgt_deg, target_gen, coeff) in image {
-                    if target_gen < target_rank {
-                        matrix[target_gen][source_gen] = coeff;
-                    }
+                    assert!(
+                        source_gen < source_rank && target_gen < target_rank,
+                        "entry ({target_gen}, {source_gen}) of d_{degree} lies outside the {target_rank}x{source_rank} shape"
+                    );
+                    matrix[target_gen][source_gen] = coeff;
                 }
             }
         }
@@ -244,5 +272,40 @@ mod tests {
         assert_eq!(matrix[0].len(), 2); // 2 source generators
         assert_eq!(matrix[0][0], 1); // d(gen_0) has gen_0 with coeff 1
         assert_eq!(matrix[1][1], 2); // d(gen_1) has gen_1 with coeff 2
+    }
+
+    #[test]
+    fn repeated_targets_are_summed() {
+        let shape = ChainComplexShape::from_ranks(vec![(0, 2), (1, 1)]);
+        let mut diff = DifferentialOperator::new(shape);
+        diff.set_generator_image(1, 0, 0, vec![(0, 2), (1, 5), (0, 3), (1, -5)]);
+        assert_eq!(diff.to_dense_matrix(1), vec![vec![5], vec![0]]);
+        assert_eq!(diff.apply_to_generator(1, 0).sorted_coefficients(), vec![(0, 5)]);
+    }
+
+    #[test]
+    #[should_panic(expected = "target generator 2 out of range")]
+    fn out_of_range_target_is_rejected() {
+        let shape = ChainComplexShape::from_ranks(vec![(0, 2), (1, 1)]);
+        let mut diff = DifferentialOperator::new(shape);
+        diff.set_generator_image(1, 0, 0, vec![(2, 1)]);
+    }
+
+    #[test]
+    #[should_panic(expected = "source generator 1 out of range")]
+    fn out_of_range_source_is_rejected() {
+        let shape = ChainComplexShape::from_ranks(vec![(0, 2), (1, 1)]);
+        let mut diff = DifferentialOperator::new(shape);
+        diff.set_generator_image(1, 1, 0, vec![(0, 1)]);
+    }
+
+    #[test]
+    fn consistency_tracks_the_current_shape() {
+        let shape = ChainComplexShape::from_ranks(vec![(0, 2), (1, 1)]);
+        let mut diff = DifferentialOperator::new(shape);
+        diff.set_generator_image(1, 0, 0, vec![(1, 1)]);
+        assert!(diff.is_consistent());
+        diff.shape = ChainComplexShape::from_ranks(vec![(0, 1), (1, 1)]);
+        assert!(!diff.is_consistent());
     }
 }

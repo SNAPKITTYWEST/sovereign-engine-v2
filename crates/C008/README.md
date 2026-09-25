@@ -1,18 +1,32 @@
-# gap_tensor_ordering (C008)
+# `gap_tensor_ordering` (C008)
 
-**Status: unimplemented scaffold.** The crate is currently only a stub — `src/lib.rs` is 7 lines: a module doc comment, `#![warn(missing_docs)]`, and a `// Scaffold: Add your code here.` marker. It compiles (empty lib) but exports nothing.
+Tier 0 — gap tensor primitives. *Generated from the crate source; regenerate after API changes.*
 
-## Intended purpose
+A lawful total order on gap tensor nodes and ordering utilities built on
+it.
 
-Ordering operations across whole gap tensors (as opposed to gap_ordering in C024, which orders prime-gap candidate tuples).
+`GapTensorNode`'s own `Ord` treats incomparable spectral weights (NaN) as
+equal, which is not a total order.  instead compares
+weights with `f32::total_cmp`, so it is total and agrees exactly with
+`EqualityMode::Exact`.
 
-## Pipeline role
+## Dependencies
 
-Part of the gap_tensor_* family rooted at `gap_tensor_core` (C001) and `multiplicity_arena_core` (C011). No `[dependencies]` are declared in `Cargo.toml` yet, so even the expected dependency on C001/C011 has not been wired up.
+- [C001 `gap_tensor_core`](../C001/README.md)
+- [C005 `gap_tensor_equality`](../C005/README.md)
 
-## Gaps / TODOs
+## Public API
 
-- No implementation: this is a pure placeholder crate.
-- No dependency on `gap_tensor_core`/`multiplicity_arena_core` declared, despite the name implying it operates on `GapTensorNode`/`MultiplicityArena`.
-- No tests.
-- `#![warn(missing_docs)]` is present but moot with no public items to document.
+| Item | Description |
+|---|---|
+| `fn canonical_cmp(a: &GapTensorNode, b: &GapTensorNode) -> Ordering` | Total order: prime, then multiplicity, then weight by IEEE total order. |
+| `fn resonance_cmp(a: &GapTensorNode, b: &GapTensorNode) -> Ordering` | Order by resonance (IEEE total order), falling back to `canonical_cmp`. |
+| `fn sort_canonical(nodes: &mut [GapTensorNode])` | Sort nodes into canonical order. |
+| `fn is_sorted_canonical(nodes: &[GapTensorNode]) -> bool` | True iff `nodes` is in non-decreasing canonical order. |
+| `fn rank_by_resonance(nodes: &[GapTensorNode]) -> Vec<usize>` | Indices of `nodes` ordered by descending resonance; ties keep canonical order. |
+| `fn dedup_exact(nodes: &mut Vec<GapTensorNode>)` | Remove consecutive exact duplicates. |
+| `fn merge_sorted(a: &[GapTensorNode], b: &[GapTensorNode]) -> Vec<GapTensorNode>` | Merge two canonically sorted slices into one sorted vector. |
+
+## Tests
+
+`cargo test -p gap_tensor_ordering` runs 4 unit tests.

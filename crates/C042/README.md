@@ -1,18 +1,50 @@
-# chain_complex_types (C042)
+# `chain_complex_types` (C042)
 
-## What it does
-Element-level data types for chain complexes: `ChainElement` (a sparse formal Z-linear combination of generators at one fixed degree) and `Chain` (a formal sum of `ChainElement`s across multiple degrees), with the usual module operations (add, scalar multiply, negate, normalize by GCD).
+Tier 4 — homological algebra. *Generated from the crate source; regenerate after API changes.*
+
+Chain element types and operations. Defines elements of chain complexes
+as formal sums of generators with integer coefficients. Elements and
+chains can be checked against a `ChainComplexShape`, and coefficient
+addition and scaling panic on i64 overflow instead of wrapping.
+
+## Dependencies
+
+- [C001 `gap_tensor_core`](../C001/README.md)
+- [C041 `chain_complex_shape`](../C041/README.md)
 
 ## Public API
-- `ChainElement::new(degree)`, `from_generator(degree, gen_idx, coeff)`, `coeff()`, `set_coeff()` (zero removes the key), `add_coeff()`, `is_zero()`, `support_size()`, `support()` (sorted indices), `add(&other)` (panics on degree mismatch), `scalar_mul()`, `neg()`, `plus(a, &b)` (owned-lhs functional variant), `sorted_coefficients()`, `coeff_gcd()`, `normalize()`.
-- `Chain::new()`, `add_element()` (merges into existing degree, drops zero elements), `element_at(degree)`, `support_degrees()` (sorted), `is_zero()`, `support_size()`, `scalar_mul()`, `add(&other)`, `neg()`.
-- Private `gcd(i64, i64)` helper (standard Euclidean, `abs()`-normalized).
 
-## Pipeline position
-Depends only on `gap_tensor_core` (C001, unused — dead dependency) and `chain_complex_shape` (C041, used only as a doc-adjacent concept — not actually referenced in `lib.rs`, so also effectively unused at the type level, though the degree-graded design mirrors C041's shape model). Consumed directly by `differential_operator` (C043) for `ChainElement`/`Chain`, and by `projective_module_definition` (C045).
+| Item | Description |
+|---|---|
+| `struct ChainElement` | A single chain element at a fixed degree n. |
+| `fn ChainElement::new(degree: i32) -> Self` | Create a new zero chain element at degree n. |
+| `fn ChainElement::from_generator(degree: i32, gen_idx: usize, coeff: i64) -> Self` | Create a chain element with a single generator. |
+| `fn ChainElement::coeff(&self, gen_idx: usize) -> i64` | Get the coefficient of a generator. |
+| `fn ChainElement::set_coeff(&mut self, gen_idx: usize, coeff: i64)` | Set the coefficient of a generator. |
+| `fn ChainElement::add_coeff(&mut self, gen_idx: usize, delta: i64)` | Add a coefficient to an existing generator. |
+| `fn ChainElement::fits_shape(&self, shape: &ChainComplexShape) -> bool` | Whether every generator in the support is a generator of C_n in `shape` (its index is below the rank at this element's degree). |
+| `fn ChainElement::is_zero(&self) -> bool` | Check if this is the zero element. |
+| `fn ChainElement::support_size(&self) -> usize` | Number of nonzero generators in this element. |
+| `fn ChainElement::support(&self) -> Vec<usize>` | Get all generator indices with nonzero coefficients. |
+| `fn ChainElement::add(&mut self, other: &ChainElement)` | Add two chain elements (must be at the same degree). |
+| `fn ChainElement::scalar_mul(&mut self, c: i64)` | Scalar multiply this chain element by c. |
+| `fn ChainElement::neg(&self) -> Self` | Return the negation of this chain element. |
+| `fn ChainElement::plus(mut a: ChainElement, b: &ChainElement) -> ChainElement` | Compute the sum of two chain elements (immutable version). |
+| `fn ChainElement::sorted_coefficients(&self) -> Vec<(usize, i64)>` | Get all coefficients in sorted order by generator index. |
+| `fn ChainElement::coeff_gcd(&self) -> i64` | Compute the GCD of all coefficients (for normalization). |
+| `fn ChainElement::normalize(&mut self)` | Normalize this element by dividing all coefficients by their GCD. |
+| `struct Chain` | A general chain (possibly with generators at multiple degrees). |
+| `fn Chain::new() -> Self` | Create a new empty chain. |
+| `fn Chain::add_element(&mut self, elem: ChainElement)` | Add a chain element at its degree. |
+| `fn Chain::element_at(&self, degree: i32) -> Option<&ChainElement>` | Get the chain element at a specific degree. |
+| `fn Chain::support_degrees(&self) -> Vec<i32>` | Get all degrees with nonzero elements. |
+| `fn Chain::is_zero(&self) -> bool` | Check if this chain is zero. |
+| `fn Chain::support_size(&self) -> usize` | Number of nonzero degrees. |
+| `fn Chain::fits_shape(&self, shape: &ChainComplexShape) -> bool` | Whether every element of the chain fits `shape`. |
+| `fn Chain::scalar_mul(&mut self, c: i64)` | Scalar multiply the entire chain. |
+| `fn Chain::add(&mut self, other: &Chain)` | Add another chain to this one. |
+| `fn Chain::neg(&self) -> Self` | Return the negation of this chain. |
 
-## Notes / gaps
-- **Gap:** both declared dependencies (C001, C041) go unreferenced in code — `ChainElement`/`Chain` don't hold or validate against a `ChainComplexShape`, so nothing here enforces that a chain's generator indices stay within the rank bounds a `ChainComplexShape` would define. That validation, if it exists, lives elsewhere (e.g. differential operator's `to_dense_matrix` truncates out-of-range target gens silently — see C043).
-- `coeff_gcd()` returns `1` for an all-zero/empty element (correct identity for "no normalization needed") rather than `0`, avoiding a divide-by-zero in `normalize()`.
-- Sparse `HashMap<usize, i64>` representation is a reasonable choice for chain complexes with mostly-zero differentials/elements at scale; `support()`/`sorted_coefficients()` pay an O(n log n) sort on every call rather than maintaining sorted order — fine unless called in a hot loop.
-- 9 unit tests.
+## Tests
+
+`cargo test -p chain_complex_types` runs 12 unit tests.

@@ -6,24 +6,11 @@
 
 pub use ideal_interface::Ideal;
 
-/// Check if an ideal is prime
-/// An ideal P is prime iff R/P is an integral domain
-/// Simplified: check divisibility property
+/// Is the ideal prime? Over Z an ideal is `(g)` with `g = gcd` of its
+/// generators, and `(g)` is prime iff `g = 0` (Z is a domain) or `g` is a
+/// prime number. `(1) = Z` is not prime.
 pub fn is_prime_ideal(ideal: &Ideal) -> bool {
-    if ideal.is_zero {
-        return true; // (0) is prime
-    }
-
-    // An ideal is prime if whenever ab is in the ideal, either a or b is in the ideal
-    // For principal ideals (p), this means p is prime
-    if ideal.num_generators() == 1 {
-        let p = ideal.generators.iter().next().unwrap();
-        return is_prime_number(*p);
-    }
-
-    // For composite ideals, check if the gcd is prime
-    let g = ideal.gcd();
-    is_prime_number(g)
+    ideal.is_zero || is_prime_number(ideal.gcd())
 }
 
 /// Check if a number is prime
@@ -48,12 +35,13 @@ pub fn is_weakly_prime(ideal: &Ideal) -> bool {
     g == 1 || is_prime_number(g)
 }
 
-/// Convert ideal to prime spectrum point (if prime)
+/// Convert ideal to prime spectrum point (if prime). In Z, `(0)` has height
+/// 0 and every non-zero prime `(p)` has height 1 (`(0) ⊂ (p)`).
 pub fn to_prime_point(ideal: &Ideal) -> Option<PrimePoint> {
     if is_prime_ideal(ideal) {
         Some(PrimePoint {
             ideal: ideal.clone(),
-            height: 1,
+            height: if ideal.is_zero { 0 } else { 1 },
         })
     } else {
         None
@@ -93,6 +81,14 @@ mod tests {
 
         let ideal4 = Ideal::principal(4);
         assert!(!is_prime_ideal(&ideal4));
+    }
+
+    #[test]
+    fn multi_generator_ideals_use_the_gcd() {
+        assert!(is_prime_ideal(&Ideal::new(vec![6, 10])));
+        assert!(!is_prime_ideal(&Ideal::new(vec![2, 3])));
+        assert!(!is_prime_ideal(&Ideal::principal(1)));
+        assert_eq!(to_prime_point(&Ideal::zero()).unwrap().height, 0);
     }
 
     #[test]

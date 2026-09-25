@@ -1,49 +1,42 @@
-# krull_certification
+# `krull_certification` (C069)
 
-Produces and verifies a `DimensionProof`: a structured witness that a
-computed Krull dimension is self-consistent, plus a multi-check
-`CertificationChecker`.
+Tier 6 — Krull dimension. *Generated from the crate source; regenerate after API changes.*
 
-## What it does
+Certification that Krull dimension is correct.
+Verify computation against bounds and algebraic properties.
 
-`DimensionProof::from_spectrum` recomputes the dimension, the preorder, and
-all maximal chains, and records whether the longest chain's length equals
-`dimension + 1` (`chain_length_ok`). `verify()` requires `chain_length_ok`,
-`bounds_satisfied` (defaults to `true` until `check_bounds` is called), and
-`verify_chain_ordering()` (every maximal chain has the expected length).
-`CertificationChecker` wraps a `Spectrum` + its `DimensionProof` and runs
-five named checks (`chain_ordering`, `non_negative`, `catenary_property`,
-`longest_chain_ok`, `bounded_by_spectrum_size`) into a `CertificationResult`
-map of pass/fail, and can separately verify a `BoundCollection` from C068.
+## Dependencies
+
+- [C010 `gap_tensor_trace`](../C010/README.md)
+- [C064 `spectrum_definition`](../C064/README.md)
+- [C065 `spectrum_order`](../C065/README.md)
+- [C066 `spectrum_chains`](../C066/README.md)
+- [C067 `krull_dimension_definition`](../C067/README.md)
+- [C068 `dimension_upper_bounds`](../C068/README.md)
 
 ## Public API
 
-- `DimensionProof { dimension, bounds_satisfied, longest_chain,
-  maximal_chains, chain_length_ok }`, `from_spectrum`, `verify`,
-  `check_bounds(&BoundCollection)`
-- `CertificationChecker::new(Spectrum)`, `check_all`, `verify_bounds`, `proof()`
-- `CertificationResult`: `add_check`, `all_passed`, `check(name)`, `checks()`,
-  `passed_count`, `total_count`, `failed_checks`
+| Item | Description |
+|---|---|
+| `struct DimensionProof` | Proof that a dimension computation is correct: the exhaustive chain enumeration's longest chains, checked to be strictly increasing and of length `dim + 1`, plus (optionally) upper bounds. |
+| `fn DimensionProof::from_spectrum(spec: &Spectrum) -> Self` | Create proof from spectrum |
+| `fn DimensionProof::verify(&self) -> bool` | The chain witness is valid, and any checked bounds hold. |
+| `fn DimensionProof::check_bounds(&mut self, bounds: &BoundCollection)` | Check dimension against upper bounds |
+| `struct CertificationChecker` | Certification checker with multiple properties |
+| `fn CertificationChecker::new(spec: Spectrum) -> Self` | Create checker for spectrum |
+| `fn CertificationChecker::check_all(&mut self) -> CertificationResult` | Run all certification checks. |
+| `fn CertificationChecker::verify_bounds(&mut self, bounds: &BoundCollection) -> bool` | Verify against specific bounds |
+| `fn CertificationChecker::proof(&self) -> &DimensionProof` | Get the proof |
+| `struct CertificationResult` | Result of certification checks |
+| `fn CertificationResult::new() -> Self` | Create empty result |
+| `fn CertificationResult::add_check(&mut self, name: &str, passed: bool)` | Add a check result |
+| `fn CertificationResult::all_passed(&self) -> bool` | All checks passed |
+| `fn CertificationResult::check(&self, name: &str) -> Option<bool>` | Get individual check result |
+| `fn CertificationResult::checks(&self) -> &std::collections::BTreeMap<String, bool>` | Get all checks |
+| `fn CertificationResult::passed_count(&self) -> usize` | Count passed checks |
+| `fn CertificationResult::total_count(&self) -> usize` | Count total checks |
+| `fn CertificationResult::failed_checks(&self) -> Vec<String>` | Get failed checks |
 
-## Pipeline role
+## Tests
 
-Depends on `gap_tensor_trace` (C010, wiring only — not used in this file),
-`spectrum_definition`, `spectrum_order`, `spectrum_chains`,
-`krull_dimension_definition`, `dimension_upper_bounds` (C064-C068). This is
-the terminal correctness gate for the Krull layer before
-`krull_spectrum_tests_integration` (C070) runs its integration suite, and
-before the runtime/certification layer (C091-C100, currently unimplemented)
-would consume it.
-
-## Gaps / weak spots
-
-- `bounds_satisfied` defaults to `true` in `from_spectrum` and is only set
-  correctly if the caller explicitly calls `check_bounds` afterward — so
-  `verify()` can silently report success on the bounds dimension without
-  any bounds ever having been checked. This is an easy-to-misuse API: a
-  caller who forgets `check_bounds` gets a false "certified".
-- `test_certification_checker`'s assertion
-  `assert!(!result.failed_checks().is_empty() || result.all_passed())` is a
-  tautology (always true for any `CertificationResult`) and verifies
-  nothing about the actual check outcomes.
-- The `gap_tensor_trace` dependency is unused in this file.
+`cargo test -p krull_certification` runs 7 unit tests.

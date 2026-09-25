@@ -1,18 +1,48 @@
-# cross_layer_invariants — UNIMPLEMENTED SCAFFOLD
+# `cross_layer_invariants` (C092)
 
-`src/lib.rs` is a 7-line stub with no types, functions, or tests.
+Tier 9 — cross-layer certification. *Generated from the crate source; regenerate after API changes.*
 
-## Intended purpose (inferred from name + dependencies)
+Invariants that must survive the boundaries between tiers, checked over
+finite families:
 
-Depends on `gap_tensor_invariants` (C007), `multiplicity_arena_layout`
-(C012), `gap_constraint_satisfaction` (C027), `resolution_certification`
-(C049), `runtime_invariant_checking` (C089), and `cross_layer_types` (C091)
-— spanning Layers 1, 2, and 4. Presumably meant to state invariants that
-must hold *across* layers (e.g. a gap-tensor invariant from Layer 1 staying
-consistent with a resolution certification from Layer 2, as observed
-through the runtime binding in Layer 4).
+* **arena_preserves_tensors** (Tier 0 ↔ 1): writing a tensor to an arena's
+  DATA region and reading it back preserves every node bit-for-bit and
+  every invariant verdict;
+* **runtime_invariants_match_static** (Tier 8 ↔ 0): the runtime invariant
+  checker reports exactly the static violations, directly and through a
+  recorded history;
+* dissonance (Tier 0) agrees with gap-constraint satisfaction (Tier 2);
+* every gap size occurring between candidate primes has a certified
+  resolution of `Z/g` (Tier 2 ↔ 4).
 
-## Status
+Each check takes its inputs (and, where useful, the component under
+test) as parameters so the counterexample harness can feed broken ones.
 
-Empty. Blocked on `cross_layer_types` (C091) and `runtime_invariant_checking`
-(C089), both also unimplemented.
+## Dependencies
+
+- [C007 `gap_tensor_invariants`](../C007/README.md)
+- [C012 `multiplicity_arena_layout`](../C012/README.md)
+- [C027 `gap_constraint_satisfaction`](../C027/README.md)
+- [C049 `resolution_certification`](../C049/README.md)
+- [C089 `runtime_invariant_checking`](../C089/README.md)
+- [C091 `cross_layer_types`](../C091/README.md)
+
+## Re-exports
+
+- `multiplicity_arena_layout::{ArenaLayout, Region}`
+
+## Public API
+
+| Item | Description |
+|---|---|
+| `fn check_arena_preserves_tensors_with(family: &[GapTensor], tamper: impl Fn(&mut MultiplicityArena, &ArenaLayout)) -> CorrespondenceReport` | Round-trip every tensor of `family` through an arena. |
+| `fn check_arena_preserves_tensors(family: &[GapTensor]) -> CorrespondenceReport` | The real arena check. |
+| `fn check_runtime_matches_static_with(family: &[GapTensor], runtime: impl Fn(&GapTensor) -> Vec<Violation>) -> CorrespondenceReport` | Compare a runtime checker with the static one, directly and through a recorded history. |
+| `fn check_runtime_matches_static(family: &[GapTensor]) -> CorrespondenceReport` | The real runtime-vs-static check. |
+| `fn check_dissonance_matches_gap_constraint(family: &[GapTensor], max_gap: u64) -> CorrespondenceReport` | The number of dissonance violations equals the number of consecutive non-nil prime pairs whose gap fails `GapConstraint::range(0, max_gap)`. |
+| `fn check_candidate_gap_resolutions(candidates: &[u32]) -> CorrespondenceReport` | Every gap between distinct candidate primes has a fully certified resolution of `Z/g`. |
+| `fn run_all(family: &[GapTensor], candidates: &[u32]) -> Vec<CorrespondenceReport>` | Run every check of this crate on the standard inputs. |
+
+## Tests
+
+`cargo test -p cross_layer_invariants` runs 2 unit tests.

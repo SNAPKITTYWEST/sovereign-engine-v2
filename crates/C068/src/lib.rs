@@ -5,7 +5,7 @@
 
 #![warn(missing_docs)]
 
-use krull_dimension_definition::KrullDim;
+pub use krull_dimension_definition::{KrullDim, Spectrum};
 
 /// Upper bound on Krull dimension
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd)]
@@ -149,6 +149,26 @@ impl BoundCollection {
     pub fn all_satisfied(&self, actual_dim: KrullDim) -> bool {
         self.bounds.iter().all(|(_, b)| b.satisfies(actual_dim))
     }
+
+    /// Combine the bounds according to `strategy`: the minimum of all bounds,
+    /// only generator bounds, only Krull PIT bounds, or (conservatively) the
+    /// maximum. `None` if no bound matches.
+    pub fn combined(&self, strategy: BoundStrategy) -> Option<DimensionUpperBound> {
+        let matching = |prefix: &str| -> Vec<DimensionUpperBound> {
+            self.bounds
+                .iter()
+                .filter(|(label, _)| label.starts_with(prefix))
+                .map(|(_, b)| *b)
+                .collect()
+        };
+        let all: Vec<DimensionUpperBound> = self.bounds.iter().map(|(_, b)| *b).collect();
+        match strategy {
+            BoundStrategy::AllBounds => all.into_iter().min(),
+            BoundStrategy::Conservative => all.into_iter().max(),
+            BoundStrategy::GeneratorsOnly => matching("generators").into_iter().min(),
+            BoundStrategy::KrullPITOnly => matching("Krull PIT").into_iter().min(),
+        }
+    }
 }
 
 impl Default for BoundCollection {
@@ -216,6 +236,19 @@ mod tests {
         coll.add_generator_bound(4);
         let dim = KrullDim(3);
         assert!(coll.all_satisfied(dim));
+    }
+
+    #[test]
+    fn strategies_select_bounds() {
+        let mut coll = BoundCollection::new();
+        coll.add_generator_bound(4);
+        coll.add_krull_pit_bound(2);
+        coll.add_relation_bound(5, 2);
+        assert_eq!(coll.combined(BoundStrategy::AllBounds), Some(DimensionUpperBound(2)));
+        assert_eq!(coll.combined(BoundStrategy::Conservative), Some(DimensionUpperBound(4)));
+        assert_eq!(coll.combined(BoundStrategy::GeneratorsOnly), Some(DimensionUpperBound(4)));
+        assert_eq!(coll.combined(BoundStrategy::KrullPITOnly), Some(DimensionUpperBound(2)));
+        assert_eq!(BoundCollection::new().combined(BoundStrategy::AllBounds), None);
     }
 
     #[test]

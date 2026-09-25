@@ -1,47 +1,64 @@
-# type_checking_interface
+# `type_checking_interface` (C071)
 
-Minimal Lean 4-flavored type system used as a common vocabulary for every
-"lemma library" crate in Tier 7 (C071-C080) to describe formal statements.
+Tier 7 — proof obligations. *Generated from the crate source; regenerate after API changes.*
 
-## What it does
+A small proof checker for proof obligations, modelled on the implicational
+fragment of Lean's kernel. Statements are s; the checker
+decides whether a  proves a statement in a :
 
-`LeanType`: `Prop`, `Type(usize)` (universe-indexed), `Arrow(Box<LeanType>,
-Box<LeanType>)`, `Custom(String)` — enough structure to write down a
-proposition's shape and pretty-print it (`to_string`, e.g.
-`"Prop → Prop"`). `ProofTerm`: `Axiom(String)`, `Trivial`, `Reference(String)`,
-`App(Box<ProofTerm>, Box<ProofTerm>)` — `is_complete()` returns true for
-`Trivial`/`Axiom`/`Reference` but **false for `App`**, i.e. an explicit
-function-application proof term is never considered complete by this logic.
-`TypeContext` is a pair of `BTreeMap<String, LeanType>` for variables and
-theorems, with lookup/insert.
+* `Trivial` proves `True` and nothing else;
+* `Reference(n)` proves the type recorded for `n` in the context — a
+  hypothesis, a theorem, or an axiom;
+* `Axiom(n)` proves the type of a declared axiom;
+* `App(f, x)` is modus ponens: from `f : A → B` and `x : A`, conclude `B`;
+* `Decided(cert)` proves the statement recorded in a
+  , which can only be obtained by running its
+  decision procedure to success over a stated finite domain.
+
+This crate does not run Lean. Every proof carries an  grade so
+reports can separate constructive proofs, exhaustive computation,
+references to theorems proven elsewhere, and bare assumptions.
+
+## Dependencies
+
+- [C001 `gap_tensor_core`](../C001/README.md)
+- [C003 `gap_tensor_spectral`](../C003/README.md)
 
 ## Public API
 
-- `LeanType` (+ `prop()`, `type_u(u)`, `arrow(from, to)`, `to_string()`)
-- `ProofTerm` (+ `axiom(name)`, `is_complete()`)
-- `TypeContext` (+ `add_variable`, `add_theorem`, `lookup_variable`,
-  `lookup_theorem`)
+| Item | Description |
+|---|---|
+| `enum LeanType` | A Lean type or proposition |
+| `fn LeanType::prop() -> Self` | The sort `Prop` |
+| `fn LeanType::type_u(u: usize) -> Self` | Create a type at universe level u |
+| `fn LeanType::arrow(from: LeanType, to: LeanType) -> Self` | Implication / function type `from → to` |
+| `fn LeanType::atom(name: impl Into<String>) -> Self` | A named proposition. |
+| `fn LeanType::truth() -> Self` | The proposition `True`, proven by `Trivial`. |
+| `fn LeanType::to_string(&self) -> String` | Get string representation |
+| `struct DecisionCertificate` | Record of a decision procedure that ran to success. |
+| `fn DecisionCertificate::run(statement: LeanType, procedure: impl Into<String>, check: impl FnOnce() -> Result<u64, String>) -> Result<Self, String>` | Run `check`, which must examine every case of the finite domain named in `statement` and return how many cases it checked, or describe a counterexample. |
+| `fn DecisionCertificate::statement(&self) -> &LeanType` | The statement decided. |
+| `fn DecisionCertificate::procedure(&self) -> &str` | Name of the decision procedure. |
+| `fn DecisionCertificate::cases_checked(&self) -> u64` | Number of cases examined. |
+| `enum Evidence` | Strength of the evidence behind a proof, weakest first. |
+| `enum ProofTerm` | A proof term. |
+| `fn ProofTerm::axiom(name: &str) -> Self` | Use of the axiom `name`. |
+| `fn ProofTerm::reference(name: &str) -> Self` | Reference to `name`. |
+| `fn ProofTerm::app(f: ProofTerm, x: ProofTerm) -> Self` | Modus ponens. |
+| `fn ProofTerm::is_complete(&self) -> bool` | Structurally complete (no holes). |
+| `fn ProofTerm::evidence(&self) -> Evidence` | Weakest evidence the proof relies on. |
+| `enum TypeError` | Why a proof term fails to check. |
+| `struct TypeContext` | A type checking context: hypotheses, theorems and axioms. |
+| `fn TypeContext::new() -> Self` | Create an empty context |
+| `fn TypeContext::add_variable(&mut self, name: String, ty: LeanType)` | Add a hypothesis |
+| `fn TypeContext::add_theorem(&mut self, name: String, ty: LeanType)` | Add a theorem |
+| `fn TypeContext::add_axiom(&mut self, name: String, ty: LeanType)` | Declare an axiom |
+| `fn TypeContext::lookup_variable(&self, name: &str) -> Option<&LeanType>` | Look up a hypothesis |
+| `fn TypeContext::lookup_theorem(&self, name: &str) -> Option<&LeanType>` | Look up a theorem |
+| `fn TypeContext::lookup_axiom(&self, name: &str) -> Option<&LeanType>` | Look up an axiom |
+| `fn TypeContext::infer(&self, proof: &ProofTerm) -> Result<LeanType, TypeError>` | The statement a proof term proves in this context. |
+| `fn TypeContext::check(&self, proof: &ProofTerm, statement: &LeanType) -> Result<(), TypeError>` | Check that `proof` proves `statement`. |
 
-## Pipeline role
+## Tests
 
-Depends on `gap_tensor_core` (C001) and `gap_tensor_spectral` (C003) for
-workspace wiring only — neither is used in this file. This is the shared
-vocabulary crate: every lemma library in C072-C080 imports `LeanType` and
-`ProofTerm` from here, and it's the closest thing this workspace has to an
-actual Lean AST — but it does not talk to a real Lean 4 process; there is no
-FFI, subprocess call, or `.lean` file parsing anywhere in this crate.
-
-## Non-obvious design decisions / gaps
-
-- This is **not** a real interface to the Lean 4 type checker despite the
-  crate name — it's a Rust-side mirror/stub of Lean's syntax used to track
-  bookkeeping (which obligations exist, whether they're "proven") without
-  ever invoking Lean. Anyone expecting FFI or subprocess integration here
-  will be surprised; the actual correspondence to Lean proofs would need to
-  happen in the runtime-binding layer (C091-C100), which is currently
-  unimplemented.
-- `ProofTerm::App(_)` always reporting `is_complete() == false` means a
-  "real" composed proof term built via function application can never be
-  marked closed through this API — only trivial/axiom/reference proofs can.
-  If `App` is meant to represent legitimate proof composition, this is a
-  functional gap, not just a placeholder.
+`cargo test -p type_checking_interface` runs 8 unit tests.

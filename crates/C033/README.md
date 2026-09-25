@@ -1,21 +1,51 @@
-# recursive_solver_cursor (C033)
+# `recursive_solver_cursor` (C033)
 
-## What it does
-A cursor over a flattened sequence of candidate gaps `(prime1, prime2, gap_size)`, with per-position `visited`/`valid` bitmaps. Supports forward/backward navigation, jump-to-start/end, and nearest-unvisited-position search in both directions.
+Tier 3 — recursive solver. *Generated from the crate source; regenerate after API changes.*
+
+Cursor management for gap sequence position tracking during recursive solving.
+Validates positions against candidate gaps, tracks visited positions, and manages
+forward/backward movement through the gap sequence.
+
+## Dependencies
+
+- [C023 `gap_candidate_set`](../C023/README.md)
+- [C024 `gap_ordering`](../C024/README.md)
+- [C031 `recursive_solver_state`](../C031/README.md)
 
 ## Public API
-- `CursorPosition { index, visited, is_valid }`.
-- `RecursiveSolverCursor::new(GapCandidateSet)` (pulls `candidates_with_gap(1)` — see gap below) or `from_gaps(Vec<(u64,u64,u64)>)` for direct construction.
-- Navigation: `position()`, `set_position()`, `advance()`, `retreat()`, `jump_to_end()`, `jump_to_start()`, `is_at_end()`, `is_at_start()`.
-- Access: `current_gap()`, `gap_at(index)`, `all_gaps()`, `total_gaps()`.
-- Visited tracking: `mark_visited()`, `is_visited()`, `visited_count()`, `unvisited_positions()`.
-- Validity tracking: `is_position_valid()`, `mark_invalid()`, `valid_count()`.
-- `current_position_info() -> CursorPosition`, `reset()`, `next_unvisited()`, `prev_unvisited()`.
 
-## Pipeline position
-Depends on `gap_candidate_set` (C023) and `gap_ordering` (C024, declared but unused in code — dead dependency) and `recursive_solver_state` (C031, declared but also unused directly in this file). Feeds selection (C034), transition (C035), contradiction detection (C038), and the transition engine's execution loop.
+| Item | Description |
+|---|---|
+| `struct CursorPosition` | Represents a position in a gap sequence with validity information. |
+| `fn CursorPosition::new(index: usize, visited: bool, is_valid: bool) -> Self` | Create a new cursor position. |
+| `struct RecursiveSolverCursor` | Cursor for navigating through a gap sequence during recursive solving. |
+| `fn RecursiveSolverCursor::new(gap_set: GapCandidateSet) -> Self` | A cursor over every consecutive-prime gap of the set (every gap is at least 1). |
+| `fn RecursiveSolverCursor::with_min_gap(gap_set: GapCandidateSet, min_gap: u64) -> Self` | A cursor over the consecutive-prime gaps of size at least `min_gap`. |
+| `fn RecursiveSolverCursor::from_gaps(gaps: Vec<(u64, u64, u64)>) -> Self` | Create a cursor from a pre-computed list of gaps. |
+| `fn RecursiveSolverCursor::position(&self) -> usize` | Get the current position. |
+| `fn RecursiveSolverCursor::set_position(&mut self, index: usize) -> bool` | Set the position to an absolute index. |
+| `fn RecursiveSolverCursor::advance(&mut self) -> bool` | Advance cursor by one position (if possible). |
+| `fn RecursiveSolverCursor::retreat(&mut self) -> bool` | Retreat cursor by one position (if possible). |
+| `fn RecursiveSolverCursor::jump_to_end(&mut self)` | Jump to the end of the sequence. |
+| `fn RecursiveSolverCursor::jump_to_start(&mut self)` | Jump to the beginning of the sequence. |
+| `fn RecursiveSolverCursor::is_at_end(&self) -> bool` | Check if at the end of the sequence. |
+| `fn RecursiveSolverCursor::is_at_start(&self) -> bool` | Check if at the start of the sequence. |
+| `fn RecursiveSolverCursor::current_gap(&self) -> Option<(u64, u64, u64)>` | Get the current gap (prime1, prime2, gap_size). |
+| `fn RecursiveSolverCursor::gap_at(&self, index: usize) -> Option<(u64, u64, u64)>` | Get the gap at a specific position. |
+| `fn RecursiveSolverCursor::all_gaps(&self) -> &[(u64, u64, u64)]` | Get all gaps in the sequence. |
+| `fn RecursiveSolverCursor::total_gaps(&self) -> usize` | Get the total number of gaps. |
+| `fn RecursiveSolverCursor::mark_visited(&mut self, index: usize)` | Mark a position as visited. |
+| `fn RecursiveSolverCursor::is_visited(&self, index: usize) -> bool` | Check if a position has been visited. |
+| `fn RecursiveSolverCursor::visited_count(&self) -> usize` | Get the number of visited positions. |
+| `fn RecursiveSolverCursor::unvisited_positions(&self) -> Vec<usize>` | Get unvisited positions. |
+| `fn RecursiveSolverCursor::is_position_valid(&self, index: usize) -> bool` | Check if a position is valid. |
+| `fn RecursiveSolverCursor::mark_invalid(&mut self, index: usize)` | Mark a position as invalid. |
+| `fn RecursiveSolverCursor::valid_count(&self) -> usize` | Get the number of valid positions. |
+| `fn RecursiveSolverCursor::current_position_info(&self) -> CursorPosition` | Get the current cursor position info. |
+| `fn RecursiveSolverCursor::reset(&mut self)` | Reset cursor to start and clear visited/valid states. |
+| `fn RecursiveSolverCursor::next_unvisited(&self) -> Option<usize>` | Get the closest unvisited position going forward. |
+| `fn RecursiveSolverCursor::prev_unvisited(&self) -> Option<usize>` | Get the closest unvisited position going backward. |
 
-## Notes / gaps
-- **Suspicious:** `new()` always calls `gap_set.candidates_with_gap(1)`, hard-coding gap size 1 regardless of what candidate set is passed in. This looks like either a placeholder or a bug — any caller using `new()` with a non-trivial `GapCandidateSet` only ever sees gap-1 candidates. `from_gaps()` is the escape hatch used by all tests, which may be masking this.
-- `gap_ordering` and `recursive_solver_state` are declared as dependencies in Cargo.toml but not referenced in `lib.rs` — dead dependency weight.
-- 12 unit tests, well covered for navigation edge cases (start/end, unvisited search).
+## Tests
+
+`cargo test -p recursive_solver_cursor` runs 12 unit tests.

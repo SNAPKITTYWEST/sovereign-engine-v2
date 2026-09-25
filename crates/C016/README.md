@@ -1,18 +1,42 @@
-# multiplicity_arena_ownership (C016)
+# `multiplicity_arena_ownership` (C016)
 
-**Status: unimplemented scaffold.** The crate is currently only a stub — `src/lib.rs` is 7 lines: a module doc comment, `#![warn(missing_docs)]`, and a `// Scaffold: Add your code here.` marker. It compiles (empty lib) but exports nothing.
+Tier 1 — multiplicity arena. *Generated from the crate source; regenerate after API changes.*
 
-## Intended purpose
+Lifetime tracking for arena node ranges. Owners acquire leases on ranges
+with shared or exclusive access; overlapping leases conflict unless both
+are shared. Lease handles are never reused, so a stale handle (used after
+release) is always detected.
 
-Ownership/borrowing model for arena contents — rules for transferring or sharing access to arena nodes across the pipeline.
+## Dependencies
 
-## Pipeline role
+- [C011 `multiplicity_arena_core`](../C011/README.md)
+- [C015 `multiplicity_arena_pointers`](../C015/README.md)
 
-Part of the multiplicity_arena_* family rooted at `gap_tensor_core` (C001) and `multiplicity_arena_core` (C011). No `[dependencies]` are declared in `Cargo.toml` yet, so even the expected dependency on C001/C011 has not been wired up.
+## Re-exports
 
-## Gaps / TODOs
+- `multiplicity_arena_pointers::{ArenaPtr, NodeRange, Region}`
 
-- No implementation: this is a pure placeholder crate.
-- No dependency on `gap_tensor_core`/`multiplicity_arena_core` declared, despite the name implying it operates on `GapTensorNode`/`MultiplicityArena`.
-- No tests.
-- `#![warn(missing_docs)]` is present but moot with no public items to document.
+## Public API
+
+| Item | Description |
+|---|---|
+| `struct OwnerId(pub u64)` | Identifies the holder of a lease. |
+| `enum Access` | Kind of access a lease grants. |
+| `struct Lease(u64)` | Handle to an active lease. |
+| `struct LeaseInfo` | What a lease covers. |
+| `enum OwnershipError` | Errors from lease operations. |
+| `struct OwnershipTracker` | Registry of active leases. |
+| `fn OwnershipTracker::new() -> Self` | No active leases. |
+| `fn OwnershipTracker::acquire(&mut self, owner: OwnerId, range: NodeRange, access: Access) -> Result<Lease, OwnershipError>` | Acquire a lease on `range`. |
+| `fn OwnershipTracker::release(&mut self, lease: Lease) -> Result<LeaseInfo, OwnershipError>` | Release a lease, returning what it covered. |
+| `fn OwnershipTracker::release_owner(&mut self, owner: OwnerId) -> usize` | Release every lease held by `owner`; returns how many were released. |
+| `fn OwnershipTracker::info(&self, lease: Lease) -> Result<&LeaseInfo, OwnershipError>` | Details of an active lease. |
+| `fn OwnershipTracker::check_read(&self, lease: Lease, ptr: ArenaPtr) -> Result<(), OwnershipError>` | Check that `lease` is active and covers `ptr`. |
+| `fn OwnershipTracker::check_write(&self, lease: Lease, ptr: ArenaPtr) -> Result<(), OwnershipError>` | Check that `lease` is active, exclusive and covers `ptr`. |
+| `fn OwnershipTracker::outstanding(&self) -> usize` | Number of active leases. |
+| `fn OwnershipTracker::outstanding_in(&self, region: Region) -> usize` | Number of active leases in `region`. |
+| `fn OwnershipTracker::leases_of(&self, owner: OwnerId) -> Vec<Lease>` | Active leases held by `owner`. |
+
+## Tests
+
+`cargo test -p multiplicity_arena_ownership` runs 5 unit tests.
