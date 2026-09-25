@@ -887,8 +887,8 @@ impl Identifier {
 
 #[derive(Debug, Clone)]
 pub struct ReferenceModification {
-    pub start: Expression,
-    pub length: Option<Expression>,
+    pub start: Box<Expression>,
+    pub length: Option<Box<Expression>>,
 }
 
 #[derive(Debug, Clone)]

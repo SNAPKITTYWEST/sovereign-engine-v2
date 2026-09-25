@@ -4,7 +4,15 @@ use std::path::PathBuf;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum TokenKind {
-    // Keywords - Divisions
+    // Keywords - Division components
+    Identification,
+    Environment,
+    Data,
+    Procedure,
+    Division,
+    Program,
+    
+    // Keywords - Divisions (compound forms)
     IdentificationDivision,
     EnvironmentDivision,
     DataDivision,
@@ -46,6 +54,7 @@ pub enum TokenKind {
     Display,
     Divide,
     Evaluate,
+    Else,
     Exec,
     Exit,
     Go,
@@ -307,11 +316,32 @@ impl Lexer {
 
         match c {
             '*' if self.column == 1 || self.peek_back() == Some('\n') => {
-                // Comment line
+                // Check for *> inline comment
+                if self.peek() == Some('>') {
+                    self.advance(); // consume '>'
+                    let comment = self.read_until_newline();
+                    Ok(Token::new(
+                        TokenKind::Comment(format!("*>{}", comment)),
+                        format!("*>{}", comment),
+                        start_location,
+                    ))
+                } else {
+                    // Traditional * comment line
+                    let comment = self.read_until_newline();
+                    Ok(Token::new(
+                        TokenKind::Comment(comment.clone()),
+                        comment,
+                        start_location,
+                    ))
+                }
+            }
+            '*' if self.peek() == Some('>') => {
+                // *> inline comment anywhere in line
+                self.advance(); // consume '>'
                 let comment = self.read_until_newline();
                 Ok(Token::new(
-                    TokenKind::Comment(comment.clone()),
-                    comment,
+                    TokenKind::Comment(format!("*>{}", comment)),
+                    format!("*>{}", comment),
                     start_location,
                 ))
             }
@@ -375,12 +405,20 @@ impl Lexer {
     }
 
     fn keyword_or_identifier(&self, upper: &str, lexeme: &str) -> TokenKind {
-        match upper.as_str() {
-            // Divisions
-            "IDENTIFICATION" => TokenKind::IdentificationDivision,
-            "ENVIRONMENT" => TokenKind::EnvironmentDivision,
-            "DATA" => TokenKind::DataDivision,
-            "PROCEDURE" => TokenKind::ProcedureDivision,
+        match upper.as_ref() {
+            // Division components
+            "IDENTIFICATION" | "ID" => TokenKind::Identification,
+            "ENVIRONMENT" => TokenKind::Environment,
+            "DATA" => TokenKind::Data,
+            "PROCEDURE" => TokenKind::Procedure,
+            "DIVISION" => TokenKind::Division,
+            "PROGRAM" => TokenKind::Program,
+            
+            // Divisions (compound forms with hyphens)
+            "IDENTIFICATION-DIVISION" | "ID-DIVISION" => TokenKind::IdentificationDivision,
+            "ENVIRONMENT-DIVISION" => TokenKind::EnvironmentDivision,
+            "DATA-DIVISION" => TokenKind::DataDivision,
+            "PROCEDURE-DIVISION" => TokenKind::ProcedureDivision,
             
             // Sections
             "CONFIGURATION" => TokenKind::ConfigurationSection,
@@ -415,9 +453,10 @@ impl Lexer {
             "COMPUTE" => TokenKind::Compute,
             "CONTINUE" => TokenKind::Continue,
             "DELETE" => TokenKind::Delete,
-            "DISPLAY" => TokenKind::Display,
+            "DISPLAY" => TokenKind::DisplayKeyword,
             "DIVIDE" => TokenKind::Divide,
             "EVALUATE" => TokenKind::Evaluate,
+            "ELSE" => TokenKind::Else,
             "EXEC" => TokenKind::Exec,
             "EXIT" => TokenKind::Exit,
             "GO" => TokenKind::Go,
@@ -553,7 +592,6 @@ impl Lexer {
             "COMP-5" | "COMPUTATIONAL-5" => TokenKind::Comp5,
             "BINARY" => TokenKind::Binary,
             "PACKED-DECIMAL" => TokenKind::PackedDecimal,
-            "DISPLAY" => TokenKind::DisplayKeyword,
             "NATIONAL" => TokenKind::National,
             "INDEX" => TokenKind::Index,
             "POINTER" => TokenKind::Pointer,

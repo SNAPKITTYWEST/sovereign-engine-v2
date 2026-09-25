@@ -99,8 +99,8 @@ fn main() -> Result<()> {
             round_trip_command(&input)?;
         }
         None => {
-            if let Some(input) = cli.input {
-                default_command(&cli, &input)?;
+            if let Some(ref input) = cli.input {
+                default_command(&cli, input)?;
             } else {
                 eprintln!("Error: No input file specified");
                 std::process::exit(1);

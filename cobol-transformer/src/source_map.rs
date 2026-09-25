@@ -47,7 +47,7 @@ pub struct SourceMapping {
     pub original_column: usize,
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub struct SourceMap {
     mappings: Vec<SourceMapping>,
 }
