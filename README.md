@@ -26,6 +26,7 @@ The Python engine contains an eleven-stage routing pipeline, ReAct agents, a too
   - [Crate Map](#crate-map)
   - [Novel Techniques & Things Worth Knowing](#novel-techniques--things-worth-knowing)
   - [Known Gaps / TODO](#known-gaps--todo)
+- [COBOL Transformer](#cobol-transformer)
 - [Recent changes](#recent-changes)
 
 ---
@@ -144,6 +145,7 @@ sovereign-engine-v2/
 ├─ kernels/                     # CUDA, MLIR, P4, hardware
 ├─ cobalt/                      # Haskell compiler (Cabal)
 ├─ ide/                         # Windows IDE (C/C++ + CMake)
+├─ cobol-transformer/           # COBOL source-to-source transformer (Rust)
 ├─ docs/                        # Technical documentation
 ├─ run.py                       # Direct runner entry point
 └─ README.md                    # This file
@@ -1210,11 +1212,54 @@ At a glance:
 
 ---
 
+## COBOL Transformer
+
+`cobol-transformer/` is a standalone Rust crate that reads COBOL source, parses it into a typed AST, and generates COBOL back out. It has its own `[workspace]` table, so it builds separately from the root workspace and `crates/`. Full details: [cobol-transformer/README.md](cobol-transformer/README.md).
+
+**Pipeline:** format normalizer (fixed/free) → preprocessor → lexer → parser → typed AST → symbol table → transformation passes → code generator
+
+| Module | Role |
+|---|---|
+| `src/format.rs` | Fixed-format column handling (sequence area, indicator column, continuation lines); free format passes through |
+| `src/preprocessor.rs` | `COPY` expansion with circular-include detection, `REPLACE`, `>>DEFINE` / `>>SET` directives |
+| `src/lexer.rs` | Keywords, numeric/alphanumeric/national/hex literals, operators, comments |
+| `src/parser.rs` | Token stream → typed AST |
+| `src/ast.rs` | AST covering all four divisions |
+| `src/symbol_table.rs` | Data items, paragraphs, sections, files |
+| `src/codegen.rs` | AST → COBOL source |
+| `src/cfg.rs`, `src/dataflow.rs`, `src/type_system.rs`, `src/transform.rs` | Control-flow, data-flow, typing and transformation passes (early stage) |
+| `src/diagnostics.rs`, `src/source_map.rs` | File/line/column diagnostics; maps preprocessed lines back to their source lines |
+
+**Build and run:**
+
+```bash
+cd cobol-transformer
+cargo build --release
+cargo test
+
+# binary: target/release/cobol-transform
+cargo run --release -- tests/fixtures/hello.cob              # parse and regenerate to stdout
+cargo run --release -- tests/fixtures/hello.cob -o out.cob   # write to a file
+cargo run --release -- tests/fixtures/hello.cob --dump-ast   # also --dump-symbols, --dump-cfg, --round-trip
+cargo run --release -- parse tests/fixtures/hello.cob        # subcommands: parse, transform, round-trip
+```
+
+**Status:** early milestone. The parser handles IDENTIFICATION DIVISION (`PROGRAM-ID`), DATA DIVISION `WORKING-STORAGE` items (levels 01–49, 77, 88, `PICTURE`, `VALUE`) and PROCEDURE DIVISION paragraphs, and parses `tests/fixtures/hello.cob`. Known issues from the latest milestone report:
+
+- `PICTURE` sizes are truncated (`X(20)` → `X`)
+- PROCEDURE DIVISION statement parsing is incomplete (e.g. `DISPLAY`, `STOP RUN`)
+- Code generator formatting
+- Symbol table population
+- Semantic analysis
+
+---
+
 ## Recent Changes
 
 | Commit | Change | Location |
 |--------|--------|----------|
-| (pending) | Per-crate READMEs for all 100 Rust workspace crates + README "Rust Verification Workspace" section (crate map, novelties, known gaps) via 3-agent documentation swarm | [crates/](crates/), [README.md](#rust-verification-workspace-100-crates) |
+| `91a6776` | COBOL transformer: parser, code generator, symbol table, analysis modules, integration test | [cobol-transformer/](cobol-transformer/) |
+| `5afe08a` | Per-crate READMEs for all 100 Rust workspace crates + README "Rust Verification Workspace" section (crate map, novelties, known gaps) via 3-agent documentation swarm | [crates/](crates/), [README.md](#rust-verification-workspace-100-crates) |
 | `d7b1dc9` | Comprehensive 3-agent documentation expansion (90K+ words) | [docs/repository-reference/](docs/repository-reference/) |
 | [`898dfbe`](https://github.com/SNAPKITTYWEST/sovereign-engine-v2/commit/898dfbe), Sep 18 | Resolved paper/formal-file placement | [research/papers/](research/papers/), [research/formal/](research/formal/) |
 | [`f97cbd8`](https://github.com/SNAPKITTYWEST/sovereign-engine-v2/commit/f97cbd8), Sep 18 | Relocated 60 files (research, training, docs) | [research/](research/), [training/](training/), [docs/](docs/) |
