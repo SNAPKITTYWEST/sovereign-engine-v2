@@ -24,11 +24,10 @@ measured results. This README only covers how to run the code.
 Install:
 
 ```bash
-pip install --break-system-packages numpy scipy pytest hypothesis
+python -m pip install numpy scipy pytest hypothesis
 ```
 
-(No `requirements.txt` is bundled since the project has no other
-dependencies; the four packages above are the complete list.)
+Use a virtual environment as described in the [starter guide](../../docs/GETTING_STARTED.md). No package manifest is bundled in this subsystem; the four packages above are its requirements, separate from the root engine requirements.
 
 ## Layout
 
@@ -53,14 +52,14 @@ docs/report.md             the research report -- start here
 ```
 
 The package is run in place (no `setup.py`/`pyproject.toml` is bundled);
-every command below is run from this directory with `PYTHONPATH=.`.
+every command below is run from this directory. Module invocations keep it on the import path.
 
 ## Reproduction instructions
 
 All three steps below are exactly how the numbers quoted in `docs/report.md`
 were produced. Re-running them is expected to reproduce the schema
 validation result, all 57 test outcomes, and the experiment's *simulated*
-columns exactly; the experiment's two *measured* columns
+structural columns exactly and route costs within floating-point tolerance; the experiment's two *measured* columns
 (`runtime_seconds`, `peak_memory_bytes`) will vary slightly run to run and
 machine to machine, since they depend on real wall-clock execution, not on
 the deterministic model (see `docs/report.md` Section 20).
@@ -75,16 +74,18 @@ the deterministic model (see `docs/report.md` Section 20).
 2. Run the test suite:
 
    ```bash
-   PYTHONPATH=. python3 -m pytest tests/ -v
+   python -m pytest tests/ -v
    # expected: 57 passed
    ```
 
 3. Run the controlled experiment:
 
    ```bash
-   PYTHONPATH=. python3 experiments/run_experiment.py
+   python -m experiments.run_experiment
    # writes experiments/results.json and prints a per-strategy summary
    ```
+
+For repeated measurements without overwriting the historical result, use the [root benchmark runner](../../scripts/benchmark_sparse_routing.py). See [validation](../../docs/VALIDATION.md) for the executed tests and examples.
 
 ## Known limitations
 

@@ -314,13 +314,8 @@ receipt.to_json()
 
 ---
 
-## Status
+## Implementation status
 
-✓ Specification complete  
-✓ Cryptographic primitives defined  
-✓ Verification algorithm specified  
-✓ Security properties documented  
-✓ Ready for implementation
+This document specifies a protocol design. The receipt examples and verification pseudocode are not a tested implementation. No end-to-end SAML, encryption, or repository-seal interoperability run is recorded here. Validate canonicalization, key management, replay handling, and each verification step before treating a receipt as evidence of repository integrity.
 
-**Next:** Implement BRICK verification in Rust/JS  
-**Goal:** Federated repository integrity at scale
+See the [security guide](SECURITY.md) for the separate engine evidence and authorization mechanisms.

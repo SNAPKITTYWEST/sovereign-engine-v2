@@ -1,956 +1,1018 @@
-```
-  ███████╗ ██████╗ ██╗   ██╗███████╗██████╗ ███████╗██╗ ██████╗ ███╗   ██╗
-  ██╔════╝██╔═══██╗██║   ██║██╔════╝██╔══██╗██╔════╝██║██╔════╝ ████╗  ██║
-  ███████╗██║   ██║██║   ██║█████╗  ██████╔╝█████╗  ██║██║  ███╗██╔██╗ ██║
-  ╚════██║██║   ██║╚██╗ ██╔╝██╔══╝  ██╔══██╗██╔══╝  ██║██║   ██║██║╚██╗██║
-  ███████║╚██████╔╝ ╚████╔╝ ███████╗██║  ██║███████╗██║╚██████╔╝██║ ╚████║
-  ╚══════╝ ╚═════╝   ╚═══╝  ╚══════╝╚═╝  ╚═╝╚══════╝╚═╝ ╚═════╝ ╚═╝  ╚═══╝
-                     E N G I N E   v 2 . 0   —   S O V E R E I G N
-```
+# Sovereign Engine v2
 
-[![Python 3.11+](https://img.shields.io/badge/Python-3.11%2B-blue?style=flat-square)](https://python.org)
-[![Haskell](https://img.shields.io/badge/Haskell-LiquidHaskell-5E5086?style=flat-square)](https://haskell.org)
-[![Lean 4](https://img.shields.io/badge/Lean%204-Zero%20Sorry-00C04B?style=flat-square)](https://leanprover.github.io)
-[![Ada/SPARK](https://img.shields.io/badge/Ada%2FSPARK-MAGMA%20FSM-brightgreen?style=flat-square)](https://adacore.com/spark)
-[![x86-64](https://img.shields.io/badge/x86--64-AVX512%20%2B%20AMX-blueviolet?style=flat-square)](https://en.wikipedia.org/wiki/AVX-512)
-[![Rust](https://img.shields.io/badge/Rust-CATN%20%2B%20GDR-orange?style=flat-square)](https://rust-lang.org)
-[![Swift](https://img.shields.io/badge/Swift-AgentFishTank-F05138?style=flat-square)](https://swift.org)
-[![Source](https://img.shields.io/badge/Source-99%2C010%20lines-green?style=flat-square)](#source)
-[![License](https://img.shields.io/badge/License-BSL%201.1-yellow?style=flat-square)](LICENSE)
+A multi-language repository for LLM agent execution, sparse expert routing, persistent model memory, compiler and hardware experiments, and formal research.
 
----
+The Python engine contains an eleven-stage routing pipeline, ReAct agents, a tool registry, continuity storage, and WORM evidence records. Alongside it are a Windows C/C++ IDE, a Haskell compiler package, native assembly and accelerator sources, a Swift training frontend, and independent research implementations. These components have separate build and validation requirements.
 
-> **A sovereign compute stack.** Silicon RTL to formal proofs to native IDE — one repo, one author, zero frameworks.  
-> **20+ languages. 427 source files. 99,010 lines.** Every layer proved, sealed, and verifiable.
+**Documentation baseline:** [`898dfbe`](https://github.com/SNAPKITTYWEST/sovereign-engine-v2/commit/898dfbe), September 18, 2026. Benchmarks below include the historical experiment artifact and a fresh ten-trial run. Both measure the isolated research router, not end-to-end LLM inference.
 
----
+## Contents
 
-## Table of Contents
-
-- [What This Is](#what-this-is)
-- [Full Stack Diagram](#full-stack-diagram)
-- [Cobalt — LiquidHaskell Package](#cobalt--liquidhaskell-package)
-- [GDR-9 Kernel Stack](#gdr-9-kernel-stack)
-- [Hardware Layer](#hardware-layer)
-- [Protocol Layer](#protocol-layer)
-- [Engine Layer](#engine-layer)
-- [Formal Layer](#formal-layer)
-- [Desktop Layer](#desktop-layer)
-- [Sparse Latency Router](#sparse-latency-router)
-- [Federated Training — AgentFishTank](#federated-training--agentfishtank)
-- [The 49th Call](#the-49th-call)
-- [BRICK Protocol](#brick-protocol)
-- [Papers](#papers)
-- [Mathematics](#the-mathematics)
-- [Security](#security)
-- [Continuity](#continuity)
-- [Source](#source)
 - [Quick Start](#quick-start)
-
----
-
-## What This Is
-
-```
-┌──────────────────────────────────────────────────────────────────────────┐
-│                         SOVEREIGN ENGINE v2                              │
-│                                                                          │
-│  ┌─────────────────────────────────────────────────────────────────┐    │
-│  │  FORMAL LAYER                                                   │    │
-│  │  Lean 4 (entropy + tensor framework + GDR) · Agda · SPARK Ada  │    │
-│  │  TensorFramework.lean — 13 theorems, 2 axioms, 0 circular       │    │
-│  └─────────────────────────────────────────────────────────────────┘    │
-│  ┌──────────────────────────┐  ┌──────────────────────────────────┐    │
-│  │  COBALT HASKELL PACKAGE  │  │  PAPERS (LaTeX)                  │    │
-│  │  23 modules              │  │  LiquidOps · Entropy · GDR-9     │    │
-│  │  LiquidOps · ISA · Math  │  │  PLDI / FM / SC targets          │    │
-│  └──────────────────────────┘  └──────────────────────────────────┘    │
-│  ┌──────────────────────────┐  ┌──────────────────────────────────┐    │
-│  │  AGENTFISHTANK (Swift)   │  │  BRICK PROTOCOL                  │    │
-│  │  36-agent swarm training │  │  SHA3 + AES-GCM + SAML 2.0       │    │
-│  │  SceneKit 3D glass tank  │  │  Federated repo integrity seals  │    │
-│  └──────────────────────────┘  └──────────────────────────────────┘    │
-│  ┌─────────────────────────────────────────────────────────────────┐    │
-│  │  DESKTOP LAYER                                                  │    │
-│  │  C Win32 IDE (Direct2D) · BEAM Process VM (WAT)                 │    │
-│  └─────────────────────────────────────────────────────────────────┘    │
-│  ┌─────────────────────────────────────────────────────────────────┐    │
-│  │  ENGINE LAYER                                                   │    │
-│  │  11-Stage Jordan Routing · 6 Attention Mechanisms               │    │
-│  │  34 Tools · ReAct Agents · WORM Seal · Entropy ≤ 0.20 nats      │    │
-│  └─────────────────────────────────────────────────────────────────┘    │
-│  ┌─────────────────────────────────────────────────────────────────┐    │
-│  │  PROTOCOL LAYER                                                 │    │
-│  │  MAGMA (SPARK Ada FSM) · NARM (MLIR+AVX-512)                    │    │
-│  │  CATN (CubeCL Rust) · ISA-8/16 · Q-Regex (QASM)                │    │
-│  │  Sparse Latency Router (Dijkstra + Jacobian rank + WORM)        │    │
-│  └─────────────────────────────────────────────────────────────────┘    │
-│  ┌─────────────────────────────────────────────────────────────────┐    │
-│  │  HARDWARE LAYER — GDR-9 KERNEL STACK                            │    │
-│  │  Rust · CUDA · SystemVerilog · Chisel · P4                      │    │
-│  │  TileLang · MLIR · CUDA-Q · x86-64 NASM (AVX2/AVX-512/AMX)     │    │
-│  └─────────────────────────────────────────────────────────────────┘    │
-└──────────────────────────────────────────────────────────────────────────┘
-```
-
----
-
-## Full Stack Diagram
-
-```
-                      ╔══════════════════════════╗
-                      ║    USER / IDE / API       ║
-                      ╚══════════════╦═══════════╝
-                                     │
-                    ╔════════════════▼═══════════════╗
-                    ║        11-STAGE ROUTING         ║
-                    ║  ┌─────────────────────────┐   ║
-                    ║  │ 1  Regex Parser          │   ║
-                    ║  │ 2  Inverted AST Builder  │   ║
-                    ║  │ 3  Symbolic Signal Graph │   ║
-                    ║  │ 4  Jordan SpinFactor     │◄──╫── φ = 0x9E3779B97F4A7C15
-                    ║  │ 5  Jacobian Lens ∂f/∂x  │   ║
-                    ║  │ 6  Constraint Eval       │◄──╫── H ≤ 0.20 nats (proved)
-                    ║  │ 7  Sparse Activation     │   ║
-                    ║  │ 8  NAND Filter           │◄──╫── NAND complete
-                    ║  │ 9  Agent Dispatch        │   ║
-                    ║  │ 10 Merge Output          │   ║
-                    ║  │ 11 WORM Seal Blake2b     │◄──╫── Ed25519, immutable
-                    ║  └─────────────────────────┘   ║
-                    ╚════════════════╦═══════════════╝
-                                     │
-           ╔═════════════════════════╬═══════════════════════════╗
-           ║                         │                           ║
-    ╔══════▼══════╗          ╔═══════▼══════╗          ╔════════▼═════╗
-    ║  ATTENTION  ║          ║    AGENTS    ║          ║   RESONANCE  ║
-    ║  6 mechs    ║          ║ ReAct/Shadow ║          ║  Tensor Net  ║
-    ║  No softmax ║          ║ MCTS / QRA   ║          ║  Plugboard   ║
-    ╚══════╦══════╝          ╚═══════╦══════╝          ╚════════╦═════╝
-           └─────────────────────────┘                          │
-                             │                                  │
-                    ╔════════▼════════╗                ╔════════▼═════╗
-                    ║  ENTROPY GOV    ║                ║  SENTENCE    ║
-                    ║  H < 0.20 nats  ║                ║  GENERATOR   ║
-                    ║  WORM chain     ║                ╚══════════════╝
-                    ╚════════╦════════╝
-                             │
-           ╔═════════════════╬═════════════════════╗
-           ║                 │                     ║
-    ╔══════▼══════╗  ╔═══════▼══════╗   ╔══════════▼══════╗
-    ║   COBALT    ║  ║   MAGMA      ║   ║   GDR-9 STACK   ║
-    ║  Haskell    ║  ║  SPARK Ada   ║   ║  9 ISA targets  ║
-    ║  23 modules ║  ║  FSM 666 L   ║   ║  Lean 4 proofs  ║
-    ╚══════╦══════╝  ╚═══════╦══════╝   ╚══════════╦══════╝
-           │                 │                      │
-    ╔══════▼══════╗  ╔═══════▼══════╗   ╔══════════▼══════╗
-    ║ LiquidOps   ║  ║  BEAM VM     ║   ║ Rust / CUDA     ║
-    ║ NandTree    ║  ║  WAT 8 agents║   ║ SV / Chisel     ║
-    ║ ISA GADT    ║  ║  Priority RR ║   ║ P4 / MLIR       ║
-    ╚═════════════╝  ╚══════════════╝   ║ CUDA-Q / x86    ║
-                                        ╚═════════════════╝
-```
-
----
-
-## Cobalt — LiquidHaskell Package
-
-`cobalt/` is a standalone Haskell package with 23 exposed modules covering a verified ISA compiler, LiquidHaskell mathematical library, and Lean 4 runtime proofs.
-
-### LiquidOps Pipeline
-
-```
-  FExpr (Fixpoint-style source logic)
-    │
-    │  normalizeExpr          ← structural recursion, exprSize measure
-    ▼
-  FExpr (normalized)           ← constant folding, absorption, IMP/IFF reduction
-    │
-    │  toLogic
-    ▼
-  Logic FExpr                  ← LTrue/LFalse/LAtom/LNot/LAnd/LOr/LImp/LIff
-    │
-    │  nandify                 ← ELIMINATES all AND/OR/NOT/IMP/IFF
-    ▼
-  NandTree FExpr               ← only NTrue/NFalse/NAtom/NNand exist here
-    │
-    │  nandReduce              ← NAND(False,_)=True, NAND(True,True)=False
-    ▼
-  NandTree FExpr (reduced)
-    │
-    │  compileNand             ← monotone register allocation, freshReg
-    ▼
-  [Instr]                      ← GADT: MovImm/Add/Sub/Mul/Nand/Load/Store/Jump
-    │
-    │  assembleProgram         ← all registers ∈ [0,32), instrValid
-    ▼
-  Program (validated)          ← ready for MachineState execution
-
-  INVARIANT: No AND/OR/NOT opcode ever appears in the output.
-             Only Nand is the boolean primitive at ISA level.
-```
-
-### NAND Boolean Completeness
-
-```
-  NOT(a)     =  NAND(a, a)
-  AND(a,b)   =  NAND(NAND(a,b), NAND(a,b))
-  OR(a,b)    =  NAND(NAND(a,a), NAND(b,b))
-  IMP(a,b)   =  OR(NOT(a), b)
-  IFF(a,b)   =  AND(IMP(a,b), IMP(b,a))
-
-  Proved: Theorem 1 (NAND Canonicality)  — structural induction on Logic a
-          Theorem 2 (ISA NAND Invariant) — structural induction on NandTree a
-```
-
-### ISA Machine State
-
-```
-  MachineState
-  ├── regs  : Map Int Word64      32 × 64-bit general registers
-  ├── mem   : Map Word64 Word8    byte-addressable sparse memory
-  ├── pc    : Word64              program counter
-  └── flags : Flags               zero | sign | carry | overflow
-
-  Instruction GADT (selected):
-  ├── MovImm  rd imm              rd = imm
-  ├── Add/Sub/Mul/Div rd rs1 rs2  rd = rs1 OP rs2  (+ carry/borrow flag)
-  ├── Nand    rd rs1 rs2          rd = ~(rs1 & rs2)  ← ONLY boolean opcode
-  ├── Load    rd ra off           rd = mem[ra+off]
-  ├── Store   rs ra off           mem[ra+off] = rs
-  ├── Jump    target              pc = target
-  └── JumpZero target             if ZF: pc = target
-```
-
-### Module Map
-
-| Module | Track | Purpose |
-|--------|-------|---------|
-| `LiquidOps.Kernel` | Educational | Simple `HExpr → P4 → [LiquidOp]` pipeline |
-| `LiquidOps.KernelFull` | Production | `FExpr → Logic → NandTree → ISA → Program` |
-| `LiquidOps.NAND` | Standalone | NAND kernel with full LH refinements |
-| `Language.Fixpoint.LiquidOps.Kernel` | Integration | Connects to real liquid-fixpoint library |
-| `ISA.Core` | ISA | MachineState, Flags, Instr GADT, exec |
-| `ISA.Macro` | ISA | macroCopy/Clear/Not/And/Or/CountLoop |
-| `ISA.Program` | ISA | assembleProgram, runProgram, traceProgram |
-| `ISA.Examples` | ISA | Sum, factorial, bitwise, NAND demo |
-| `Core.Nat` | Math | `{v:Int \| v≥0}`, powNat, sumNat, 9 lemmas |
-| `Core.Group` | Math | Z₂ + Z₇ groups, all 5 group axioms |
-| `Physics.Godel` | Math | `GTime {timeIndex, timePeriod}`, cyclic step, closed curves |
-| `Physics.WormholeBH` | Math | E-R bridge, `RegionBH{bhMass}`, no-escape monotone |
-| `Calculus.Limit` | Math | ε-δ, uniqueness, squeeze theorem |
-| `Calculus.Derivative` | Math | constant/power/product/quotient/chain rules |
-| `Calculus.Integral` | Math | Riemann, FTC Part 1 + 2 |
-| `Language.Fixpoint.Solver.Simplify` | Solver | `simplifyRecursive`, const+bool+set folding |
-| `Language.Fixpoint.Solver.Eliminate` | Solver | KVar scopes, substitution, elimination |
-| `Language.Fixpoint.Smt.Theories.Recurse` | Solver | `truncateAndRecurseFunc`, SMT2 bridge |
-| `Language.Haskell.Liquid.Transforms.DenseDex` | Transform | `dexFold / [dexSize d]`, map/filter/merge |
-| `Language.Haskell.Liquid.Transforms.CoreToLogic` | Transform | GHC Core → Fixpoint translation |
-| `Cobalt.Dense` | Compiler | Prolog→functor crystal expansion→x86-64 |
-| `Cobalt.Trilock` | Compiler | φ64 Fibonacci hash, 192-bit Trilock "AAAA-BBBB-CCCC" |
-| `MagicCobalt` | Compiler | `compile :: CobaltConfig → String → Either String CompileResult` |
-
----
-
-## GDR-9 Kernel Stack
-
-Nine co-verified implementations of `δw = η·(t−y)·x` — fused forward-backward in one kernel pass.
-
-```
-  Mathematical specification (Lean 4):
-  ─────────────────────────────────────
-  gdrSpec W x t η = W + η • outer(t − W·x, x)
-
-  ┌─────────────────────────────────────────────────────────────┐
-  │  1  Rust         drain kernel, complexity_frac × entropy_frac│
-  │  2  CUDA         shared-memory tiling, 32×32 blocks          │
-  │  3  SystemVerilog MAC pipeline, RTL stages                   │
-  │  4  Chisel HDL   high-level RTL generation                   │
-  │  5  P4           match-action data plane (finite, no recurse) │
-  │  6  TileLang     NPU/TPU tile decomposition                  │
-  │  7  MLIR         gdr.fused_update → linalg.generic → LLVM   │
-  │  8  CUDA-Q       variational quantum-classical kernel         │
-  │  9  x86-64 NASM  YMM AVX2 super-scalar GEMM                  │
-  └─────────────────────────────────────────────────────────────┘
-           │
-           ▼ Lean 4 cross-ISA equivalence
-  ∀ target_t: target_t W x t η = gdrSpec W x t (η · drainScale inv)
-
-  Drain Invariants (Rust):
-  ────────────────────────
-  complexity_frac ∈ [0,1]        weight update bounded by complexity
-  entropy_frac    ∈ [0,1]        update suppressed in high-entropy regime
-  scale = η · F_c · (1 − F_e)   → 0 when entropy approaches H_MAX
-
-  WORM Audit Chain (every chunk):
-  ────────────────────────────────
-  seal_k = SHA-256( chunk_id ‖ delta_norm ‖ seal_{k-1} )
-  append-only log — break one seal → break all downstream
-```
-
----
-
-## Hardware Layer
-
-### Kernel Stack — `kernels/`
-
-| Directory | Language | What It Does |
-|-----------|----------|-------------|
-| `x86/` | NASM | AVX2 GEMM, AMX Hopper kickdown, FP8 SM90, AC VM (Σ1..10=55), 8K framebuffer AVX-512 |
-| `hardware/rtl/` | SystemVerilog | MAC lateral array, dual-core top, P3 SHA accumulator |
-| `p4/` | P4-16 | TNA in-network forwarding, STRP ingress, sovereign data plane |
-| `tvm/` | Python+PTX | TileLang flash QKT kernel, TensorIR L3, PTX fused level 2 |
-| `cuda/` | CUDA C | GPU drain pipeline, 1M tensor parallel filter, binary checkpoint |
-| `rust/` | Rust | Fixed-point drain pipeline + Kani formal verification harness |
-| `cudaq/` | CUDA-Q | Quantum kernels (C++ + Python + holographic wormhole) |
-| `hardware/chisel/` | Scala | Chisel3 dual-core GDR |
-| `hardware/analog/` | Verilog-A | Analog MAC leaf cell |
-| `mlir/` | MLIR | TensorIR sovereign P3 lowering |
-
-### Synthesis Pipeline — `src/hardware/`
-
-```
-  microcode.json / add_instruction()
-        │  SovereignSynth
-        ▼
-  case-statement Verilog           single-cycle, ~150ps combinatorial
-
-  opcode_sequences.json / add_sequence()
-        │  SovereignSynthMulti
-        ▼
-  FSM Verilog                      N-cycle, log₂(N) flip-flops, zero ROM
-
-  activity_profile / n_cycles / alpha_target
-        │  EntropyBalancedDMAGen
-        ▼
-  Entropy-balanced DMA Verilog     power H=0 per cycle → DPA-resistant
-        │
-        ▼
-  Ada/SPARK proof: entropy(agent) ≤ 0.20 → active ⇒ trusted ⇒ sovereign
-```
-
----
-
-## Protocol Layer
-
-### MAGMA — `magma/`
-
-Internal sovereign agent language: **§VERB:AGENT:ACTION{payload}**
-
-12 verbs · 22 agents (clearance 1–5) · 6 modifiers · SLC (Sovereign Logic Core)
-
-```
-  §INVOKE:BERT:EMBED{query}           → 768-dim Nomic embedding (Ollama)
-  §ANCHOR:WORM:SEAL{payload}          → Blake2b + Ed25519 immutable record
-  §ROUTE:JORDAN:TRANSFORM{signal}     → SpinFactor (α,v)∘(β,w) routing
-  §DRAIN:GDR:CHUNK{w,x,t,η}          → fused forward-backward weight update
-```
-
-| Component | Language | What It Does |
-|-----------|----------|-------------|
-| `magma_666.adb` | SPARK Ada | 666-line ferrite state machine — Idle→Flowing→Latched→Persisted→Fault |
-| `format.adb/ads` | Ada | LE decoders, CRC32, element sizes |
-| `parser.adb/ads` | Ada | Dense SPARK state machine for tensor parsing |
-| `apl/wick_rotation.apl` | APL | Hoare-verified Wick rotation operators |
-| `src/lib.rs` | Rust | Biot-Savart field computation + Ed25519 certification |
-| `bindings/rust/ada_ffi.rs` | Rust | CoreState ↔ C ABI |
-| `bindings/rust/magmad_client.rs` | Rust | REST client + CoreTransition::dispatch() |
-
-### NARM Runtime — `narm/`
-
-Non-Autoregressive Reconstruction Machine. NASA systems engineering spec.  
-Reconstructs without backprop: `encode → sparse activate → GDR update → decode`
-
-| File | Language | What It Does |
-|------|----------|-------------|
-| `mlir/reconstruct.td` | MLIR | 20+ op dialect |
-| `runtime/memory.h` | C | LIFO arena allocator |
-| `kernels/narm_kernels_avx512.asm` | x86-64 | AVX-512 CUFF kernels (KERN-001..009) |
-| `kernels/narm_kernels_6502.asm` | MOS 6502 | GEMM / residual / norm |
-| `fortran/qwen3asr_kernels.f90` | Fortran | Subroutine bodies |
-
-### CATN — `catn/`
-
-Cellular Automaton Tensor Network. Erosion → propagate → self-sustaining resonance.
-
-```
-  center seed: nodes[128] = 1
-       │  CatnDispatcher
-       ▼
-  erosion.rs (CubeCL)      SVD truncation χ≤64, ε=0.001
-       │
-       ▼
-  recharge
-       │
-       ▼
-  propagate.rs (CubeCL)    mirror-goto, ‖Ψ‖₂ = 1
-       │
-       └──────────────────► loop (Wolfram rule-16 propagation)
-```
-
-### ISA Layer — `src/isa/`
-
-```
-  ISA-8  (8-bit):   15 instructions × 2 bytes = 30 code bytes
-                    SET·CLEAR·TOGGLE·ROUTE·READ·WRITE·XOR·AND·OR·SHIFT·BRANCH·LOAD·STORE·HALT
-
-  ISA-16 (16-bit):  opcode[15:12] mode[11:10] reg[9:8] operand[7:0]
-                    4 modes: R/R · IMM · DIRECT · INDIRECT/PLUGBOARD
-                    Reference: R0 oscillates 0x10 ↔ 0xFFFFFFEF forever
-```
-
----
-
-## Engine Layer
-
-### 11-Stage Routing Pipeline
-
-```
-  User Input
-      │
-      ├─ 1  Regex Parser       tokenize · strip dangerous patterns
-      │
-      ├─ 2  AST Builder        INVERTED tree — payloads never propagate up
-      │
-      ├─ 3  Symbolic Graph     adjacency matrix of signal flow
-      │
-      ├─ 4  Jordan Transform   (α,v)∘(β,w) = (αβ+⟨v,w⟩, αw+βv)
-      │                        attractor = idempotent of x↦x∘x
-      │
-      ├─ 5  Jacobian Lens      ∂routing/∂signal via finite differences
-      │
-      ├─ 6  Constraint Eval    spectral_radius < 10 · H ≤ 0.20 nats
-      │
-      ├─ 7  Sparse Activation  top-k expert selection · rest zeroed
-      │
-      ├─ 8  NAND Filter        conflict suppression between experts
-      │
-      ├─ 9  Agent Dispatch     concurrent asyncio execution
-      │
-      ├─ 10 Merge Output       concatenate | vote | weighted_sum | first_success
-      │
-      └─ 11 WORM Seal          Blake2b + Ed25519 · immutable · append-only
-```
-
-### Attention Mechanisms — `src/attention/`
-
-Six non-softmax attention mechanisms. None compute `exp(QKᵀ/√d)`:
-
-```
-  ┌─────────────────────────────────────────────────────────────────┐
-  │  UMTCPI    Boolean-Jordan-Jacobian resonance                    │
-  │            Σwₖ ≠ 1  — inverted Jacobian breaks simplex          │
-  │                                                                 │
-  │  SGAM      Spatial Geometric (inverse-dist/compact/RBF/angular) │
-  │            Deterministic kernel, no softmax                     │
-  │                                                                 │
-  │  SMA       Symplectic Manifold  J²=−I, g=ωJ positive definite   │
-  │            Poisson bracket kernel                               │
-  │                                                                 │
-  │  RMA       Riemannian (Euclidean/Sphere/Hyperbolic)             │
-  │            Geodesic distance + parallel transport               │
-  │                                                                 │
-  │  HeatKernel  ∂u/∂t = Δu  semigroup H(s)∘H(t)=H(s+t)            │
-  │            Spectral Laplacian, closed under composition         │
-  │                                                                 │
-  │  IntegratedBlock  RMSNorm + HyperbolicUMTCPI + CIFG memory      │
-  │            Full transformer block replacement, 60% fewer params │
-  │            C_t = f_t⊙C_{t-1} + (1-f_t)⊙outer(v_t, k_t)        │
-  └─────────────────────────────────────────────────────────────────┘
-```
-
-### QRA Tensor — `src/inference/`
-
-6×6 deterministic routing tensor. Shannon entropy H = 0 nats.
-
-| Glyph | Route | Trigger words |
-|-------|-------|--------------|
-| Π | Reasoning | explain · why · analyze |
-| Γ | Generation | write · create · draft |
-| Δ | Domain | sql · medical · legal |
-| Λ | Code | function · implement · debug |
-| Ω | Orchestration | plan · coordinate · multi-step |
-| Ψ | Verification | prove · verify · test |
-
-### Machine Code Layer — `src/runtime/machine/`
-
-```
-  bytecode_assembler.py   real CPython opcodes → executable code objects
-  marshal_codec.py        .pyc binary: magic + flags + code objects + consts
-  binary_ir.py            SOVEREIGN_IR: 32-byte fixed-width node records
-  vm_executor.py          40+ opcodes: NAND · JORDAN_MUL · ENTROPY_CHECK
-  machine_code_gen.py     raw x86-64 bytes: REX · ModR/M · mmap+mprotect
-  dsl_validator.py        H≤0.20 · trust axiom · DAG acyclic · Blake2b proof
-```
-
----
-
-## Formal Layer
-
-```
-  formal/
-  ├── sovereign_entropy/EntropyBound.lean
-  │     H(softmax_ratio(d, T(F))) < 0.20 nats  ·  ZERO sorry
-  │     T(F) ≤ 0.2218 → s = exp(d/T) ≥ 90.75 → H(s) < H(19) < 0.20
-  │
-  ├── enochian_root.lean
-  │     ERE Pass 5 root opcode: input ≠ undefined → ∃ v, input = some v
-  │
-  ├── VA_243.lean
-  │     Cylinder seal VA 243 specification
-  │
-  ├── gdr_drain.lean
-  │     GDR drain invariant proof
-  │
-  ├── IronicMirror/XInvariant.agda
-  │     X-invariant of the ironic mirror (Agda)
-  │
-  ├── gnostic/GnosticArithmetic.lean
-  │     Abjad 28-letter matrix · Jamal/Jalal polarity · digit root
-  │     Wafq magic squares (3×3, constant=33) · 360° cipher
-  │     Sethian cosmology (kenoma→pleroma at t=49)
-  │
-  ├── gnostic/AlHamidMatrix.lean
-  │     Al-Hamid(93)+Ahmad(53)+Ali(110) = 256 = 16² = root 4
-  │     Four-pillar architecture · Jamal-Jalal equilibrium
-  │     16×16 Wafq seed (magic constant 2056) · hieroglyphic cipher
-  │
-  └── tensor_framework/TensorFramework.lean
-        11-phase Lean 4 formalization
-        ├── Phase 1   FiniteIndex · ComputationalWork · Latency · Distance
-        ├── Phase 2   TensorNetwork · ContractionEdge · well-typed tensors
-        ├── Phase 3   Work ≠ Latency separation (explicit axiom)
-        ├── Phase 4   JacobianMatrix · Matrix.rank · IsInvertible
-        ├── Phase 5   rank→invertibility · rank-nullity
-        ├── Phase 6   MitosisState abstract division (analogy, NOT biology)
-        ├── Phase 7   MetricStateSpace · LatencyGapModel
-        ├── Phase 8   ConstitutionalRule · Constitution · is_constitutional
-        ├── Phase 9   refine_constitution · iterative_refinement (monotone)
-        ├── Phase 10  IntegratedSystem · system_is_valid
-        └── Phase 11  AssumptionsRegistry (theorems vs axioms vs analogies)
-
-        13 theorems proved · 2 axioms declared · 0 circular reasoning
-```
-
----
-
-## Desktop Layer
-
-### C Win32 IDE — `ide/native/`
-
-Native Win32. Direct2D GPU rendering, ConPTY terminal, Win32 message loop. No Electron. No web view.
-
-```
-  ide/native/
-  ├── core/        memory arena · event system · strings · threading
-  ├── editor/      gap buffer · code reference parser
-  ├── terminal/    ConPTY + fallback gate
-  ├── ui/          layout · status bar · project tree · output panel
-  ├── bridge/      HTTP client → Python :19000
-  ├── chat/        named pipe agent interaction
-  ├── lsp/         Language Server Protocol client
-  ├── graphics/    Direct2D hardware-accelerated rendering
-  ├── fcl/         Formal Command Language interpreter
-  ├── git/         status · diff · commit
-  └── platform/windows/  application · window · shell
-```
-
-### BEAM Process VM — `ide/beam/`
-
-Erlang-model process VM in WebAssembly. 8 sovereign agent processes. No browser runtime.
-
-```
-  beam_vm.wat (552 lines)
-  ├── spawn(module, func, priority)   create process → 256-slot PCB table
-  ├── send(dst_pid, tag, val)          Erlang ! — ring buffer mailbox
-  ├── receive(out_ptr)                 pattern-match pop, block if empty
-  ├── schedule()                       priority round-robin, 256 slots
-  ├── reduce()                         burn reduction, reschedule at 0
-  ├── kill(pid, reason)                EXIT signal → linked trap handler
-  └── link(pid_a, pid_b)               bidirectional process link
-
-  8 Agent Processes:
-  ┌──────────────────────────────────────────────────────────┐
-  │  0  chat       BOB reasoning → 11-stage pipeline          │
-  │  1  tool       34-tool dispatch by msg_tag                │
-  │  2  model      inference (local/ollama/anthropic/openrouter)│
-  │  3  audit      WORM append-only log, no mutation          │
-  │  4  workspace  project state, file trees, git             │
-  │  5  sandbox    code execution in agent scratch            │
-  │  6  routing    11-stage pipeline as BEAM process          │
-  │  7  entropy    governor: blocks H > 0.20, max priority    │
-  └──────────────────────────────────────────────────────────┘
-
-  Memory: 512KB (8 pages)
-  Process table 256×256B · Mailbox rings 256×512B · Per-process heap 256×512B
-```
-
----
-
-## Sparse Latency Router
-
-`src/routing/sparse-latency-routing/` — Directed sparse graph with deterministic Jacobian-rank–driven topology adaptation, WORM hash chain, and 12 invariants.
-
-```
-  bin/sparse_router.sh run <network.xml>
-      │
-      ├── 1  xmllint schema validation (network.xsd)
-      ├── 2  parse_nodes / parse_edges → sparse adjacency list
-      ├── 3  recurse_tensor → nested tensor model
-      ├── 4  parse_jacobian → matrix or structural proxy
-      ├── 5  calculate_rank → numpy (computed) or structural heuristic
-      ├── 6  calculate_latency → Dijkstra on nonneg edge weights
-      ├── 7  adapt_network → 5 rules: latency_exceeds_threshold /
-      │                       rank_decreases / rank_increases /
-      │                       tensor_dimension_changes / sparsity_maximum
-      ├── 8  verify_invariants → I1-I12 checked inline
-      ├── 9  emit_state → write-to-temp then mv (atomic, I12)
-      └── 10 WORM seal → SHA-256( topology ‖ prev_hash )
-
-  Exit codes: 0=success · 64=usage · 65=xml · 66=invariant
-              67=adaptation_failed · 68=hash_mismatch · 69=missing_tool
-
-  Test fixtures (17):
-  tests/valid/          1 schema-valid baseline
-  tests/invalid/        9 fixtures, one invariant violated each
-  tests/adaptation/     7 two-step adaptation + tamper scenarios
-```
-
----
-
-## Audio & Message Bridge
-
-### Video-to-Text Training — `src/asr/`
-
-Qwen3-ASR fine-tuning on custom audio data. Async transcription pipeline (OpenAI Whisper + local models).
-
-```
-src/asr/finetune.py
-├── Qwen3-ASR-1.7B fine-tuning
-├── Prefix-only training (system prompt + target)
-├── Auto-checkpoint resumption
-├── HuggingFace Trainer (bfloat16/float16)
-└── CLI: python -m src.asr.finetune --train_file train.jsonl --output_dir ./out
-
-src/tools/audio/transcribe.py
-├── AudioTranscriber (OpenAI + local)
-├── Multi-provider fallback
-└── WORM ledger logging (audit trail)
-```
-
-**Usage:** See [docs/ASR_AND_BRIDGE.md](docs/ASR_AND_BRIDGE.md)
-
-### Message Bridge — `src/bridge/http_server.py`
-
-HTTP REST API (:19000) for Ahmad (or external systems) to send messages. Parses intent via 11-stage Jordan routing, dispatches to ReAct agent, executes tools, seals in WORM ledger.
-
-```
-POST /chat
-  {"message": "write a fibonacci function"}
-  ↓ 11-stage routing (Regex → AST → Jordan → Jacobian → Sparse → NAND → Dispatch)
-  ↓ ReActAgent (think → act → observe loop)
-  ↓ Tool execution (34 tools across 9 namespaces)
-  ↓ WORM seal (Blake2b + Ed25519 hash chain)
-  ← JSON response + trace data
-```
-
-**Endpoints:**
-- `POST /chat` — send message
-- `POST /agent/run` — ReAct task
-- `POST /tool/execute` — single tool
-- `GET /tools` — list 34 tools
-- `GET /routing/traces` — trace collection
-- `POST /keys/set` — API key mgmt (OpenAI, Anthropic, Bedrock)
-
-**Start server:**
-```bash
-python -m src.bridge.http_server --host 127.0.0.1 --port 19000
-```
-
----
-
-## Federated Training — AgentFishTank
-
-`training-frontend/` — Swift/SceneKit federated swarm training frontend. 36 agents inside a 3D glass tank processing training corpora from GitHub forks.
-
-```
-  ┌─────────────────────────────────────────────────────────────────────┐
-  │  AgentFishTank — 60fps Deterministic Swarm State Machine            │
-  │                                                                     │
-  │  GitHub Forks (NASA CMR · OpenMetadata · Autoware)                  │
-  │       │ CorpusLoader (async URLSession → TRAINING_CORPUS.json)      │
-  │       ▼                                                             │
-  │  TrainingCorpus ──► TrainingNode tree + RelationshipEdge graph       │
-  │       │              7 classes: DISCOVERY → RECONSTRUCTION           │
-  │       ▼                                                             │
-  │  TaskPool (shuffle all nodes × 7 task types)                        │
-  │       │                                                             │
-  │       ▼                                                             │
-  │  36 Agents ──────────────────────────────────────────────────────── │
-  │  │ IDLE → TRAVERSING → PARSING → EXTRACTING → TRANSFORMING         │
-  │  │      → VERIFYING → COMMUNICATING → COMPLETE → reassign           │
-  │  │                                                                  │
-  │  │  Movement: bounce in [-1,1]³ · cluster pull · separation         │
-  │  │  Pipeline: load tree → extract → transform → verify → WORM seal  │
-  │  │  Messages: agent-to-agent payload exchange (ring buffer)          │
-  │  │  Clusters: ≥3 agents on same node → cluster formation event      │
-  │  └──────────────────────────────────────────────────────────────── │
-  │                                                                     │
-  │  SceneKit 3D View                                                   │
-  │  ├── Glass box (2×2×2, chamfer 0.08, IOR 1.45, 85% transparency)   │
-  │  ├── Agent spheres (r=0.035, color = state, emission = progress)    │
-  │  ├── Volumetric particles (80/sec, 3s lifespan)                     │
-  │  ├── Shockwave pulse on COMPLETE (scale 1→1.015→1)                  │
-  │  ├── Corpus tree sidebar (filter by source)                         │
-  │  ├── Agent inspector (pipeline steps, progress, reasoning)          │
-  │  └── Event timeline (scrolling, color-coded by type)                │
-  └─────────────────────────────────────────────────────────────────────┘
-```
-
-**7 Task Types:**
-| Task | Pipeline Steps |
-|------|---------------|
-| TRAVERSE_TREE | Load tree → Traverse hierarchy → Index children → Send to extractor |
-| EXTRACT_METADATA | Read evidence → Parse → Extract facts → Tag confidence → Append |
-| BUILD_REL_GRAPH | Load components → Detect imports → Classify → Build edge |
-| RECONSTRUCT_ARCH | Gather edges → Cluster subsystem → Derive data flow → Validate |
-| GENERATE_TRAINING | Select class → Form question → Derive answer → Serialize |
-| VALIDATE_OUTPUT | Load spec → Compare behavior → Classify MATCH/PARTIAL/MISMATCH → WORM seal |
-| SEND_TO_AGENT | Pack payload → Route to target → Await ACK |
-
-**Build:**
-```bash
-cd training-frontend
-swift build    # macOS 14+ / iOS 17+
-```
-
----
-
-## The 49th Call
-
-`the-49th-call/` — Multi-language substrate implementing Call49 esoteric computation: Enochian keys, soul specification, gnostic arithmetic, and the 49th invocation.
-
-```
-  the-49th-call/
-  ├── src/
-  │   ├── Cargo.toml
-  │   └── lib.rs              Rust core library
-  └── substrate/
-      ├── soul_spec.hs        Haskell soul specification
-      ├── substrate.apl       APL substrate computation
-      ├── subleq.asm          SUBLEQ one-instruction set computer
-      ├── mamari.cbl          COBOL mamari module
-      └── comefrom.i          INTERCAL COMEFROM control flow
-
-  Gnostic Arithmetic (proofs/ + runtime/):
-  ├── proofs/GnosticArithmetic.lean    Abjad matrix, Wafq magic squares, 360° cipher
-  ├── proofs/AlHamidMatrix.lean        Master constant 256=16², four-pillar architecture
-  └── runtime/src/gnostic_arithmetic.rs  #![no_std] Rust runtime, 12 tests
-```
-
-**Key invariant:** Al-Hamid(93) + Ahmad(53) + Ali(110) = 256 = 16² → root 4 (four pillars). Lean 4 proved.
-
----
-
-## BRICK Protocol
-
-`docs/BRICK_PROTOCOL_SPECIFICATION.md` — **Bound Repository Integrity & Cryptographic Kernel.** Federated repository sealing: SHA3-256 content hashing → AES-256-GCM authenticated encryption → SAML 2.0 identity binding.
-
-```
-  Repository Tree
-        ↓ canonicalize
-  Manifest(repo_id, commit, paths, file_hashes, policy)
-        ↓ SHA3-256
-  ROOT_HASH
-        ↓ AES-256-GCM encrypt (HKDF-derived key, random 96-bit nonce)
-  SEALED_BRICK
-        ↓ SAML bind (federation issuer + subject + assertion)
-  FEDERATED_BRICK_RECEIPT
-
-  Verification: recompute H_tree → verify SAML → recompute BRICK_ID
-                → verify AES-GCM tag → decrypt manifest → VALID/INVALID
-```
-
----
-
-## Papers
-
-### New (this repo, `papers/`)
-
-| File | Target venue | Contribution |
-|------|-------------|-------------|
-| `papers/liquidops_kernel.tex` | PLDI/ICFP | LiquidOps: NAND-canonical verified compiler, LH termination proofs, P4 compatibility |
-| `papers/sovereign_entropy.tex` | FM/CAV | H≤0.20 nats Lean 4 proof, SPARK Ada contract, UMTCPI connection, ERE gate |
-| `papers/gdr_kernels.tex` | SC/MLSys | GDR-9 nine-ISA stack, drain invariants, cross-ISA Lean 4 equivalence, WORM chain |
-
-Compile: `pdflatex papers/liquidops_kernel.tex`
-
-### Published (Zenodo DOI)
-
-| DOI | Title |
-|-----|-------|
-| [10.5281/zenodo.20678420](https://doi.org/10.5281/zenodo.20678420) | Attention Exhaustion Attacks — 0% detection rate |
-| [10.5281/zenodo.21144425](https://doi.org/10.5281/zenodo.21144425) | Resonance Block Trust Deeds |
-| [10.5281/zenodo.21132094](https://doi.org/10.5281/zenodo.21132094) | Sovereign Compute Architecture |
-| [10.5281/zenodo.21349277](https://doi.org/10.5281/zenodo.21349277) | Gates Normalization Constraint — simplex is structural |
-| [10.5281/zenodo.21351461](https://doi.org/10.5281/zenodo.21351461) | NAND Decomposition — attention is NAND-complete |
-| [10.5281/zenodo.21443609](https://doi.org/10.5281/zenodo.21443609) | Jordan Spectral Transformer — φ-weighted routing |
-| [10.5281/zenodo.21727363](https://doi.org/10.5281/zenodo.21727363) | PAR-011 Jacobian via Jordan Algebras |
-| [10.5281/zenodo.21268911](https://doi.org/10.5281/zenodo.21268911) | GKN I4 Quartic Invariant and E7 Symmetry |
-
-Unified: [The Sovereign Stack](https://snapkittywest.github.io/hyperkitty/papers/sovereign-stack-unified.pdf) — 26 pages, Lean 4.
-
----
-
-## The Mathematics
-
-### Entropy Bound — Formally Proved in Lean 4
-
-```
-  For all F ≥ 1, d ≥ 1:
-    H(softmax_ratio(d, T(F))) < 0.20 nats
-
-  Proof chain:
-    T(F) = T₀ + (1−T₀)·exp(−αF)  ≤  0.2218
-    s    = exp(d / T(F))           ≥  90.75
-    H(s) < H(19)                   < 0.20   ✓
-
-  Architectural enforcement:
-    θ = 89/2462  (Jordan eigenvalue bound on UMTCPI)
-    dominant token probability ≥ 1 − θ
-    H(p) ≤ h(1−θ) + θ·ln(n−1)    < 0.20 for n ≤ 32
-```
-
-### Jordan Algebra — SpinFactor J(n)
-
-```
-  Product:  (α,v) ∘ (β,w) = (αβ + ⟨v,w⟩,  αw + βv)
-
-  Properties used in routing:
-  ├── Non-associative      different agent groupings → different outcomes
-  ├── Fixed-point          x↦x∘x converges to idempotents = routing attractors
-  ├── Spectral decomp      x = λ₊c₊ + λ₋c₋  (provably unique expert assignment)
-  └── Spectral gap         2‖v‖  = separation between top-2 experts
-```
-
-### Cobalt Trilock Hash
-
-```
-  φ64  = 0x9E3779B97F4A7C15  (64-bit Fibonacci/golden-ratio constant)
-  A    = φ64 × (structural_identity_hash)   mod 2⁶⁴
-  B    = φ64 × (connectivity_hash)          mod 2⁶⁴
-  C    = φ64 × (emission_constraint_hash)   mod 2⁶⁴
-  Trilock = hex(A)[0:8] ++ "-" ++ hex(B)[0:8] ++ "-" ++ hex(C)[0:8]
-```
-
----
-
-## Security
-
-```
-  ┌─────────────────────────────────────────────────────────────────┐
-  │  PathJail          resolve → check allowed roots → reject outside│
-  │  SSRFGuard         block private IPs, link-local, metadata       │
-  │  Inverted AST      payload leaves weight=0, NEVER propagate up   │
-  │  NAND Filter       suppress lower-weight expert on conflict       │
-  │  Binary WORM       152-byte struct headers, no text, append-only │
-  │  ERE P1–P5         no secrets · no eval · no loops · SHA-256 seal│
-  │  Entropy Governor  H < 0.20 nats — proved Lean 4, enforced SPARK │
-  │  WORM Chain        every record hashes prior — break one = break all│
-  │  Drain Invariants  F_c·(1−F_e) scale factor bounds weight updates│
-  │  Hash Seal         sparse router: SHA-256(topology ‖ prev_hash)  │
-  └─────────────────────────────────────────────────────────────────┘
-```
-
----
-
-## Continuity
-
-Four independent persistence mechanisms sync on every state transition:
-
-| # | Paradigm | Storage | Survives |
-|---|----------|---------|----------|
-| 1 | Env bitmask | `os.environ` (64-bit packed) | `os.execv` hot restart |
-| 2 | Seed chain | Blake2b derivation (24 bytes) | Full history → one hash |
-| 3 | Inode flags | Zero-byte files + `stat()` | OOM kill (kernel dcache) |
-| 4 | Shared memory | ctypes struct (4KB mmap) | Cross-process, no serialization |
-
----
-
-## Source
-
-| Component | Language | Files | Lines |
-|-----------|----------|------:|------:|
-| Engine core | Python 3.11 | 170 | 49,517 |
-| **Cobalt — LiquidHaskell pkg** | **Haskell** | **28** | **6,841** |
-| C Win32 IDE | C / C++ | 59 | 7,481 |
-| Hardware kernels | NASM + CUDA + SV + P4 | 32 | 5,670 |
-| MAGMA protocol | Ada/SPARK + Rust | 14 | 2,331 |
-| NARM runtime | C + ASM + Fortran | 9 | 2,322 |
-| Hardware RTL | SystemVerilog + Scala | 19 | 1,917 |
-| **Formal proofs** | **Lean 4 + Agda** | **8** | **3,121** |
-| BEAM VM | WebAssembly (WAT) | 3 | 1,225 |
-| **Sparse Latency Router (Python)** | **Python** | **36** | **4,136** |
-| **ASR + Bridge** | **Python** | **6** | **1,200** |
-| **AgentFishTank** | **Swift / SceneKit** | **7** | **1,331** |
-| **The 49th Call** | **Rust + Haskell + APL + Prolog + COBOL** | **22** | **3,341** |
-| **Gnostic Arithmetic Runtime** | **Rust (#![no_std])** | **1** | **346** |
-| Tests | Python + Bash | 5 | 1,203 |
-| CATN tensor network | Rust | 9 | 1,051 |
-| **Papers** | **LaTeX** | **3** | **1,580** |
-| AToKio | Haskell | 1 | 299 |
-| **Total** | **20+ languages** | **427** | **99,010** |
+- [Overview & Architecture](#overview--architecture)
+- [Repository Structure](#repository-structure)
+- [Language Stack](#language-stack)
+- [Getting Started](#getting-started)
+- [Building from Source](#building-from-source)
+- [API Reference](#api-reference)
+- [Deployment & Scaling](#deployment--scaling)
+- [Examples](#examples)
+- [FAQ & Troubleshooting](#faq--troubleshooting)
+- [Contributing](#contributing)
+- [Performance & Benchmarks](#performance--benchmarks)
+- [Glossary](#glossary)
+- [Resources & License](#resources--license)
+- [Recent changes](#recent-changes)
 
 ---
 
 ## Quick Start
 
+**Sovereign Engine v2** is a production-grade framework for autonomous LLM agent execution with algebraic routing, formal verification, and distributed continuity. It routes complex tasks through dynamically selected experts, maintains cryptographic proof trails, and enables deterministic replay of agent reasoning.
+
+### 5-Minute Setup
+
 ```bash
+# Clone and enter directory
 git clone https://github.com/SNAPKITTYWEST/sovereign-engine-v2.git
 cd sovereign-engine-v2
 
-# Run the engine (zero pip dependencies)
-python -c "
-import asyncio
-from src.sovereign import SovereignEngine, EngineConfig
+# Create and activate virtual environment
+python -m venv venv
+source venv/bin/activate  # Windows: venv\Scripts\activate
 
-async def main():
-    engine = SovereignEngine(EngineConfig())
-    result = await engine.run('Write a fibonacci function')
-    print(result)
-    engine.shutdown()
+# Install core dependencies
+pip install -r requirements.txt
 
-asyncio.run(main())
-"
+# Run first task (requires AWS Bedrock credentials)
+python run.py
 
-# Build the C IDE (Windows — requires CMake + MSVC)
-cd ide/native
-cmake -B build -G "Visual Studio 17 2022"
-cmake --build build --config Release
+# Expected output: routing trace + ReAct reasoning + final answer
+```
 
-# Run the Cobalt Haskell package (requires GHC + cabal-install)
-cd cobalt
-cabal build
-cabal test
+For a provider-free demo, use the isolated routing experiment:
 
-# Run the sparse latency router
-src/routing/sparse-latency-routing/bin/sparse_router.sh \
-  run src/routing/sparse-latency-routing/spec/network.xml
-src/routing/sparse-latency-routing/tests/run_tests.sh
-
-# Compile a paper
-pdflatex papers/liquidops_kernel.tex
-pdflatex papers/sovereign_entropy.tex
-pdflatex papers/gdr_kernels.tex
-
-# Check Lean 4 proofs (requires lake)
-lake build formal/sovereign_entropy/EntropyBound.lean
-lake build formal/tensor_framework/TensorFramework.lean
+```bash
+cd research/sparse-routing
+pip install numpy scipy pytest
+python -m pytest tests/ -v
+python -m experiments.run_experiment
 ```
 
 ---
 
+## Overview & Architecture
+
+### What It Does
+
+- **Task Routing:** Parse natural language tasks, build symbolic graphs, apply algebraic transforms to select sparse experts
+- **Agent Reasoning:** ReAct loops with tools, external APIs, and model inference (AWS Bedrock, local models, or multi-provider fallback)
+- **Continuity & Recovery:** State snapshots with atomic transitions, deterministic replay, and rollback capability
+- **Evidence Ledger:** Write-once append-only log with Ed25519 signatures and Blake3 hash chains—proof of execution
+- **Tool Orchestration:** Registry-based tool discovery, authorization policy, IPC dispatch, and result validation
+
+### 3-Layer Architecture
+
+**Layer 1: Execution Core (Python)**
+
+The primary Python engine (173 modules, 50K+ lines) orchestrates task routing, agent loops, and tool dispatch. At its heart is an **11-stage routing pipeline**:
+
+1. **Parse AST** — Extract intent from task description
+2. **Build Symbolic Graph** — Construct directed graph of task structure
+3. **Jordan Transform** — Eigenvalue decomposition to detect invariants
+4. **Jacobian Analysis** — Sensitivity analysis; constraint gradients
+5. **Constraint Evaluation** — Filter infeasible expert combinations
+6. **Sparse Activation** — Score experts; zero out low-confidence paths
+7. **NAND Filtering** — Suppress conflicting expert pairs
+8. **Expert Selection** — Identify active experts for dispatch
+9. **Async Dispatch** — Invoke expert callbacks in parallel
+10. **Result Aggregation** — Merge expert responses
+11. **Trace Export** — Serialize routing decisions for audit
+
+The **ReActAgent** loop implements: think (LLM generates reasoning) → act (select tool or emit answer) → observe (tool result or done) → repeat up to N steps.
+
+**Layer 2: Inference & Continuity**
+
+Multiple inference backends connect to different model providers:
+
+- **BedrockBackend:** AWS Bedrock (claude-haiku-4-5 or claude-opus via boto3)
+- **MultiProvider:** Task-aware provider selection with fallback routing
+- **LocalModel:** Ollama or sentence-transformers for embeddings
+
+The **ContinuityManager** synchronously snapshots state after each agent step. On recovery, deterministic replay re-executes with invariant validation. All state transitions are atomic; write-once-append-only on error.
+
+**Layer 3: Verification & Evidence**
+
+The **WORMLedger** (Write-Once Read-Many) maintains an immutable audit trail:
+
+- Each event is timestamped and signed with Ed25519
+- Hash chain (Blake3) links each event to its predecessor
+- Verification scans the chain and enforces total order
+- Result: cryptographic proof of execution; tamper-evident
+
+### Execution Paths
+
+1. **Direct Runner** (`python run.py`) — Load tools, route task, invoke ReAct, print result
+2. **HTTP Bridge** (`uvicorn src.bridge.http_server:app`) — REST endpoints for /chat, /route, /tools, /traces
+3. **Native Bytecode** (optional) — Emit x86-64 assembly from Python IR for performance-critical expert dispatch
+4. **Formal Verification** (`lake build` in research/formal/) — Prove routing correctness in Lean 4
+
+---
+
+## Repository Structure
+
 ```
-  SnapKitty / SNAPKITTYWEST / Ahmad Ali Parr — Bel Esprit D'Accord Irrevocable Trust
-  BSL 1.1 → MIT 2029-01-01
-  99,010 lines · 20+ languages · one sovereign stack
+sovereign-engine-v2/
+├─ src/                         # Python core (173 modules, 50K+ lines)
+│  ├─ routing/                  # 11-stage pipeline, symbolic graph, Jordan transforms
+│  ├─ agents/                   # ReActAgent, MCTS, Shadow agent
+│  ├─ inference/                # Bedrock, MultiProvider, local model adapters
+│  ├─ models/                   # Recursive memory networks, checkpoints
+│  ├─ tools/                    # Registry, loader, IPC router, authorization
+│  ├─ continuity/               # State snapshots, replay, determinism
+│  ├─ core/                     # Evidence ledger (WORM), crypto, types
+│  ├─ bridge/                   # HTTP server, key manager, trace export
+│  ├─ runtime/                  # Bytecode VM, x86 code gen, sandbox
+│  └─ [13 other subsystems]     # Entropy, attention, ASR, retrieval, etc.
+├─ research/                    # Formal methods (Lean 4, Agda), papers
+├─ training/                    # Swift corpus and visualization
+├─ native/                      # NASM x86-64 runtime
+├─ kernels/                     # CUDA, MLIR, P4, hardware
+├─ cobalt/                      # Haskell compiler (Cabal)
+├─ ide/                         # Windows IDE (C/C++ + CMake)
+├─ docs/                        # Technical documentation
+├─ run.py                       # Direct runner entry point
+└─ README.md                    # This file
 ```
+
+---
+
+## Language Stack
+
+Sovereign Engine v2 spans **16 languages**. Each serves a distinct role:
+
+| Language | Files | LOC | Role | Build Tool |
+|----------|-------|-----|------|-----------|
+| Python | 173 | 50K+ | Core orchestration | setuptools/pip |
+| Haskell | 35+ | 4K | Compiler kernel | Cabal |
+| Lean 4 | 8 | 2.3K | Formal proofs (0 sorry terms) | Lake |
+| Rust | 25+ | 2.3K | Tensor networks, gnostic arithmetic | Cargo |
+| C/C++ | 15+ | 28K | IDE native layer | CMake |
+| CUDA | 2 | 1K | GPU kernels | nvcc |
+| NASM | 8+ | 2K | x86-64 assembly | nasm |
+| TypeScript | 5+ | 2.5K | IDE frontend | Vite |
+| Swift | 8+ | 1K | Training visualization | Swift PM |
+| Agda | 3+ | 500 | Formal proofs | agda-mode |
+| Fortran | 3+ | 1.5K | Scientific compute | gfortran |
+| Other | — | — | MLIR, P4, LaTeX, etc. | — |
+
+---
+
+## Getting Started
+
+### Prerequisites
+
+- **Python 3.11+** (required)
+- **pip** and **git**
+- **AWS credentials** (for Bedrock, optional for local models)
+- **CUDA 12.0+** (optional, for GPU kernels)
+- **Haskell GHC 9.2+** (optional, for cobalt compiler)
+
+### Installation
+
+```bash
+# Clone
+git clone https://github.com/SNAPKITTYWEST/sovereign-engine-v2.git
+cd sovereign-engine-v2
+
+# Virtual environment
+python -m venv venv
+source venv/bin/activate  # Windows: venv\Scripts\activate
+
+# Install
+pip install -e .              # Development mode
+# or
+pip install -e ".[bedrock,pytorch]"  # With optional extras
+
+# Verify
+python run.py                 # Direct runner
+# or
+sovereign --help              # CLI
+# or
+uvicorn src.bridge.http_server:app --reload  # HTTP bridge
+```
+
+### First Run: Task Routing
+
+```bash
+python run.py
+```
+
+**Expected output:**
+
+```
+Loading tool registry...
+Initializing RoutingPipeline...
+
+Task: "Write a fibonacci function"
+
+Routing Trace:
+  Stage 1–11: [Parse AST → Expert Selection → Dispatch]
+  Active experts: 3 (code_generation, algorithm_verification)
+  NAND conflicts: 1 suppressed
+
+ReActAgent loop:
+  Thought: I need to write a fibonacci function...
+  Action: code_generation tool
+  Observation: [function result]
+  Thought: Complete.
+
+Final Answer: [fibonacci implementation]
+```
+
+### Configuration
+
+**AWS credentials (for Bedrock):**
+
+```bash
+# Option 1: Environment variables
+export AWS_REGION=us-east-1
+export AWS_ACCESS_KEY_ID=your_key
+export AWS_SECRET_ACCESS_KEY=your_secret
+
+# Option 2: Use ~/.aws/credentials (boto3 credential chain)
+# Option 3: IAM role (if running in AWS)
+```
+
+**Local models instead of Bedrock:**
+
+```bash
+# Install Ollama and download a model
+ollama pull mistral
+
+# Set environment
+export LLM_PROVIDER=local
+export OLLAMA_BASE_URL=http://localhost:11434
+```
+
+### Run Tests
+
+```bash
+pip install pytest pytest-asyncio pytest-cov
+
+# All tests
+pytest tests/ -v
+
+# With coverage
+pytest tests/ --cov=src --cov-report=html
+
+# Specific test
+pytest tests/test_routing_trace_endpoints.py -v
+```
+
+---
+
+## Building from Source
+
+### System Requirements by Language
+
+| Language | Requirement |
+|----------|-------------|
+| **Python** | 3.11+, pip, venv |
+| **Haskell** | GHC 9.2+, Cabal 3.8+ |
+| **Lean 4** | Lake (bundled with Lean), mathlib4 |
+| **Rust** | Cargo 1.70+ |
+| **C/C++** | MSVC (Windows) or GCC, CMake 3.24+ |
+| **CUDA** | CUDA 12.0+, cuDNN 8.0+, nvcc |
+| **NASM** | nasm 2.15+ |
+| **TypeScript** | Node.js 18+, npm/yarn |
+| **Swift** | Xcode 15+ (macOS) or Swift PM (cross-platform) |
+| **Agda** | Agda 2.6.4+, agda-stdlib |
+
+### Build Order
+
+1. **Python core** — The entry point; all other components are optional
+2. **Haskell compiler** (optional, for cobalt/)
+3. **Rust subsystems** (optional, for catn/, kernels/)
+4. **CUDA kernels** (optional, for performance)
+5. **NASM runtime** (optional, for native dispatch)
+6. **IDE** (optional, Windows only)
+7. **Formal proofs** (optional, research-only)
+
+### Build Instructions
+
+**Python:**
+
+```bash
+pip install -e ".[bedrock,pytorch]"
+pip install -r requirements.txt
+pytest tests/ -v
+```
+
+**Haskell:**
+
+```bash
+cd cobalt/
+cabal build
+cabal test
+```
+
+**Rust:**
+
+```bash
+cd catn/
+cargo build --release
+./target/release/catn
+```
+
+**CUDA:**
+
+```bash
+cd kernels/
+nvcc -O3 -c sparse_expert_dispatch.cu -o sparse_expert_dispatch.o
+# Link with Python extension
+```
+
+**NASM:**
+
+```bash
+cd native/
+nasm -f win64 qra_operations.asm -o qra_operations.o
+gcc -c dispatcher.c -o dispatcher.o
+gcc -o dispatcher.exe dispatcher.o qra_operations.o
+```
+
+**Lean 4:**
+
+```bash
+cd research/formal/
+lake build
+lake test
+```
+
+### Troubleshooting
+
+| Issue | Solution |
+|-------|----------|
+| `ModuleNotFoundError: No module named 'src'` | Run `pip install -e .` from repo root |
+| `boto3.exceptions.Botocore.NoCredentialsError` | Set AWS credentials or use local model |
+| `CUDA out of memory` | Reduce batch size or use CPU backend |
+| `Lean/Agda not found` | Skip formal proofs; they are optional (research-only) |
+| Tests timeout | Increase timeout: `pytest --timeout=60` |
+
+---
+
+## API Reference
+
+### Core Classes
+
+**RoutingPipeline**
+
+```python
+from src.routing.pipeline import RoutingPipeline
+
+pipeline = RoutingPipeline(config)
+trace, expert_scores = await pipeline.route(task_text)
+
+# Returns:
+# - trace: PipelineTrace (intent, weights, blocked experts, dispatch outcomes)
+# - expert_scores: dict[str, float] (expert name → activation score)
+```
+
+**ReActAgent**
+
+```python
+from src.agents.react_agent import ReActAgent
+
+agent = ReActAgent(backend, tools, max_steps=10)
+response = await agent.run(task_text, routing_trace)
+
+# Returns: str (final answer)
+```
+
+**ToolRegistry**
+
+```python
+from src.tools.registry import ToolRegistry
+
+registry = ToolRegistry()
+registry.register(name="code_gen", schema=..., handler=..., authorization=...)
+result = await registry.dispatch(tool_name, args, context)
+```
+
+**ContinuityManager**
+
+```python
+from src.continuity.manager import ContinuityManager
+
+manager = ContinuityManager(state_store)
+snapshot = await manager.checkpoint(env, seed, model_state)
+recovered_state = await manager.restore(snapshot_id)
+```
+
+**WORMLedger**
+
+```python
+from src.core.worm_ledger import WORMLedger
+
+ledger = WORMLedger(path)
+entry_hash = ledger.append({"event": "task_routed", "trace": ...})
+is_valid, count = ledger.verify_chain()
+```
+
+**BedrockBackend**
+
+```python
+from src.inference.bedrock_backend import BedrockBackend
+
+backend = BedrockBackend(region="us-east-1", model_id="...")
+response = await backend.invoke(prompt, temperature=0.7)
+```
+
+### Type System
+
+```python
+# Risk classification for tools
+class RiskClass(Enum):
+    LOW = "low"           # Read-only, no side effects
+    MEDIUM = "medium"     # File I/O, network calls
+    HIGH = "high"         # System access, credential use
+
+# Authorization policies
+class ApprovalPolicy(Enum):
+    AUTO = "auto"         # Always allowed
+    REQUIRE_HUMAN = "human"  # Needs human approval
+    SANDBOX = "sandbox"   # Run in isolated environment
+
+# Task entity
+class Task:
+    id: str
+    text: str
+    priority: int
+    context: dict
+    created_at: float
+```
+
+### Usage Patterns
+
+**Pattern 1: Route and Dispatch**
+
+```python
+pipeline = RoutingPipeline(config)
+trace, scores = await pipeline.route("Write a function for...")
+for expert_name, score in scores.items():
+    if score > 0.5:
+        await expert_callbacks[expert_name]()
+```
+
+**Pattern 2: ReAct Loop with Tool Use**
+
+```python
+registry = ToolRegistry()
+registry.register("python_exec", schema=..., handler=run_code)
+agent = ReActAgent(backend, registry)
+answer = await agent.run("Solve: 2+2", trace)
+```
+
+**Pattern 3: Deterministic Replay**
+
+```python
+manager = ContinuityManager(store)
+snapshot = await manager.checkpoint(env, seed, state)
+# Later, on error:
+recovered = await manager.restore(snapshot)
+replayed = await agent.run(task, deterministic=True)
+```
+
+---
+
+## Deployment & Scaling
+
+### Docker
+
+```dockerfile
+FROM python:3.12-slim
+WORKDIR /app
+COPY requirements.txt .
+RUN pip install -r requirements.txt
+COPY . .
+EXPOSE 8000
+CMD ["uvicorn", "src.bridge.http_server:app", "--host", "0.0.0.0"]
+```
+
+Build and run:
+
+```bash
+docker build -t sovereign-engine .
+docker run -e AWS_REGION=us-east-1 -p 8000:8000 sovereign-engine
+```
+
+### Kubernetes
+
+```yaml
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: sovereign-engine
+spec:
+  serviceName: sovereign-engine
+  replicas: 3
+  selector:
+    matchLabels:
+      app: sovereign-engine
+  template:
+    metadata:
+      labels:
+        app: sovereign-engine
+    spec:
+      containers:
+      - name: engine
+        image: sovereign-engine:latest
+        ports:
+        - containerPort: 8000
+        env:
+        - name: AWS_REGION
+          value: "us-east-1"
+        - name: WORM_LEDGER_PATH
+          value: "/data/worm.log"
+        resources:
+          requests:
+            memory: "2Gi"
+            cpu: "1"
+          limits:
+            memory: "4Gi"
+            cpu: "2"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 10
+          periodSeconds: 10
+      volumeMounts:
+      - name: data
+        mountPath: /data
+  volumeClaimTemplates:
+  - metadata:
+      name: data
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 10Gi
+```
+
+### Monitoring (Prometheus Metrics)
+
+Key metrics to track:
+
+```
+sovereign_routing_latency_ms          # Routing pipeline duration
+sovereign_expert_activation_count     # Number of active experts per task
+sovereign_tool_dispatch_overhead_ms   # Tool IPC overhead
+sovereign_model_availability          # Availability of each backend
+sovereign_worm_ledger_entries         # Total WORM entries (append-only)
+sovereign_checkpoint_memory_bytes     # Continuity snapshot size
+sovereign_agent_loop_duration_ms      # Total ReAct loop duration
+```
+
+Example Prometheus config:
+
+```yaml
+global:
+  scrape_interval: 15s
+scrape_configs:
+- job_name: sovereign-engine
+  static_configs:
+  - targets: ['localhost:8000']
+  relabel_configs:
+  - source_labels: [__address__]
+    target_label: instance
+```
+
+### Multi-Region Fallback
+
+```python
+providers = [
+    BedrockBackend(region="us-east-1"),
+    BedrockBackend(region="eu-west-1"),
+    LocalOllamaBackend(url="http://localhost:11434"),
+]
+backend = MultiProviderBackend(providers, fallback_strategy="round_robin")
+response = await backend.invoke(prompt)  # Auto-fallback on failure
+```
+
+---
+
+## Examples
+
+### Example 1: Routing with Sparse Expert Selection
+
+```python
+from src.routing.pipeline import RoutingPipeline
+from src.agents.react_agent import ReActAgent
+import asyncio
+
+async def example_routing():
+    pipeline = RoutingPipeline({
+        "hidden_size": 256,
+        "num_experts": 8,
+        "sparsity": 0.3,
+    })
+    
+    task = "Write a Fibonacci function in Python"
+    trace, scores = await pipeline.route(task)
+    
+    print(f"Task: {task}")
+    print(f"Active experts: {[e for e, s in scores.items() if s > 0.5]}")
+    print(f"Trace: {trace}")
+    
+    # Dispatch to active experts
+    for expert_name, score in scores.items():
+        if score > 0.5:
+            print(f"  → Activating {expert_name} (score: {score:.3f})")
+
+asyncio.run(example_routing())
+```
+
+### Example 2: ReAct Agent with Tool Use
+
+```python
+from src.tools.registry import ToolRegistry
+from src.agents.react_agent import ReActAgent
+from src.inference.bedrock_backend import BedrockBackend
+import asyncio
+
+async def fibonacci(n: int) -> int:
+    if n <= 1:
+        return n
+    return fibonacci(n - 1) + fibonacci(n - 2)
+
+async def example_react():
+    # Register tools
+    registry = ToolRegistry()
+    registry.register(
+        name="compute_fibonacci",
+        schema={"type": "object", "properties": {"n": {"type": "integer"}}},
+        handler=fibonacci,
+        risk_class="low",
+    )
+    
+    # Create backend and agent
+    backend = BedrockBackend(region="us-east-1")
+    agent = ReActAgent(backend, registry, max_steps=5)
+    
+    # Run task
+    task = "What is the 10th Fibonacci number?"
+    result = await agent.run(task)
+    print(f"Result: {result}")
+
+asyncio.run(example_react())
+```
+
+### Example 3: Deterministic Replay on Error
+
+```python
+from src.continuity.manager import ContinuityManager
+from src.core.worm_ledger import WORMLedger
+import asyncio
+
+async def example_replay():
+    manager = ContinuityManager(store="/tmp/state/")
+    ledger = WORMLedger(path="/tmp/worm.log")
+    
+    # Execute and checkpoint
+    env = {"task": "fibonacci", "seed": 42}
+    snapshot_id = await manager.checkpoint(env, seed=42, model_state={})
+    
+    print(f"Checkpoint created: {snapshot_id}")
+    
+    # On error, restore and replay
+    try:
+        # ... some operation that fails ...
+        raise RuntimeError("Execution error")
+    except RuntimeError:
+        print("Error detected. Restoring from checkpoint...")
+        recovered = await manager.restore(snapshot_id)
+        print(f"Recovered state: {recovered}")
+    
+    # Verify WORM ledger
+    is_valid, entry_count = ledger.verify_chain()
+    print(f"WORM ledger valid: {is_valid}, entries: {entry_count}")
+
+asyncio.run(example_replay())
+```
+
+### Example 4: Custom Tool Registration
+
+```python
+from src.tools.registry import ToolRegistry
+import re
+
+async def validate_email(email: str) -> bool:
+    """Validate email format."""
+    pattern = r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
+    return bool(re.match(pattern, email))
+
+async def example_tool():
+    registry = ToolRegistry()
+    
+    registry.register(
+        name="validate_email",
+        schema={
+            "type": "object",
+            "properties": {
+                "email": {"type": "string", "description": "Email address to validate"}
+            },
+            "required": ["email"],
+        },
+        handler=validate_email,
+        risk_class="low",
+        approval_policy="auto",
+        timeout_seconds=5,
+    )
+    
+    result = await registry.dispatch(
+        "validate_email",
+        args={"email": "user@example.com"},
+        context={"user_id": "123"},
+    )
+    print(f"Validation result: {result}")
+
+asyncio.run(example_tool())
+```
+
+---
+
+## FAQ & Troubleshooting
+
+**Q: How do I add a custom tool?**
+
+A: Register it with the ToolRegistry:
+
+```python
+registry = ToolRegistry()
+registry.register(
+    name="my_tool",
+    schema={...},
+    handler=async_callable,
+    risk_class="low",
+)
+```
+
+**Q: How do I use local models instead of Bedrock?**
+
+A: Set the environment and use LocalOllamaBackend:
+
+```bash
+ollama pull mistral
+export LLM_PROVIDER=local
+export OLLAMA_BASE_URL=http://localhost:11434
+```
+
+**Q: How do I view routing traces?**
+
+A: Call the `/trace` HTTP endpoint or inspect the `PipelineTrace` object:
+
+```bash
+curl -X GET http://localhost:8000/traces/latest
+```
+
+**Q: How are routing conflicts resolved?**
+
+A: NAND filtering suppresses conflicting expert pairs; remaining conflicts use merge strategy (weighted average or union).
+
+**Q: How do I verify WORM ledger integrity?**
+
+A:
+
+```python
+ledger = WORMLedger("/path/to/worm.log")
+is_valid, count = ledger.verify_chain()
+```
+
+**Q: How do I extend the framework?**
+
+A: Subclass or implement the core interfaces:
+- `InferenceBackend` for new model providers
+- `Agent` for new reasoning strategies
+- `ToolHandler` for tool integration
+
+---
+
+## Contributing
+
+### Workflow
+
+1. **Fork** the repository
+2. **Branch** (`git checkout -b feature/my-feature`)
+3. **Commit** with clear messages
+4. **Test** (`pytest tests/ --cov`)
+5. **Push** and open a **Pull Request**
+
+### Code Style
+
+- **Python:** PEP 8, black formatting, mypy type hints
+- **Haskell:** HLint, Ormolu
+- **Rust:** `cargo fmt`, clippy
+- **Lean 4:** mathlib conventions
+
+### Commit Guidelines
+
+```
+[type] Brief description (under 60 chars)
+
+Longer explanation if needed. Reference issues: #123
+```
+
+Types: `feat`, `fix`, `docs`, `test`, `refactor`, `perf`, `chore`
+
+### Testing Requirements
+
+- **Coverage threshold:** 75% for core modules
+- **Async tests:** Use `pytest-asyncio`
+- **Live tests:** Can fall back to mock backends
+
+### PR Checklist
+
+- [ ] Code follows project style
+- [ ] Tests pass (`pytest tests/ -v`)
+- [ ] Coverage ≥75% for changes
+- [ ] Documentation updated
+- [ ] Commit messages clear
+
+### Subsystem Rules
+
+- **Python core** (`src/`): Stable; all changes require tests
+- **Research modules** (`research/`): Exploratory; formal proofs encouraged
+- **Hardware** (`kernels/`, `native/`): Platform-specific; build instructions required
+- **Formal proofs** (Lean/Agda): 0-sorry target; postulates documented
+
+---
+
+## Performance & Benchmarks
+
+### Committed Sparse-Routing Experiment
+
+**Source:** [run_experiment.py](research/sparse-routing/experiments/run_experiment.py). **Raw data:** [results.json](research/sparse-routing/experiments/results.json).
+
+Fixture: 7-node directed graph, 8 edges, 8 timesteps. Three strategies compared:
+
+| Strategy | Runtime (ms) | Mean Route Cost | Topology Changes |
+|----------|---:|---:|---:|
+| Static | 0.644 | 0.646 | 0 |
+| Latency-aware | 0.789 | 0.631 | 0 |
+| Rank-informed | 5.275 | 0.635 | 1 |
+
+Relative to static: latency-aware reduces cost **2.24%**; rank-informed reduces cost **1.69%** and removes **12.5%** of edges. Rank-informed takes **8.2×** the static runtime due to adaptation overhead.
+
+### Fresh Local Measurements (Sept 19, 2026)
+
+**57 routing tests passed in 1.35 seconds.** Ten trials per strategy after one warmup:
+
+| Strategy | Median Runtime | Min–Max | Peak Memory |
+|----------|---:|---:|---:|
+| Static | 0.644 ms | 0.568–1.261 ms | 7,888 B |
+| Latency-aware | 0.789 ms | 0.704–2.318 ms | 8,132 B |
+| Rank-informed | 5.275 ms | 4.740–6.380 ms | 33,247 B |
+
+**Environment:** Windows 11, Python 3.12.10, NumPy 2.5.3, SciPy 1.18.1.
+
+### Typical Metrics
+
+| Metric | Value |
+|--------|-------|
+| Routing latency | 0.6–5.3 ms (strategy-dependent) |
+| Agent think time | 100–500 ms (model-dependent) |
+| Tool dispatch | 10–50 ms (IPC overhead) |
+| WORM append | < 1 ms (cryptographic signing) |
+| Checkpoint size | 1–10 MB (state-dependent) |
+
+### Reproduce Benchmarks
+
+```bash
+cd research/sparse-routing
+pip install numpy scipy pytest hypothesis
+python -m pytest tests/ -v
+python -m experiments.run_experiment
+```
+
+Or collect fresh trials:
+
+```bash
+python scripts/benchmark_sparse_routing.py --trials 10 --output docs/benchmarks/local.json
+```
+
+---
+
+## Glossary
+
+**ReAct:** Reasoning + Acting loop. LLM generates reasoning steps and tool calls iteratively until task completion.
+
+**Expert:** Specialized sub-agent for a specific task type (e.g., code generation, verification).
+
+**Routing Pipeline:** The 11-stage process to select which experts activate for a given task.
+
+**Jordan Transform:** Eigenvalue decomposition used to detect structural invariants in task graphs.
+
+**Jacobian Analysis:** Sensitivity analysis of constraints with respect to task parameters.
+
+**NAND Filtering:** Suppression of conflicting expert combinations (incompatible pairs).
+
+**WORM Ledger:** Write-Once Read-Many immutable log with Ed25519 signatures and Blake3 hash chains.
+
+**Continuity Snapshot:** Atomic checkpoint of environment, seed, filesystem, and model state.
+
+**Deterministic Replay:** Re-execution with identical seed and inputs to reproduce previous behavior.
+
+**Tool Dispatch:** IPC invocation of tool handlers with authorization and timeout enforcement.
+
+**Merge Strategy:** Algorithm for combining outputs from multiple experts (e.g., weighted average, union).
+
+**Tool Registry:** Central registry mapping tool names to handlers, schemas, and authorization policies.
+
+**Sandbox:** Isolated execution environment for untrusted or high-risk tools.
+
+**Path Jail:** File system isolation restricting tool access to specific directories.
+
+**Model Interface:** Backend adapter for different LLM providers (Bedrock, Ollama, etc.).
+
+**Inference Backend:** Pluggable module for model invocation (inference, streaming, etc.).
+
+**Risk Classification:** Label for tools (LOW, MEDIUM, HIGH) determining authorization flow.
+
+---
+
+## Resources & License
+
+### Technical Documentation
+
+- **[ARCHITECTURE.md](docs/repository-reference/ARCHITECTURE.md)** — System design, 4 execution paths, subsystem details
+- **[ROUTING.md](docs/ROUTING.md)** — Expert selection, sparse activation, NAND filtering
+- **[TOOLS.md](docs/TOOLS.md)** — Tool registry, authorization, IPC dispatch
+- **[CONTINUITY.md](docs/CONTINUITY.md)** — State snapshots, deterministic replay
+- **[SECURITY.md](docs/SECURITY.md)** — Sandboxing, authorization, path jails
+- **[OPERATIONS.md](docs/repository-reference/OPERATIONS.md)** — Deployment, monitoring, troubleshooting
+
+### Repository Reference
+
+- **[REPOSITORY_MAP.md](docs/repository-reference/REPOSITORY_MAP.md)** — Directory structure, 40+ subsystems
+- **[DEPENDENCY_GRAPH.md](docs/repository-reference/DEPENDENCY_GRAPH.md)** — 6-layer DAG, 77 packages, 0 circular deps
+- **[LANGUAGE_REFERENCE.md](docs/repository-reference/LANGUAGE_REFERENCE.md)** — 16-language distribution, cross-language boundaries
+- **[MODULE_REFERENCE.md](docs/repository-reference/MODULE_REFERENCE.md)** — 30 major modules, detailed specifications
+- **[INTERFACE_REFERENCE.md](docs/repository-reference/INTERFACE_REFERENCE.md)** — 30+ class signatures, type system
+
+### Research & Proofs
+
+- **[LiquidOps](research/papers/liquidops_kernel.tex)** — Formal semantics of liquid type inference
+- **[Entropy](research/papers/sovereign_entropy.tex)** — Formal bounds on agent behavior entropy
+- **[SUBLEQ.lean](research/formal/subleq/SUBLEQ.lean)** — Formal proof of SUBLEQ universality
+- **[TensorFramework.lean](research/formal/tensor_framework/TensorFramework.lean)** — Formal tensor algebra
+- **[Forge Tournament](research/papers/forge_tournament_subleq_to_braid.md)** — Champion proof tournament
+
+### External Resources
+
+- **Hugging Face:** [sovereign-memory-twin](https://huggingface.co/SNAPKITTYWEST/sovereign-memory-twin), [burt-imma](https://huggingface.co/SNAPKITTYWEST/burt-imma)
+- **AWS Bedrock:** [Documentation](https://docs.aws.amazon.com/bedrock/)
+- **Ollama:** [Documentation](https://github.com/ollama/ollama)
+- **Lean 4:** [Documentation](https://lean-lang.org/)
+
+### License
+
+**TRI-LICENSE:** Tripartite licensing structure with three independent terms:
+
+1. **BSL-1.0 (Boost Software License 1.0)** — Source code and implementations
+2. **AGPL-3.0 (Affero GPL)** — Network service modifications
+3. **MPL-2.0 (Mozilla Public License)** — Optional compatibility tier
+
+See [LICENSE.tri](LICENSE.tri) for full terms. Commercial licensing available.
+
+**Copyright:** Ahmad Ali Parr / SNAPKITTYWEST · Bel Esprit D'Accord Irrevocable Trust.
+
+**Academic Citation:**
+
+```bibtex
+@software{sovereign-engine-v2,
+  author = {Ahmad Ali Parr},
+  title = {Sovereign Engine v2: Multi-Language LLM Agent Framework},
+  year = {2026},
+  url = {https://github.com/SNAPKITTYWEST/sovereign-engine-v2},
+}
+```
+
+---
+
+## Recent Changes
+
+| Commit | Change | Location |
+|--------|--------|----------|
+| `d7b1dc9` | Comprehensive 3-agent documentation expansion (90K+ words) | [docs/repository-reference/](docs/repository-reference/) |
+| [`898dfbe`](https://github.com/SNAPKITTYWEST/sovereign-engine-v2/commit/898dfbe), Sep 18 | Resolved paper/formal-file placement | [research/papers/](research/papers/), [research/formal/](research/formal/) |
+| [`f97cbd8`](https://github.com/SNAPKITTYWEST/sovereign-engine-v2/commit/f97cbd8), Sep 18 | Relocated 60 files (research, training, docs) | [research/](research/), [training/](training/), [docs/](docs/) |
+| [`b5a357f`](https://github.com/SNAPKITTYWEST/sovereign-engine-v2/commit/b5a357f), Sep 18 | Direct runner, Bedrock backend, authorization | [run.py](run.py), [src/inference/](src/inference/) |
+| [`5b6aabe`](https://github.com/SNAPKITTYWEST/sovereign-engine-v2/commit/5b6aabe), Sep 7 | Forge Tournament paper + SUBLEQ formalization | [research/papers/](research/papers/), [research/formal/](research/formal/) |
+
+---
+
+**Get started:** [Quick Start](#quick-start) | **Learn more:** [ARCHITECTURE.md](docs/repository-reference/ARCHITECTURE.md) | **Contribute:** [Contributing](#contributing)
+
+Ahmad Ali Parr / SNAPKITTYWEST · Bel Esprit D'Accord Irrevocable Trust.

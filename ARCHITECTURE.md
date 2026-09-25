@@ -1,206 +1,60 @@
-# SOVEREIGN PYTHON LLM ENGINE
+# Architecture
 
-**A production-grade LLM agent framework with custom MoE routing, binary WORM storage, four-paradigm continuity, and native IPC — generated from a single DSL prompt.**
+Sovereign Engine v2 is a multi-language repository with several execution paths. The Python research router, engine task router, provider adapters, native runtimes, and desktop clients have distinct interfaces and validation scopes.
 
----
+## Python execution paths
 
-## Origin
-
-This entire codebase was generated from scratch in a single prompt using the **HyperKittyConstraintDSL** — a deterministic constraint specification that orchestrates multi-agent code generation with proof-backed output.
-
-One DSL. One prompt. Three coordinated agents. **16,784 lines of machine code.**
-
-```xml
-<HyperKittyConstraintDSL version="1.0">
-  <Meta>
-    <System>HK-OS</System>
-    <Mode>DETERMINISTIC-CONSTRAINT-BUILD</Mode>
-    <Output>PROOF_BACKED_ARTIFACT</Output>
-  </Meta>
-
-  <BooleanKernel>
-    <Primitive name="NAND">NAND(a,b)=1-ab</Primitive>
-    <Derived name="NOT">NAND(x,x)</Derived>
-    <Derived name="AND">NAND(NAND(a,b),NAND(a,b))</Derived>
-    <Derived name="OR">NAND(NAND(a,a),NAND(b,b))</Derived>
-    <Derived name="IMPLIES">OR(NOT(a),b)</Derived>
-    <Derived name="EQUAL">AND(IMPLIES(a,b),IMPLIES(b,a))</Derived>
-  </BooleanKernel>
-
-  <GlyphTypeSystem>
-    <Unit symbol="🧠" name="Cognition"/>
-    <Unit symbol="📚" name="Knowledge"/>
-    <Unit symbol="🔍" name="Search"/>
-    <Unit symbol="⚙" name="Transformation"/>
-    <Unit symbol="⚖" name="Constraint"/>
-    <Unit symbol="🔐" name="Proof"/>
-    <Unit symbol="🌐" name="Interface"/>
-  </GlyphTypeSystem>
-
-  <AgentModel>
-    <Invariant>active(I) => trusted(I)</Invariant>
-    <Invariant>entropy(I) <= 0.20</Invariant>
-  </AgentModel>
-
-  <QuantumConstraintLayer>
-    <Entropy>
-      <Bound>H <= 0.20</Bound>
-    </Entropy>
-  </QuantumConstraintLayer>
-
-  <ProofOutput>
-    <ProofStatus>PROOF_TRUE</ProofStatus>
-  </ProofOutput>
-
-  <FinalState>
-    <Artifact>PYTHON_C_BRIDGE_IR</Artifact>
-    <BinaryOutput>BBSTRING_MACHINEC_CODE</BinaryOutput>
-    <Orchestration>THREE_AGENT_WORKFLOW</Orchestration>
-  </FinalState>
-</HyperKittyConstraintDSL>
+```mermaid
+flowchart TD
+    Runner[run.py] --> Routing[RoutingPipeline]
+    Runner --> Agent[ReActAgent]
+    Agent --> Model[Model interface]
+    Runner --> Bedrock[BedrockBackend]
+    Bridge[HTTPBridge] --> Multi[MultiProvider]
+    Bridge --> Registry[ToolRegistry]
+    Bridge --> BridgeAgent[Bridge ReActAgent]
+    Engine[SovereignEngine draft wiring] --> Routing
+    Engine --> Agent
+    Engine --> Continuity[ContinuityManager]
+    Engine --> Ledger[WORMLedger]
 ```
 
-The DSL defines:
-- **Boolean kernel** — All logic gates derived from NAND (universal gate)
-- **Glyph type system** — Semantic types for agent roles
-- **Agent invariants** — Trust and entropy constraints enforced at build time
-- **DAG structure** — Acyclic routing graph validated before code generation
-- **Proof output** — Cryptographic hash commitment over all artifacts
+This diagram shows construction/call relationships in the source, not a successful end-to-end run. The unified engine and bridge agent paths contain interface mismatches described in [deployment readiness](docs/PRODUCTION_HARDENING.md).
 
----
+| Component | Contract |
+|---|---|
+| [RoutingPipeline](src/routing/pipeline.py) | Text/context to trace and expert dispatch result |
+| [AgentDispatch](src/routing/dispatch.py) | Async expert callbacks returning dictionaries |
+| [ReActAgent](src/agents/react.py) | Task entity and optional initial context to a reasoning/tool loop |
+| [ToolRegistry](src/tools/registry.py) | Tool definitions, lookup, schemas, and policy metadata |
+| [ContinuityManager](src/continuity/manager.py) | Synchronous state transitions and backend coordination |
+| [WORMLedger](src/core/evidence.py) | Synchronous event append, scan, and chain checks |
+| [HTTPBridge](src/bridge/http_server.py) | HTTP handlers for provider chat, tools, keys, and routing traces |
 
-## Architecture
+## Routing boundaries
 
-```
-┌─────────────────────────────────────────────────────────┐
-│                   SOVEREIGN ENGINE                        │
-├──────────────┬──────────────┬───────────────────────────┤
-│  Routing     │  Continuity  │  Machine Code Layer        │
-│              │              │                            │
-│  RegexParser │  EnvState    │  BytecodeAssembler         │
-│  ASTBuilder  │  SeedChain   │  MarshalCodec              │
-│  SymbolicGr. │  InodeState  │  BinaryIR                  │
-│  JordanTrans │  SharedMem   │  VMExecutor                │
-│  JacobianLen │  Manager     │  MachineCodeGen (x86-64)   │
-│  Constraints │              │  CTypesBridge              │
-│  SparseActiv │              │  DSLValidator              │
-│  NANDFilter  │              │  SovereignMachine          │
-│  Dispatch    │              │                            │
-│  MergeOutput │              ├───────────────────────────┤
-│  JordanMoE   │              │  Native ASM (NASM x86-64) │
-│              │              │                            │
-├──────────────┤              │  sovereign_runtime.asm     │
-│  Tools (34)  │              │  qra_tensor.asm            │
-│              │              │  ipc_dispatcher.asm        │
-│  filesystem  │              │  nand_kernel.asm           │
-│  code        │              │  jordan_blocks.asm         │
-│  git         │              │  entropy_gate.asm          │
-│  database    │              │  sovereign_link.asm        │
-│  documents   ├──────────────┤                            │
-│  web         │  IPC Layer   │                            │
-│  embeddings  │              │                            │
-│  audio       │  OpcodeReg   │                            │
-│  pytorch     │  IPCRouter   │                            │
-│              │  ipc_core.c  │                            │
-├──────────────┼──────────────┼───────────────────────────┤
-│  Core        │  Agents      │  Daemon                    │
-│              │              │                            │
-│  WORMFile    │  ReActAgent  │  PythonDaemon (TCP 19002)  │
-│  Checkpoint  │  ShadowAgent │  Swarm (fan_out/race)      │
-│  Evidence    │  Supervisor  │                            │
-│  Storage     │              │                            │
-└──────────────┴──────────────┴───────────────────────────┘
-```
+The engine routes task text through parsing, symbolic/Jordan/Jacobian analysis, constraints, sparse activation, and dispatch. Its selected experts need real asynchronous implementations supplied by the caller.
 
----
+The independent [research router](research/sparse-routing/) instead operates on a graph model. It measures synthetic edge costs and rank, proposes topology changes, verifies invariants, and commits accepted states. Its benchmark does not time the agent's LLM generation.
 
-## Key Innovations
+[MultiProvider](src/runtime/providers/multi.py) chooses a provider/model using task classification and fallback. This is distinct from the eleven-stage RoutingPipeline; `/chat` calls MultiProvider directly.
 
-### Jordan Algebraic MoE Routing
+## Native and desktop layers
 
-Replaces softmax gating with Jordan algebra (Spin Factor) composition:
+- [Python machine runtime](src/runtime/machine/): bytecode/IR utilities, stack VM, native interop, and x86 code generation.
+- [native/](native/): NASM sources and C dispatcher.
+- [ide/CMakeLists.txt](ide/CMakeLists.txt): native Windows C/C++ client.
+- [ide/desktop/](ide/desktop/): Electron/TypeScript workbench sources with separate package scripts.
+- [ide/beam/](ide/beam/): WebAssembly experiments.
 
-- **Non-associative** — Agent grouping topology changes routing output mathematically
-- **Fixed-point convergence** — Jordan squaring converges to idempotents (stable routing attractors)
-- **Spectral decomposition** — Provably unique expert assignment via eigenvalue separation
+These layers are not interchangeable implementations of one validated executable. See [IDE](docs/IDE.md) and [Machine runtime](docs/MACHINE_CODE.md).
 
-### Four-Paradigm Continuity
+## Models and research
 
-Agent state survives daemon restarts, crashes, and hot-reloads:
+[src/models/](src/models/) contains recurrent memory, BURT-IMMA, checkpoint/pruning helpers, and text output modules. [hf/](hf/) provides model packaging and corpus schema artifacts. [training/](training/) provides the Swift corpus/swarm visualization library.
 
-| Paradigm | Mechanism | Speed | Use Case |
-|----------|-----------|-------|----------|
-| Env bitmask | `os.environ` (64-bit) | Fast | Hot restart via `os.execv` |
-| Seed chain | Blake2b derivation (24 bytes) | Fast | Deterministic replay |
-| Inode flags | Zero-byte files (`stat()`) | Kernel | Boolean state gates |
-| Shared memory | `ctypes` (4KB block) | RAM | Cross-process realtime |
+[cobalt/](cobalt/), [kernels/](kernels/), [magma/](magma/), [narm/](narm/), and [catn/](catn/) use their own compiler and runtime assumptions. Formal sources and manuscripts are under [research/](research/). Source presence, formal assumptions, compilation, and measured behavior must be reported separately.
 
-### Binary WORM Storage
+## Further reading
 
-Append-only binary struct format — no JSON, no injection surface:
-
-- 152-byte fixed headers (magic + version + type + timestamps + Blake2b hash + Ed25519 sig)
-- Chain verification (each record hashes the previous)
-- Zero text parsing — immune to JSONL injection, newline attacks, XXE
-
-### Inverted AST with Payload Elimination
-
-Routing tree is structurally inverted:
-- Structural nodes (routing_weight=1.0) drive all decisions
-- Payload leaves (routing_weight=0.0) cannot propagate upward
-- Blocklist + XXE pattern detection at parse boundary
-
-### Native IPC Multiplexer
-
-Memory-mapped shared buffer with O(1) opcode dispatch:
-
-- 34 static opcodes (tools) + dynamic assignment from 0x0100
-- 50us polling loop (C core) or Python asyncio fallback
-- Zero serialization — raw struct read/write via mmap
-
----
-
-## Line Counts
-
-| Component | Lines |
-|-----------|-------|
-| Python machine code layer | 9,251 |
-| NASM x86-64 assembly | 7,019 |
-| Routing pipeline | 1,900 |
-| Continuity layer | 1,536 |
-| Tool registration + IPC | 1,935 |
-| Core (storage, evidence) | 570 |
-| Agents (ReAct, Shadow, Supervisor) | 1,500 |
-| Daemon + Retrieval | 1,500 |
-| Sovereign machine wiring | 514 |
-| **Total** | **~25,700** |
-
----
-
-## Build Constraints
-
-Every artifact in this repository satisfies:
-
-```
-ACTIVE(I) => TRUSTED(I)    -- Trust axiom
-ENTROPY(I) <= 0.20         -- Shannon bound (nats)
-NAND truth table verified   -- Boolean kernel complete
-DAG acyclic                 -- No routing cycles
-Glyph mapping injective    -- No type collisions
-ProofStatus = PROOF_TRUE   -- All constraints pass
-```
-
----
-
-## Requirements
-
-- Python 3.11+
-- No external dependencies (pure stdlib)
-- Optional: NASM for native assembly compilation
-- Optional: C compiler for IPC core dispatcher
-
----
-
-## License
-
-Proprietary. Copyright SnapKitty / SNAPKITTYWEST.
+Use the [documentation index](docs/README.md) for starter and technical guides. [Security](docs/SECURITY.md) describes enforcement boundaries; [Validation](docs/VALIDATION.md) records the checks actually performed.

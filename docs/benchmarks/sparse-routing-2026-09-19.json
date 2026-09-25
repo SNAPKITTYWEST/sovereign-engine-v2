@@ -1,0 +1,954 @@
+{
+  "measured_at_utc": "2026-09-20T02:27:44.103971+00:00",
+  "source_commit": "898dfbe9c7b5f3d60a168dbfef0587a3ff62d2ed",
+  "python": "3.12.10 (tags/v3.12.10:0cc8128, Apr  8 2025, 12:21:36) [MSC v.1943 64 bit (AMD64)]",
+  "platform": "Windows-11-10.0.26200-SP0",
+  "processor": "AMD64 Family 25 Model 97 Stepping 2, AuthenticAMD",
+  "dependencies": {
+    "numpy": "2.5.3",
+    "scipy": "1.18.1",
+    "pytest": "9.1.1",
+    "hypothesis": "6.168.0"
+  },
+  "trials_per_strategy": 10,
+  "warmups_per_strategy": 1,
+  "strategy_order": [
+    "static",
+    "latency_aware",
+    "rank_informed"
+  ],
+  "measurement": "Existing perf_counter and tracemalloc instrumentation; complete eight-step strategy, excluding imports. Peak traced allocation is not RSS. Fixed order; no CPU affinity or thread limits imposed.",
+  "deterministic_outputs_match_historical": true,
+  "route_cost_comparison": "math.isclose with relative and absolute tolerance 1e-12; all other model fields compared exactly",
+  "summary": [
+    {
+      "strategy": "static",
+      "median_runtime_ms": 0.6444999962695874,
+      "min_runtime_ms": 0.5684000061592087,
+      "max_runtime_ms": 1.2611999991349876,
+      "median_peak_traced_bytes": 7888.0
+    },
+    {
+      "strategy": "latency_aware",
+      "median_runtime_ms": 0.7887000028858893,
+      "min_runtime_ms": 0.7042999932309613,
+      "max_runtime_ms": 2.3176999966381118,
+      "median_peak_traced_bytes": 8132.0
+    },
+    {
+      "strategy": "rank_informed",
+      "median_runtime_ms": 5.274650000501424,
+      "min_runtime_ms": 4.74039999244269,
+      "max_runtime_ms": 6.379700003890321,
+      "median_peak_traced_bytes": 33247.0
+    }
+  ],
+  "trials": {
+    "run_static": [
+      {
+        "strategy": "static",
+        "per_timestep_route_cost": [
+          0.7927795653711007,
+          0.7484142085228109,
+          0.6028587984974163,
+          0.5608009481026742,
+          0.6066423790037746,
+          0.6177602237769786,
+          0.605284976148773,
+          0.632141508669614
+        ],
+        "per_timestep_rank": [
+          3,
+          3,
+          2,
+          2,
+          3,
+          3,
+          3,
+          3
+        ],
+        "final_active_edge_count": 8,
+        "final_sparsity_ratio": 0.16326530612244897,
+        "committed_steps": 0,
+        "adaptation_count": 0,
+        "verification_failures": 0,
+        "runtime_seconds": 0.0007747000054223463,
+        "peak_memory_bytes": 8008
+      },
+      {
+        "strategy": "static",
+        "per_timestep_route_cost": [
+          0.7927795653711007,
+          0.7484142085228109,
+          0.6028587984974163,
+          0.5608009481026742,
+          0.6066423790037746,
+          0.6177602237769786,
+          0.605284976148773,
+          0.632141508669614
+        ],
+        "per_timestep_rank": [
+          3,
+          3,
+          2,
+          2,
+          3,
+          3,
+          3,
+          3
+        ],
+        "final_active_edge_count": 8,
+        "final_sparsity_ratio": 0.16326530612244897,
+        "committed_steps": 0,
+        "adaptation_count": 0,
+        "verification_failures": 0,
+        "runtime_seconds": 0.0005721999914385378,
+        "peak_memory_bytes": 7912
+      },
+      {
+        "strategy": "static",
+        "per_timestep_route_cost": [
+          0.7927795653711007,
+          0.7484142085228109,
+          0.6028587984974163,
+          0.5608009481026742,
+          0.6066423790037746,
+          0.6177602237769786,
+          0.605284976148773,
+          0.632141508669614
+        ],
+        "per_timestep_rank": [
+          3,
+          3,
+          2,
+          2,
+          3,
+          3,
+          3,
+          3
+        ],
+        "final_active_edge_count": 8,
+        "final_sparsity_ratio": 0.16326530612244897,
+        "committed_steps": 0,
+        "adaptation_count": 0,
+        "verification_failures": 0,
+        "runtime_seconds": 0.0005684000061592087,
+        "peak_memory_bytes": 7888
+      },
+      {
+        "strategy": "static",
+        "per_timestep_route_cost": [
+          0.7927795653711007,
+          0.7484142085228109,
+          0.6028587984974163,
+          0.5608009481026742,
+          0.6066423790037746,
+          0.6177602237769786,
+          0.605284976148773,
+          0.632141508669614
+        ],
+        "per_timestep_rank": [
+          3,
+          3,
+          2,
+          2,
+          3,
+          3,
+          3,
+          3
+        ],
+        "final_active_edge_count": 8,
+        "final_sparsity_ratio": 0.16326530612244897,
+        "committed_steps": 0,
+        "adaptation_count": 0,
+        "verification_failures": 0,
+        "runtime_seconds": 0.0006924000044818968,
+        "peak_memory_bytes": 7888
+      },
+      {
+        "strategy": "static",
+        "per_timestep_route_cost": [
+          0.7927795653711007,
+          0.7484142085228109,
+          0.6028587984974163,
+          0.5608009481026742,
+          0.6066423790037746,
+          0.6177602237769786,
+          0.605284976148773,
+          0.632141508669614
+        ],
+        "per_timestep_rank": [
+          3,
+          3,
+          2,
+          2,
+          3,
+          3,
+          3,
+          3
+        ],
+        "final_active_edge_count": 8,
+        "final_sparsity_ratio": 0.16326530612244897,
+        "committed_steps": 0,
+        "adaptation_count": 0,
+        "verification_failures": 0,
+        "runtime_seconds": 0.0006070999952498823,
+        "peak_memory_bytes": 7888
+      },
+      {
+        "strategy": "static",
+        "per_timestep_route_cost": [
+          0.7927795653711007,
+          0.7484142085228109,
+          0.6028587984974163,
+          0.5608009481026742,
+          0.6066423790037746,
+          0.6177602237769786,
+          0.605284976148773,
+          0.632141508669614
+        ],
+        "per_timestep_rank": [
+          3,
+          3,
+          2,
+          2,
+          3,
+          3,
+          3,
+          3
+        ],
+        "final_active_edge_count": 8,
+        "final_sparsity_ratio": 0.16326530612244897,
+        "committed_steps": 0,
+        "adaptation_count": 0,
+        "verification_failures": 0,
+        "runtime_seconds": 0.0006004000024404377,
+        "peak_memory_bytes": 7888
+      },
+      {
+        "strategy": "static",
+        "per_timestep_route_cost": [
+          0.7927795653711007,
+          0.7484142085228109,
+          0.6028587984974163,
+          0.5608009481026742,
+          0.6066423790037746,
+          0.6177602237769786,
+          0.605284976148773,
+          0.632141508669614
+        ],
+        "per_timestep_rank": [
+          3,
+          3,
+          2,
+          2,
+          3,
+          3,
+          3,
+          3
+        ],
+        "final_active_edge_count": 8,
+        "final_sparsity_ratio": 0.16326530612244897,
+        "committed_steps": 0,
+        "adaptation_count": 0,
+        "verification_failures": 0,
+        "runtime_seconds": 0.0006818999972892925,
+        "peak_memory_bytes": 7888
+      },
+      {
+        "strategy": "static",
+        "per_timestep_route_cost": [
+          0.7927795653711007,
+          0.7484142085228109,
+          0.6028587984974163,
+          0.5608009481026742,
+          0.6066423790037746,
+          0.6177602237769786,
+          0.605284976148773,
+          0.632141508669614
+        ],
+        "per_timestep_rank": [
+          3,
+          3,
+          2,
+          2,
+          3,
+          3,
+          3,
+          3
+        ],
+        "final_active_edge_count": 8,
+        "final_sparsity_ratio": 0.16326530612244897,
+        "committed_steps": 0,
+        "adaptation_count": 0,
+        "verification_failures": 0,
+        "runtime_seconds": 0.0005856999923707917,
+        "peak_memory_bytes": 7888
+      },
+      {
+        "strategy": "static",
+        "per_timestep_route_cost": [
+          0.7927795653711007,
+          0.7484142085228109,
+          0.6028587984974163,
+          0.5608009481026742,
+          0.6066423790037746,
+          0.6177602237769786,
+          0.605284976148773,
+          0.632141508669614
+        ],
+        "per_timestep_rank": [
+          3,
+          3,
+          2,
+          2,
+          3,
+          3,
+          3,
+          3
+        ],
+        "final_active_edge_count": 8,
+        "final_sparsity_ratio": 0.16326530612244897,
+        "committed_steps": 0,
+        "adaptation_count": 0,
+        "verification_failures": 0,
+        "runtime_seconds": 0.0009526999929221347,
+        "peak_memory_bytes": 7888
+      },
+      {
+        "strategy": "static",
+        "per_timestep_route_cost": [
+          0.7927795653711007,
+          0.7484142085228109,
+          0.6028587984974163,
+          0.5608009481026742,
+          0.6066423790037746,
+          0.6177602237769786,
+          0.605284976148773,
+          0.632141508669614
+        ],
+        "per_timestep_rank": [
+          3,
+          3,
+          2,
+          2,
+          3,
+          3,
+          3,
+          3
+        ],
+        "final_active_edge_count": 8,
+        "final_sparsity_ratio": 0.16326530612244897,
+        "committed_steps": 0,
+        "adaptation_count": 0,
+        "verification_failures": 0,
+        "runtime_seconds": 0.0012611999991349876,
+        "peak_memory_bytes": 7888
+      }
+    ],
+    "run_latency_aware": [
+      {
+        "strategy": "latency_aware",
+        "per_timestep_route_cost": [
+          0.7927795653711007,
+          0.7345989337913832,
+          0.5659307056728049,
+          0.5239998587162871,
+          0.6066423790037746,
+          0.5934930964820749,
+          0.6012607905335972,
+          0.632141508669614
+        ],
+        "per_timestep_rank": [
+          3,
+          3,
+          2,
+          2,
+          3,
+          3,
+          3,
+          3
+        ],
+        "final_active_edge_count": 8,
+        "final_sparsity_ratio": 0.16326530612244897,
+        "committed_steps": 0,
+        "adaptation_count": 0,
+        "verification_failures": 0,
+        "runtime_seconds": 0.000788799996371381,
+        "peak_memory_bytes": 8136
+      },
+      {
+        "strategy": "latency_aware",
+        "per_timestep_route_cost": [
+          0.7927795653711007,
+          0.7345989337913832,
+          0.5659307056728049,
+          0.5239998587162871,
+          0.6066423790037746,
+          0.5934930964820749,
+          0.6012607905335972,
+          0.632141508669614
+        ],
+        "per_timestep_rank": [
+          3,
+          3,
+          2,
+          2,
+          3,
+          3,
+          3,
+          3
+        ],
+        "final_active_edge_count": 8,
+        "final_sparsity_ratio": 0.16326530612244897,
+        "committed_steps": 0,
+        "adaptation_count": 0,
+        "verification_failures": 0,
+        "runtime_seconds": 0.0007886000094003975,
+        "peak_memory_bytes": 8208
+      },
+      {
+        "strategy": "latency_aware",
+        "per_timestep_route_cost": [
+          0.7927795653711007,
+          0.7345989337913832,
+          0.5659307056728049,
+          0.5239998587162871,
+          0.6066423790037746,
+          0.5934930964820749,
+          0.6012607905335972,
+          0.632141508669614
+        ],
+        "per_timestep_rank": [
+          3,
+          3,
+          2,
+          2,
+          3,
+          3,
+          3,
+          3
+        ],
+        "final_active_edge_count": 8,
+        "final_sparsity_ratio": 0.16326530612244897,
+        "committed_steps": 0,
+        "adaptation_count": 0,
+        "verification_failures": 0,
+        "runtime_seconds": 0.0023176999966381118,
+        "peak_memory_bytes": 8184
+      },
+      {
+        "strategy": "latency_aware",
+        "per_timestep_route_cost": [
+          0.7927795653711007,
+          0.7345989337913832,
+          0.5659307056728049,
+          0.5239998587162871,
+          0.6066423790037746,
+          0.5934930964820749,
+          0.6012607905335972,
+          0.632141508669614
+        ],
+        "per_timestep_rank": [
+          3,
+          3,
+          2,
+          2,
+          3,
+          3,
+          3,
+          3
+        ],
+        "final_active_edge_count": 8,
+        "final_sparsity_ratio": 0.16326530612244897,
+        "committed_steps": 0,
+        "adaptation_count": 0,
+        "verification_failures": 0,
+        "runtime_seconds": 0.0007602999976370484,
+        "peak_memory_bytes": 8160
+      },
+      {
+        "strategy": "latency_aware",
+        "per_timestep_route_cost": [
+          0.7927795653711007,
+          0.7345989337913832,
+          0.5659307056728049,
+          0.5239998587162871,
+          0.6066423790037746,
+          0.5934930964820749,
+          0.6012607905335972,
+          0.632141508669614
+        ],
+        "per_timestep_rank": [
+          3,
+          3,
+          2,
+          2,
+          3,
+          3,
+          3,
+          3
+        ],
+        "final_active_edge_count": 8,
+        "final_sparsity_ratio": 0.16326530612244897,
+        "committed_steps": 0,
+        "adaptation_count": 0,
+        "verification_failures": 0,
+        "runtime_seconds": 0.0008323999936692417,
+        "peak_memory_bytes": 8144
+      },
+      {
+        "strategy": "latency_aware",
+        "per_timestep_route_cost": [
+          0.7927795653711007,
+          0.7345989337913832,
+          0.5659307056728049,
+          0.5239998587162871,
+          0.6066423790037746,
+          0.5934930964820749,
+          0.6012607905335972,
+          0.632141508669614
+        ],
+        "per_timestep_rank": [
+          3,
+          3,
+          2,
+          2,
+          3,
+          3,
+          3,
+          3
+        ],
+        "final_active_edge_count": 8,
+        "final_sparsity_ratio": 0.16326530612244897,
+        "committed_steps": 0,
+        "adaptation_count": 0,
+        "verification_failures": 0,
+        "runtime_seconds": 0.0007042999932309613,
+        "peak_memory_bytes": 8128
+      },
+      {
+        "strategy": "latency_aware",
+        "per_timestep_route_cost": [
+          0.7927795653711007,
+          0.7345989337913832,
+          0.5659307056728049,
+          0.5239998587162871,
+          0.6066423790037746,
+          0.5934930964820749,
+          0.6012607905335972,
+          0.632141508669614
+        ],
+        "per_timestep_rank": [
+          3,
+          3,
+          2,
+          2,
+          3,
+          3,
+          3,
+          3
+        ],
+        "final_active_edge_count": 8,
+        "final_sparsity_ratio": 0.16326530612244897,
+        "committed_steps": 0,
+        "adaptation_count": 0,
+        "verification_failures": 0,
+        "runtime_seconds": 0.0007384999917121604,
+        "peak_memory_bytes": 8112
+      },
+      {
+        "strategy": "latency_aware",
+        "per_timestep_route_cost": [
+          0.7927795653711007,
+          0.7345989337913832,
+          0.5659307056728049,
+          0.5239998587162871,
+          0.6066423790037746,
+          0.5934930964820749,
+          0.6012607905335972,
+          0.632141508669614
+        ],
+        "per_timestep_rank": [
+          3,
+          3,
+          2,
+          2,
+          3,
+          3,
+          3,
+          3
+        ],
+        "final_active_edge_count": 8,
+        "final_sparsity_ratio": 0.16326530612244897,
+        "committed_steps": 0,
+        "adaptation_count": 0,
+        "verification_failures": 0,
+        "runtime_seconds": 0.000712799999746494,
+        "peak_memory_bytes": 8088
+      },
+      {
+        "strategy": "latency_aware",
+        "per_timestep_route_cost": [
+          0.7927795653711007,
+          0.7345989337913832,
+          0.5659307056728049,
+          0.5239998587162871,
+          0.6066423790037746,
+          0.5934930964820749,
+          0.6012607905335972,
+          0.632141508669614
+        ],
+        "per_timestep_rank": [
+          3,
+          3,
+          2,
+          2,
+          3,
+          3,
+          3,
+          3
+        ],
+        "final_active_edge_count": 8,
+        "final_sparsity_ratio": 0.16326530612244897,
+        "committed_steps": 0,
+        "adaptation_count": 0,
+        "verification_failures": 0,
+        "runtime_seconds": 0.0008885999995982274,
+        "peak_memory_bytes": 8072
+      },
+      {
+        "strategy": "latency_aware",
+        "per_timestep_route_cost": [
+          0.7927795653711007,
+          0.7345989337913832,
+          0.5659307056728049,
+          0.5239998587162871,
+          0.6066423790037746,
+          0.5934930964820749,
+          0.6012607905335972,
+          0.632141508669614
+        ],
+        "per_timestep_rank": [
+          3,
+          3,
+          2,
+          2,
+          3,
+          3,
+          3,
+          3
+        ],
+        "final_active_edge_count": 8,
+        "final_sparsity_ratio": 0.16326530612244897,
+        "committed_steps": 0,
+        "adaptation_count": 0,
+        "verification_failures": 0,
+        "runtime_seconds": 0.0012571999977808446,
+        "peak_memory_bytes": 8056
+      }
+    ],
+    "run_rank_informed": [
+      {
+        "strategy": "rank_informed",
+        "per_timestep_route_cost": [
+          0.7927795653711007,
+          0.7345989337913832,
+          0.5659307056728049,
+          0.5239998587162871,
+          0.6066423790037746,
+          0.6177602237769786,
+          0.605284976148773,
+          0.632141508669614
+        ],
+        "per_timestep_rank": [
+          3,
+          3,
+          2,
+          2,
+          3,
+          3,
+          3,
+          3
+        ],
+        "final_active_edge_count": 7,
+        "final_sparsity_ratio": 0.14285714285714285,
+        "committed_steps": 8,
+        "adaptation_count": 1,
+        "verification_failures": 0,
+        "runtime_seconds": 0.005177200000616722,
+        "peak_memory_bytes": 34439
+      },
+      {
+        "strategy": "rank_informed",
+        "per_timestep_route_cost": [
+          0.7927795653711007,
+          0.7345989337913832,
+          0.5659307056728049,
+          0.5239998587162871,
+          0.6066423790037746,
+          0.6177602237769786,
+          0.605284976148773,
+          0.632141508669614
+        ],
+        "per_timestep_rank": [
+          3,
+          3,
+          2,
+          2,
+          3,
+          3,
+          3,
+          3
+        ],
+        "final_active_edge_count": 7,
+        "final_sparsity_ratio": 0.14285714285714285,
+        "committed_steps": 8,
+        "adaptation_count": 1,
+        "verification_failures": 0,
+        "runtime_seconds": 0.005405899995821528,
+        "peak_memory_bytes": 33431
+      },
+      {
+        "strategy": "rank_informed",
+        "per_timestep_route_cost": [
+          0.7927795653711007,
+          0.7345989337913832,
+          0.5659307056728049,
+          0.5239998587162871,
+          0.6066423790037746,
+          0.6177602237769786,
+          0.605284976148773,
+          0.632141508669614
+        ],
+        "per_timestep_rank": [
+          3,
+          3,
+          2,
+          2,
+          3,
+          3,
+          3,
+          3
+        ],
+        "final_active_edge_count": 7,
+        "final_sparsity_ratio": 0.14285714285714285,
+        "committed_steps": 8,
+        "adaptation_count": 1,
+        "verification_failures": 0,
+        "runtime_seconds": 0.004988100001355633,
+        "peak_memory_bytes": 33367
+      },
+      {
+        "strategy": "rank_informed",
+        "per_timestep_route_cost": [
+          0.7927795653711007,
+          0.7345989337913832,
+          0.5659307056728049,
+          0.5239998587162871,
+          0.6066423790037746,
+          0.6177602237769786,
+          0.605284976148773,
+          0.632141508669614
+        ],
+        "per_timestep_rank": [
+          3,
+          3,
+          2,
+          2,
+          3,
+          3,
+          3,
+          3
+        ],
+        "final_active_edge_count": 7,
+        "final_sparsity_ratio": 0.14285714285714285,
+        "committed_steps": 8,
+        "adaptation_count": 1,
+        "verification_failures": 0,
+        "runtime_seconds": 0.005372100000386126,
+        "peak_memory_bytes": 33319
+      },
+      {
+        "strategy": "rank_informed",
+        "per_timestep_route_cost": [
+          0.7927795653711007,
+          0.7345989337913832,
+          0.5659307056728049,
+          0.5239998587162871,
+          0.6066423790037746,
+          0.6177602237769786,
+          0.605284976148773,
+          0.632141508669614
+        ],
+        "per_timestep_rank": [
+          3,
+          3,
+          2,
+          2,
+          3,
+          3,
+          3,
+          3
+        ],
+        "final_active_edge_count": 7,
+        "final_sparsity_ratio": 0.14285714285714285,
+        "committed_steps": 8,
+        "adaptation_count": 1,
+        "verification_failures": 0,
+        "runtime_seconds": 0.005713100006687455,
+        "peak_memory_bytes": 33271
+      },
+      {
+        "strategy": "rank_informed",
+        "per_timestep_route_cost": [
+          0.7927795653711007,
+          0.7345989337913832,
+          0.5659307056728049,
+          0.5239998587162871,
+          0.6066423790037746,
+          0.6177602237769786,
+          0.605284976148773,
+          0.632141508669614
+        ],
+        "per_timestep_rank": [
+          3,
+          3,
+          2,
+          2,
+          3,
+          3,
+          3,
+          3
+        ],
+        "final_active_edge_count": 7,
+        "final_sparsity_ratio": 0.14285714285714285,
+        "committed_steps": 8,
+        "adaptation_count": 1,
+        "verification_failures": 0,
+        "runtime_seconds": 0.006379700003890321,
+        "peak_memory_bytes": 33223
+      },
+      {
+        "strategy": "rank_informed",
+        "per_timestep_route_cost": [
+          0.7927795653711007,
+          0.7345989337913832,
+          0.5659307056728049,
+          0.5239998587162871,
+          0.6066423790037746,
+          0.6177602237769786,
+          0.605284976148773,
+          0.632141508669614
+        ],
+        "per_timestep_rank": [
+          3,
+          3,
+          2,
+          2,
+          3,
+          3,
+          3,
+          3
+        ],
+        "final_active_edge_count": 7,
+        "final_sparsity_ratio": 0.14285714285714285,
+        "committed_steps": 8,
+        "adaptation_count": 1,
+        "verification_failures": 0,
+        "runtime_seconds": 0.0057077999954344705,
+        "peak_memory_bytes": 33135
+      },
+      {
+        "strategy": "rank_informed",
+        "per_timestep_route_cost": [
+          0.7927795653711007,
+          0.7345989337913832,
+          0.5659307056728049,
+          0.5239998587162871,
+          0.6066423790037746,
+          0.6177602237769786,
+          0.605284976148773,
+          0.632141508669614
+        ],
+        "per_timestep_rank": [
+          3,
+          3,
+          2,
+          2,
+          3,
+          3,
+          3,
+          3
+        ],
+        "final_active_edge_count": 7,
+        "final_sparsity_ratio": 0.14285714285714285,
+        "committed_steps": 8,
+        "adaptation_count": 1,
+        "verification_failures": 0,
+        "runtime_seconds": 0.00474039999244269,
+        "peak_memory_bytes": 33087
+      },
+      {
+        "strategy": "rank_informed",
+        "per_timestep_route_cost": [
+          0.7927795653711007,
+          0.7345989337913832,
+          0.5659307056728049,
+          0.5239998587162871,
+          0.6066423790037746,
+          0.6177602237769786,
+          0.605284976148773,
+          0.632141508669614
+        ],
+        "per_timestep_rank": [
+          3,
+          3,
+          2,
+          2,
+          3,
+          3,
+          3,
+          3
+        ],
+        "final_active_edge_count": 7,
+        "final_sparsity_ratio": 0.14285714285714285,
+        "committed_steps": 8,
+        "adaptation_count": 1,
+        "verification_failures": 0,
+        "runtime_seconds": 0.005165499998838641,
+        "peak_memory_bytes": 33039
+      },
+      {
+        "strategy": "rank_informed",
+        "per_timestep_route_cost": [
+          0.7927795653711007,
+          0.7345989337913832,
+          0.5659307056728049,
+          0.5239998587162871,
+          0.6066423790037746,
+          0.6177602237769786,
+          0.605284976148773,
+          0.632141508669614
+        ],
+        "per_timestep_rank": [
+          3,
+          3,
+          2,
+          2,
+          3,
+          3,
+          3,
+          3
+        ],
+        "final_active_edge_count": 7,
+        "final_sparsity_ratio": 0.14285714285714285,
+        "committed_steps": 8,
+        "adaptation_count": 1,
+        "verification_failures": 0,
+        "runtime_seconds": 0.004998900010832585,
+        "peak_memory_bytes": 32991
+      }
+    ]
+  }
+}
