@@ -103,6 +103,7 @@ dependencies = [
 name = "differential_squared_zero"
 version = "0.1.0"
 dependencies = [
+ "chain_complex_shape",
  "differential_operator",
 ]
 
@@ -128,6 +129,7 @@ dependencies = [
 name = "exactness_predicate"
 version = "0.1.0"
 dependencies = [
+ "chain_complex_shape",
  "differential_operator",
  "differential_squared_zero",
  "homology_computation",
@@ -810,6 +812,7 @@ name = "recursive_solver_transition"
 version = "0.1.0"
 dependencies = [
  "gap_constraint_satisfaction",
+ "gap_tensor_core",
  "recursion_depth_management",
  "recursive_solver_cursor",
  "recursive_solver_state",

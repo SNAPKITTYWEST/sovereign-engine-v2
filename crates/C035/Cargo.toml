@@ -4,6 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+gap_tensor_core = { path = "../C001" }
 gap_constraint_satisfaction = { path = "../C027" }
 recursive_solver_state = { path = "../C031" }
 recursion_depth_management = { path = "../C032" }
