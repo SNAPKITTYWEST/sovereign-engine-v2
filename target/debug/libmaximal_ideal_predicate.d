@@ -1,0 +1,1 @@
+C:\Users\jessi\Desktop\sovereign-engine-v2\target\debug\libmaximal_ideal_predicate.rlib: C:\Users\jessi\Desktop\sovereign-engine-v2\crates\C001\src\lib.rs C:\Users\jessi\Desktop\sovereign-engine-v2\crates\C061\src\lib.rs C:\Users\jessi\Desktop\sovereign-engine-v2\crates\C062\src\lib.rs C:\Users\jessi\Desktop\sovereign-engine-v2\crates\C063\src\lib.rs

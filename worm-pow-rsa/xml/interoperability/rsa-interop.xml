@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  TEST / INTEROPERABILITY ONLY.
+  This document describes PUBLIC RSA key material extracted from a
+  disposable test PEM file ("rsa test keys.pem") for the sole purpose of
+  cross-implementation interoperability testing of the worm-pow-rsa
+  canonicalization/hashing/signature-format pipeline. It contains NO
+  private key material, and this schema defines no element capable of
+  carrying private key material.
+-->
+<ri:rsa_interop xmlns:ri="urn:sovereign-engine:worm-pow-rsa:rsa-interop"
+                 xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                 xsi:schemaLocation="urn:sovereign-engine:worm-pow-rsa:rsa-interop ../schema/rsa-interop.xsd">
+
+  <ri:schema>rsa-interop-v1</ri:schema>
+
+  <ri:classification_banner>TEST / INTEROPERABILITY ONLY — NOT FOR PRODUCTION TRUST DECISIONS</ri:classification_banner>
+
+  <ri:provenance>
+    <ri:source_file>rsa test keys.pem</ri:source_file>
+    <ri:disposable>true</ri:disposable>
+    <ri:classification>TEST_ONLY</ri:classification>
+    <ri:usage_label>TEST / INTEROPERABILITY ONLY</ri:usage_label>
+    <ri:private_key_included>false</ri:private_key_included>
+    <ri:extracted_at>2026-09-24T00:00:00Z</ri:extracted_at>
+  </ri:provenance>
+
+  <ri:detected_key_metadata>
+    <ri:key_type>RSA</ri:key_type>
+    <ri:encoding_format>PKCS#1</ri:encoding_format>
+    <ri:key_size_bits>2048</ri:key_size_bits>
+    <ri:public_exponent_decimal>65537</ri:public_exponent_decimal>
+    <ri:public_exponent_hex>0x10001</ri:public_exponent_hex>
+    <ri:pem_container_algorithm>rsaEncryption (X.509 SubjectPublicKeyInfo)</ri:pem_container_algorithm>
+  </ri:detected_key_metadata>
+
+  <ri:public_key_material>
+    <ri:pem_file_reference>test_public_key.pem</ri:pem_file_reference>
+    <ri:modulus_hex>00:a1:25:ba:69:1a:0e:15:97:88:ee:0c:a2:e4:8c:c4:36:77:e9:75:8d:de:bd:d6:f5:2d:31:88:7b:79:53:75:17:ae:9c:85:64:dc:da:4c:ed:02:bc:2e:2f:cf:00:ff:fb:e6:ff:d2:30:b8:20:0d:78:47:68:0a:af:e7:d9:5b:e2:d7:c6:10:23:db:3c:a8:24:92:a7:10:4f:bb:2a:b3:ea:69:5e:ec:1d:f9:45:e1:eb:8c:ae:f3:77:a5:b0:90:9e:62:5a:79:dc:be:51:93:b5:b1:e9:05:96:a7:f3:63:0f:e7:ae:09:2e:ce:d0:dd:56:26:00:a8:82:fc:61:c3:50:37:14:d6:68:0d:ce:85:b8:58:b2:28:36:cc:d8:21:f5:6f:ee:92:c9:8a:c4:a7:68:3b:77:5e:74:2e:28:6e:bf:a4:0f:b9:d9:0b:d0:7f:16:8d:d5:55:d5:9e:bb:5d:91:5d:ec:2a:ad:9a:37:f3:64:b0:de:8f:f6:3c:7e:1e:46:b4:9d:f8:59:bf:57:51:36:39:3b:07:77:a9:81:8e:3b:5a:64:5f:d5:69:2f:01:ed:7d:d6:34:08:f0:6f:33:7b:ce:03:49:9b:43:ac:2a:d0:b5:d6:dc:6f:98:4c:62:4a:a5:ca:39:a5:17:60:29:11:c2:df:24:cd:42:d3:b5:77</ri:modulus_hex>
+    <ri:exponent_decimal>65537</ri:exponent_decimal>
+    <ri:exponent_hex>0x10001</ri:exponent_hex>
+  </ri:public_key_material>
+
+</ri:rsa_interop>

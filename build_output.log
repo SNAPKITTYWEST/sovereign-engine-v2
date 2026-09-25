@@ -1,0 +1,17 @@
+warning: hiding a lifetime that's elided elsewhere is confusing
+  --> crates\C011\src\lib.rs:69:17
+   |
+69 |     pub fn iter(&self) -> ArenaIter {
+   |                 ^^^^^     ^^^^^^^^^ the same lifetime is hidden here
+   |                 |
+   |                 the lifetime is elided here
+   |
+   = help: the same lifetime is referred to in inconsistent ways, making the signature confusing
+   = note: `#[warn(mismatched_lifetime_syntaxes)]` on by default
+help: use `'_` for type paths
+   |
+69 |     pub fn iter(&self) -> ArenaIter<'_> {
+   |                                    ++++
+
+warning: `multiplicity_arena_core` (lib) generated 1 warning (run `cargo fix --lib -p multiplicity_arena_core` to apply 1 suggestion)
+    Finished `release` profile [optimized] target(s) in 0.13s

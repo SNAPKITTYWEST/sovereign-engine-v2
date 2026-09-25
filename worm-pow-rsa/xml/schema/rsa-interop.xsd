@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+           xmlns:ri="urn:sovereign-engine:worm-pow-rsa:rsa-interop"
+           targetNamespace="urn:sovereign-engine:worm-pow-rsa:rsa-interop"
+           elementFormDefault="qualified">
+
+  <xs:annotation>
+    <xs:documentation>
+      XSD schema for RSA interoperability metadata documents. These
+      documents describe PUBLIC key material only, used strictly for
+      cross-implementation interoperability/format testing. Private key
+      material MUST NEVER appear in an instance of this schema; there is
+      intentionally no element defined here capable of carrying it.
+    </xs:documentation>
+  </xs:annotation>
+
+  <xs:simpleType name="KeyClassificationType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="TEST_ONLY"/>
+      <xs:enumeration value="INTEROPERABILITY_ONLY"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="RsaModulusHexType">
+    <xs:annotation>
+      <xs:documentation>
+        RSA modulus as a colon-delimited hex byte string, matching the
+        conventional OpenSSL "modulus" text dump format, e.g.
+        "00:a1:25:...". Leading "00" byte (sign padding) permitted.
+      </xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string">
+      <xs:pattern value="([0-9a-f]{2}:)*[0-9a-f]{2}"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:complexType name="KeyProvenanceType">
+    <xs:sequence>
+      <xs:element name="source_file" type="xs:string">
+        <xs:annotation>
+          <xs:documentation>Original filename the key material was extracted from.</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element name="disposable" type="xs:boolean" fixed="true">
+        <xs:annotation>
+          <xs:documentation>Source material is explicitly disposable, test-only, and not used for any production trust decision.</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element name="classification" type="ri:KeyClassificationType" fixed="TEST_ONLY"/>
+      <xs:element name="usage_label" type="xs:string" fixed="TEST / INTEROPERABILITY ONLY"/>
+      <xs:element name="private_key_included" type="xs:boolean" fixed="false">
+        <xs:annotation>
+          <xs:documentation>Always false. This schema defines no element capable of carrying private key material.</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element name="extracted_at" type="xs:dateTime" minOccurs="0"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="DetectedKeyMetadataType">
+    <xs:sequence>
+      <xs:element name="key_type" type="xs:string" fixed="RSA"/>
+      <xs:element name="encoding_format" type="xs:string" fixed="PKCS#1"/>
+      <xs:element name="key_size_bits" type="xs:positiveInteger" fixed="2048"/>
+      <xs:element name="public_exponent_decimal" type="xs:positiveInteger" fixed="65537"/>
+      <xs:element name="public_exponent_hex" type="xs:string" fixed="0x10001"/>
+      <xs:element name="pem_container_algorithm" type="xs:string" minOccurs="0">
+        <xs:annotation>
+          <xs:documentation>
+            Outer PEM/DER container algorithm identifier if different from
+            the raw PKCS#1 body, e.g. "rsaEncryption (X.509 SubjectPublicKeyInfo)".
+          </xs:documentation>
+        </xs:annotation>
+      </xs:element>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="PublicKeyMaterialType">
+    <xs:sequence>
+      <xs:element name="pem_file_reference" type="xs:string">
+        <xs:annotation>
+          <xs:documentation>Relative path to the accompanying PEM file containing the public key.</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element name="modulus_hex" type="ri:RsaModulusHexType">
+        <xs:annotation>
+          <xs:documentation>PUBLIC modulus only, colon-delimited hex, 2048-bit.</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element name="exponent_decimal" type="xs:positiveInteger" fixed="65537"/>
+      <xs:element name="exponent_hex" type="xs:string" fixed="0x10001"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="RsaInteropType">
+    <xs:sequence>
+      <xs:element name="schema" type="xs:string"/>
+      <xs:element name="classification_banner" type="xs:string" fixed="TEST / INTEROPERABILITY ONLY — NOT FOR PRODUCTION TRUST DECISIONS"/>
+      <xs:element name="provenance" type="ri:KeyProvenanceType"/>
+      <xs:element name="detected_key_metadata" type="ri:DetectedKeyMetadataType"/>
+      <xs:element name="public_key_material" type="ri:PublicKeyMaterialType"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:element name="rsa_interop" type="ri:RsaInteropType"/>
+
+</xs:schema>

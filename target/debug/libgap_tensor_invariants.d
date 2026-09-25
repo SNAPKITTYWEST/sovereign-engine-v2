@@ -1,0 +1,1 @@
+C:\Users\jessi\Desktop\sovereign-engine-v2\target\debug\libgap_tensor_invariants.rlib: C:\Users\jessi\Desktop\sovereign-engine-v2\crates\C001\src\lib.rs C:\Users\jessi\Desktop\sovereign-engine-v2\crates\C002\src\lib.rs C:\Users\jessi\Desktop\sovereign-engine-v2\crates\C004\src\lib.rs C:\Users\jessi\Desktop\sovereign-engine-v2\crates\C007\src\lib.rs

@@ -1,0 +1,1 @@
+C:\Users\jessi\Desktop\sovereign-engine-v2\target\debug\libprime_predicate.rlib: C:\Users\jessi\Desktop\sovereign-engine-v2\crates\C001\src\lib.rs C:\Users\jessi\Desktop\sovereign-engine-v2\crates\C021\src\lib.rs

@@ -1,0 +1,1 @@
+C:\Users\jessi\Desktop\sovereign-engine-v2\target\debug\libgap_tensor_primes.rlib: C:\Users\jessi\Desktop\sovereign-engine-v2\crates\C001\src\lib.rs C:\Users\jessi\Desktop\sovereign-engine-v2\crates\C002\src\lib.rs

@@ -1,0 +1,275 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+           xmlns:wr="urn:sovereign-engine:worm-pow-rsa:worm-record"
+           targetNamespace="urn:sovereign-engine:worm-pow-rsa:worm-record"
+           elementFormDefault="qualified">
+
+  <xs:annotation>
+    <xs:documentation>
+      XSD schema for a single WORM (Write-Once-Read-Many) cryptographic
+      continuity ledger record. Each record is a link in an append-only
+      hash chain, canonicalized via RFC 8785 JCS prior to hashing, hashed
+      with SHA-256, and optionally sealed with a Proof-of-Work challenge.
+      This schema describes the LOGICAL record structure only; it does not
+      itself provide physical write-once enforcement (see worm-manifest.xsd
+      for the explicit caveat on that point).
+    </xs:documentation>
+  </xs:annotation>
+
+  <!-- ============ Shared simple types ============ -->
+
+  <xs:simpleType name="Sha256HexType">
+    <xs:annotation>
+      <xs:documentation>
+        A SHA-256 digest rendered as 64 lowercase hexadecimal characters.
+      </xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string">
+      <xs:pattern value="[0-9a-f]{64}"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="HashAlgorithmType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="SHA-256"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="PowAlgorithmType">
+    <xs:annotation>
+      <xs:documentation>
+        The proof-of-work hashing algorithm used to seal this record.
+        Currently only SHA-256-based leading-zero PoW is defined.
+      </xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="SHA-256"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="RecordIdType">
+    <xs:annotation>
+      <xs:documentation>
+        Globally unique identifier for a record, e.g. a UUIDv4 or a
+        deterministic urn. Kept as an unrestricted non-empty token so
+        deployments may choose their own ID scheme.
+      </xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:token">
+      <xs:minLength value="1"/>
+      <xs:maxLength value="256"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="EventTypeType">
+    <xs:annotation>
+      <xs:documentation>
+        Free-form but namespaced event-type identifier, e.g.
+        "genesis", "checkpoint", "audit.attestation", "key.rotation".
+      </xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:token">
+      <xs:minLength value="1"/>
+      <xs:maxLength value="128"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <!-- ============ Complex types ============ -->
+
+  <xs:complexType name="PayloadType">
+    <xs:annotation>
+      <xs:documentation>
+        Opaque, event-specific payload. Content is application-defined;
+        this schema deliberately allows any well-formed child content or
+        text so downstream event types can evolve without breaking this
+        schema. The canonical byte form used for payload_hash MUST be the
+        RFC 8785 JSON Canonicalization Scheme (JCS) serialization of the
+        logical payload data model, not the raw XML serialization.
+      </xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:any namespace="##any" processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+    <xs:anyAttribute processContents="lax"/>
+  </xs:complexType>
+
+  <xs:complexType name="PowType">
+    <xs:annotation>
+      <xs:documentation>
+        Proof-of-work challenge/response sealed into this record.
+        WARNING: difficulty is expressed here in hex leading-zero nibbles
+        for backward compatibility with the historical default (18).
+        18 hex nibbles of leading zero is approximately 16^18 = 2^72
+        expected hash operations, which is computationally infeasible to
+        generate live on commodity hardware (multiple years at billions
+        of hashes/sec). Deployments SHOULD instead use difficulty_bits
+        (leading zero BITS rather than nibbles) with a realistic value in
+        the 20-24 bit range, which is roughly 5-6 hex nibbles of
+        difficulty and achievable in well under a second on a single
+        core. difficulty is retained as the labeled legacy/default field;
+        difficulty_bits is the recommended operational field going
+        forward and, when present, takes precedence over difficulty for
+        actual PoW validation.
+      </xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="algorithm" type="wr:PowAlgorithmType"/>
+      <xs:element name="nonce" type="xs:string">
+        <xs:annotation>
+          <xs:documentation>
+            Nonce value (decimal or hex string, application-defined) that,
+            combined with the record's canonical pre-image, satisfies the
+            configured difficulty target under the chosen algorithm.
+          </xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element name="difficulty" type="xs:nonNegativeInteger">
+        <xs:annotation>
+          <xs:documentation>
+            Legacy/default difficulty expressed in required leading-zero
+            HEX NIBBLES. Default value across this project is 18, which
+            is flagged as impractical for live generation (~2^72 work).
+            Retained for schema/config compatibility; see
+            difficulty_bits for the recommended field.
+          </xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element name="difficulty_bits" type="xs:nonNegativeInteger" minOccurs="0">
+        <xs:annotation>
+          <xs:documentation>
+            Recommended difficulty expressed in required leading-zero
+            BITS of the resulting hash. A saner operational default is
+            20-24 bits (approximately 5-6 hex nibbles). When present,
+            this field is authoritative over "difficulty" for validating
+            whether the pow hash actually satisfies the target.
+          </xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element name="hash" type="wr:Sha256HexType">
+        <xs:annotation>
+          <xs:documentation>
+            The resulting PoW hash that satisfies the configured
+            difficulty target (leading zero nibbles/bits as configured).
+          </xs:documentation>
+        </xs:annotation>
+      </xs:element>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="WormFlagsType">
+    <xs:annotation>
+      <xs:documentation>
+        Per-record WORM enforcement flags. These are metadata assertions
+        made by the writer, not a substitute for physical write-once
+        storage enforcement at the storage layer.
+      </xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="mode" type="xs:string">
+        <xs:annotation>
+          <xs:documentation>
+            Declared WORM mode for this record, e.g. "strict",
+            "advisory". See worm-manifest.xsd for chain-level detail.
+          </xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element name="append_only" type="xs:boolean"/>
+      <xs:element name="immutable" type="xs:boolean"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="SignatureType">
+    <xs:annotation>
+      <xs:documentation>
+        Optional RSA signature extension over the canonical record_hash
+        pre-image, for deployments that want cryptographic non-repudiation
+        in addition to the hash chain and PoW seal.
+      </xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="algorithm" fixed="RSASSA-PKCS1-v1_5-SHA256" type="xs:string"/>
+      <xs:element name="key_id" type="xs:string"/>
+      <xs:element name="value" type="xs:base64Binary">
+        <xs:annotation>
+          <xs:documentation>
+            Base64-encoded RSA signature bytes. This element carries a
+            SIGNATURE only. Private key material MUST NEVER appear in
+            this or any other document.
+          </xs:documentation>
+        </xs:annotation>
+      </xs:element>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="WormRecordType">
+    <xs:sequence>
+      <xs:element name="schema" type="xs:string">
+        <xs:annotation>
+          <xs:documentation>
+            Identifier/version of the logical record schema this instance
+            conforms to, e.g. "worm-record-v1".
+          </xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element name="sequence" type="xs:nonNegativeInteger">
+        <xs:annotation>
+          <xs:documentation>
+            Zero-based, strictly monotonically increasing position of this
+            record in the chain. The genesis record MUST have sequence=0.
+          </xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element name="record_id" type="wr:RecordIdType"/>
+      <xs:element name="timestamp" type="xs:dateTime">
+        <xs:annotation>
+          <xs:documentation>UTC timestamp of record creation, RFC 3339 / ISO 8601 form (XSD dateTime).</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element name="event_type" type="wr:EventTypeType"/>
+      <xs:element name="payload" type="wr:PayloadType"/>
+      <xs:element name="payload_hash" type="wr:Sha256HexType">
+        <xs:annotation>
+          <xs:documentation>
+            SHA-256 hash of the RFC 8785 JCS canonicalization of the
+            logical payload data.
+          </xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element name="prev_hash" type="wr:Sha256HexType">
+        <xs:annotation>
+          <xs:documentation>
+            record_hash of the immediately preceding record in the chain.
+            For the genesis record (sequence=0), this MUST be 64 zero
+            characters ("00...0", 64 total).
+          </xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element name="pow" type="wr:PowType"/>
+      <xs:element name="record_hash" type="wr:Sha256HexType">
+        <xs:annotation>
+          <xs:documentation>
+            SHA-256 hash of the RFC 8785 JCS canonicalization of this
+            record's canonical fields (excluding record_hash itself),
+            forming this record's link in the hash chain.
+          </xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element name="worm" type="wr:WormFlagsType"/>
+      <xs:element name="signature" type="wr:SignatureType" minOccurs="0">
+        <xs:annotation>
+          <xs:documentation>
+            Optional RSA signature extension. Absent unless the
+            deployment has enabled signing.
+          </xs:documentation>
+        </xs:annotation>
+      </xs:element>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:element name="worm_record" type="wr:WormRecordType"/>
+
+  <!-- Genesis-record specific constraint documented, not machine-enforced here:
+       XSD 1.0 cannot conditionally require prev_hash == 64 zero chars only
+       when sequence = 0; this MUST be validated by application logic. -->
+
+</xs:schema>

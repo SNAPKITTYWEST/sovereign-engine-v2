@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<sc:system_config xmlns:sc="urn:sovereign-engine:worm-pow-rsa:system-config"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="urn:sovereign-engine:worm-pow-rsa:system-config ../schema/system-config.xsd">
+
+  <sc:schema>system-config-v1</sc:schema>
+
+  <sc:cryptography>
+    <sc:hash_algorithm>SHA-256</sc:hash_algorithm>
+    <sc:canonicalization>RFC8785-JCS</sc:canonicalization>
+    <sc:signature_algorithm>RSASSA-PKCS1-v1_5-SHA256</sc:signature_algorithm>
+    <sc:rsa_key_size_bits>2048</sc:rsa_key_size_bits>
+    <sc:rsa_public_exponent>65537</sc:rsa_public_exponent>
+    <sc:signing_enabled>false</sc:signing_enabled>
+  </sc:cryptography>
+
+  <!--
+    NOTE ON PoW DIFFICULTY:
+    difficulty=18 below is the historical/labeled project default,
+    expressed in HEX NIBBLES of required leading zero. At 18 nibbles this
+    represents ~16^18 (~2^72) expected SHA-256 operations — computationally
+    infeasible to generate live on commodity hardware (years of single-core
+    compute). It is retained here only as a documented default value, NOT
+    as a recommendation for live operation.
+
+    difficulty_bits=22 is provided as the operational value actually used
+    by this configuration: 22 leading zero BITS (~5.5 hex nibbles), which
+    is achievable in a small fraction of a second per record on a single
+    core and is a realistic sane default (recommended range: 20-24 bits).
+    Where both fields are present, difficulty_bits is authoritative for
+    validation.
+  -->
+  <sc:proof_of_work>
+    <sc:algorithm>SHA-256</sc:algorithm>
+    <sc:difficulty>18</sc:difficulty>
+    <sc:difficulty_bits>22</sc:difficulty_bits>
+    <sc:max_nonce_attempts>4294967295</sc:max_nonce_attempts>
+    <sc:target_seal_time_ms>250</sc:target_seal_time_ms>
+  </sc:proof_of_work>
+
+  <sc:storage>
+    <sc:backend>local-filesystem</sc:backend>
+    <sc:worm_mode>strict</sc:worm_mode>
+    <sc:append_only>true</sc:append_only>
+    <sc:immutable>true</sc:immutable>
+    <sc:physical_worm_enforcement>false</sc:physical_worm_enforcement>
+    <sc:storage_path>./data/worm-ledger</sc:storage_path>
+    <sc:replication_factor>1</sc:replication_factor>
+  </sc:storage>
+
+  <sc:audit>
+    <sc:enabled>true</sc:enabled>
+    <sc:audit_log_path>./data/audit/audit.log</sc:audit_log_path>
+    <sc:verify_on_read>true</sc:verify_on_read>
+    <sc:periodic_full_chain_verification_interval_minutes>60</sc:periodic_full_chain_verification_interval_minutes>
+    <sc:alert_on_verification_failure>true</sc:alert_on_verification_failure>
+  </sc:audit>
+
+  <sc:mustache_rendering>
+    <sc:engine>mustache</sc:engine>
+    <sc:template_directory>./templates</sc:template_directory>
+    <sc:default_template>chain-report.mustache</sc:default_template>
+    <sc:escape_html>true</sc:escape_html>
+    <sc:strict_mode>true</sc:strict_mode>
+  </sc:mustache_rendering>
+
+</sc:system_config>

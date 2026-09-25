@@ -1,0 +1,1 @@
+C:\Users\jessi\Desktop\sovereign-engine-v2\target\debug\libspectrum_definition.rlib: C:\Users\jessi\Desktop\sovereign-engine-v2\crates\C001\src\lib.rs C:\Users\jessi\Desktop\sovereign-engine-v2\crates\C061\src\lib.rs C:\Users\jessi\Desktop\sovereign-engine-v2\crates\C062\src\lib.rs C:\Users\jessi\Desktop\sovereign-engine-v2\crates\C064\src\lib.rs

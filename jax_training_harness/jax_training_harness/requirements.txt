@@ -1,0 +1,4 @@
+jax[cpu]>=0.4.30
+optax>=0.2.3
+numpy>=1.24
+pytest>=8.0

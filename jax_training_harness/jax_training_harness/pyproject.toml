@@ -1,0 +1,13 @@
+[project]
+name = "jax-training-harness"
+version = "0.1.0"
+description = "A deterministic, multi-modal JAX training harness for formal, RL, graph, tabular, telemetry, vision, and audio data."
+requires-python = ">=3.10"
+dependencies = ["jax>=0.4.30", "numpy>=1.24", "optax>=0.2.3", "typing-extensions>=4.8"]
+
+[project.scripts]
+jax-harness = "jax_harness.cli:main"
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+addopts = "-q"

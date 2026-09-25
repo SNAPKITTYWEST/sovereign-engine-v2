@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<wm:worm_manifest xmlns:wm="urn:sovereign-engine:worm-pow-rsa:worm-manifest"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="urn:sovereign-engine:worm-pow-rsa:worm-manifest ../schema/worm-manifest.xsd">
+
+  <wm:schema>worm-manifest-v1</wm:schema>
+
+  <wm:chain_identity>
+    <wm:chain_id>urn:sovereign-engine:worm-pow-rsa:chain:primary-ledger-001</wm:chain_id>
+    <wm:chain_name>worm-pow-rsa primary continuity ledger</wm:chain_name>
+    <wm:created_at>2026-09-24T00:00:00Z</wm:created_at>
+    <wm:genesis_record_hash>3f1e0a4b6c9d2e5f7a8b1c4d6e0f2a3b5c7d9e1f0a2b4c6d8e0f1a3b5c7d9e0f</wm:genesis_record_hash>
+    <wm:owner>sovereign-engine-v2</wm:owner>
+  </wm:chain_identity>
+
+  <wm:record_count>
+    <wm:total_records>1</wm:total_records>
+    <wm:last_sequence>0</wm:last_sequence>
+    <wm:last_record_hash>3f1e0a4b6c9d2e5f7a8b1c4d6e0f2a3b5c7d9e1f0a2b4c6d8e0f1a3b5c7d9e0f</wm:last_record_hash>
+    <wm:last_updated_at>2026-09-24T00:00:00Z</wm:last_updated_at>
+  </wm:record_count>
+
+  <wm:anchor_points>
+    <wm:anchor_point>
+      <wm:sequence>0</wm:sequence>
+      <wm:record_id>urn:sovereign-engine:worm-pow-rsa:record:genesis</wm:record_id>
+      <wm:record_hash>3f1e0a4b6c9d2e5f7a8b1c4d6e0f2a3b5c7d9e1f0a2b4c6d8e0f1a3b5c7d9e0f</wm:record_hash>
+      <wm:anchored_at>2026-09-24T00:00:00Z</wm:anchored_at>
+      <wm:anchor_type>genesis</wm:anchor_type>
+    </wm:anchor_point>
+  </wm:anchor_points>
+
+  <!--
+    IMPORTANT CAVEAT — READ BEFORE RELYING ON THIS DOCUMENT:
+    This manifest declares the LOGICAL append-only / immutability
+    guarantees of the worm-pow-rsa record format (hash-chain linkage via
+    prev_hash/record_hash, RFC 8785 JCS canonicalization, SHA-256 hashing,
+    and optional PoW sealing). These guarantees mean that if a record is
+    altered or removed after the fact, that tampering is DETECTABLE by
+    re-verifying the chain.
+
+    This XML metadata does NOT, by itself, PREVENT tampering. XML files on
+    an ordinary writable filesystem can be edited, replaced, or deleted
+    like any other file. Genuine write-once/read-many enforcement — actual
+    prevention, not just detection — requires a physical or platform-level
+    control independent of this document, such as:
+      - Object storage in compliance/governance WORM lock mode
+        (e.g. S3 Object Lock, Azure Immutable Blob Storage)
+      - Write-once optical/tape media
+      - A permissioned, replicated append-only log service
+      - OS-level immutability flags combined with restricted write access
+        and independent audit of the enforcing host
+
+    See append_only_guarantees/physical_worm_enforcement below for whether
+    such a control is actually configured for THIS deployment; it defaults
+    to false until an operator wires one up and sets it explicitly.
+  -->
+  <wm:append_only_guarantees>
+    <wm:hash_chain_linkage>true</wm:hash_chain_linkage>
+    <wm:pow_sealed>true</wm:pow_sealed>
+    <wm:canonicalization>RFC8785-JCS</wm:canonicalization>
+    <wm:hash_algorithm>SHA-256</wm:hash_algorithm>
+    <wm:physical_worm_enforcement>false</wm:physical_worm_enforcement>
+    <wm:physical_enforcement_mechanism>none configured — local filesystem storage backend only</wm:physical_enforcement_mechanism>
+    <wm:caveat>XML metadata in this manifest alone does NOT provide physical WORM enforcement. Genuine write-once/immutability guarantees require storage-layer controls independent of this document.</wm:caveat>
+  </wm:append_only_guarantees>
+
+</wm:worm_manifest>

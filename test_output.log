@@ -1,0 +1,189 @@
+   Compiling gap_tensor_core v0.1.0 (C:\Users\jessi\Desktop\sovereign-engine-v2\crates\C001)
+   Compiling gap_tensor_shape v0.1.0 (C:\Users\jessi\Desktop\sovereign-engine-v2\crates\C004)
+   Compiling prime_predicate v0.1.0 (C:\Users\jessi\Desktop\sovereign-engine-v2\crates\C021)
+   Compiling gap_tensor_primes v0.1.0 (C:\Users\jessi\Desktop\sovereign-engine-v2\crates\C002)
+   Compiling ideal_interface v0.1.0 (C:\Users\jessi\Desktop\sovereign-engine-v2\crates\C061)
+   Compiling prime_enumeration v0.1.0 (C:\Users\jessi\Desktop\sovereign-engine-v2\crates\C022)
+   Compiling gap_tensor_spectral v0.1.0 (C:\Users\jessi\Desktop\sovereign-engine-v2\crates\C003)
+   Compiling gap_tensor_equality v0.1.0 (C:\Users\jessi\Desktop\sovereign-engine-v2\crates\C005)
+   Compiling chain_complex_shape v0.1.0 (C:\Users\jessi\Desktop\sovereign-engine-v2\crates\C041)
+   Compiling multiplicity_arena_core v0.1.0 (C:\Users\jessi\Desktop\sovereign-engine-v2\crates\C011)
+   Compiling gap_tensor_invariants v0.1.0 (C:\Users\jessi\Desktop\sovereign-engine-v2\crates\C007)
+   Compiling gap_tensor_serialization v0.1.0 (C:\Users\jessi\Desktop\sovereign-engine-v2\crates\C006)
+   Compiling gap_candidate_set v0.1.0 (C:\Users\jessi\Desktop\sovereign-engine-v2\crates\C023)
+   Compiling gap_tensor_ordering v0.1.0 (C:\Users\jessi\Desktop\sovereign-engine-v2\crates\C008)
+   Compiling chain_complex_types v0.1.0 (C:\Users\jessi\Desktop\sovereign-engine-v2\crates\C042)
+warning: hiding a lifetime that's elided elsewhere is confusing
+  --> crates\C011\src\lib.rs:69:17
+   |
+69 |     pub fn iter(&self) -> ArenaIter {
+   |                 ^^^^^     ^^^^^^^^^ the same lifetime is hidden here
+   |                 |
+   |                 the lifetime is elided here
+   |
+   = help: the same lifetime is referred to in inconsistent ways, making the signature confusing
+   = note: `#[warn(mismatched_lifetime_syntaxes)]` on by default
+help: use `'_` for type paths
+   |
+69 |     pub fn iter(&self) -> ArenaIter<'_> {
+   |                                    ++++
+
+   Compiling gap_tensor_trace v0.1.0 (C:\Users\jessi\Desktop\sovereign-engine-v2\crates\C010)
+   Compiling multiplicity_arena_layout v0.1.0 (C:\Users\jessi\Desktop\sovereign-engine-v2\crates\C012)
+   Compiling differential_operator v0.1.0 (C:\Users\jessi\Desktop\sovereign-engine-v2\crates\C043)
+   Compiling recursive_solver_state v0.1.0 (C:\Users\jessi\Desktop\sovereign-engine-v2\crates\C031)
+   Compiling gap_ordering v0.1.0 (C:\Users\jessi\Desktop\sovereign-engine-v2\crates\C024)
+   Compiling projective_module_definition v0.1.0 (C:\Users\jessi\Desktop\sovereign-engine-v2\crates\C045)
+   Compiling runtime_state_snapshot v0.1.0 (C:\Users\jessi\Desktop\sovereign-engine-v2\crates\C081)
+   Compiling differential_squared_zero v0.1.0 (C:\Users\jessi\Desktop\sovereign-engine-v2\crates\C044)
+   Compiling recursion_depth_management v0.1.0 (C:\Users\jessi\Desktop\sovereign-engine-v2\crates\C032)
+warning: `multiplicity_arena_core` (lib) generated 1 warning (run `cargo fix --lib -p multiplicity_arena_core` to apply 1 suggestion)
+   Compiling homology_computation v0.1.0 (C:\Users\jessi\Desktop\sovereign-engine-v2\crates\C048)
+   Compiling projective_resolution v0.1.0 (C:\Users\jessi\Desktop\sovereign-engine-v2\crates\C046)
+   Compiling gap_absolute_difference v0.1.0 (C:\Users\jessi\Desktop\sovereign-engine-v2\crates\C026)
+   Compiling type_checking_interface v0.1.0 (C:\Users\jessi\Desktop\sovereign-engine-v2\crates\C071)
+   Compiling tensor_product_module v0.1.0 (C:\Users\jessi\Desktop\sovereign-engine-v2\crates\C052)
+   Compiling prime_ideal_predicate v0.1.0 (C:\Users\jessi\Desktop\sovereign-engine-v2\crates\C062)
+   Compiling tor_functor_definition v0.1.0 (C:\Users\jessi\Desktop\sovereign-engine-v2\crates\C051)
+   Compiling gap_constraint_satisfaction v0.1.0 (C:\Users\jessi\Desktop\sovereign-engine-v2\crates\C027)
+   Compiling resolution_tensored v0.1.0 (C:\Users\jessi\Desktop\sovereign-engine-v2\crates\C053)
+   Compiling spectrum_definition v0.1.0 (C:\Users\jessi\Desktop\sovereign-engine-v2\crates\C064)
+   Compiling recursion_runtime_binding v0.1.0 (C:\Users\jessi\Desktop\sovereign-engine-v2\crates\C085)
+   Compiling recursive_solver_cursor v0.1.0 (C:\Users\jessi\Desktop\sovereign-engine-v2\crates\C033)
+   Compiling prime_state_binding v0.1.0 (C:\Users\jessi\Desktop\sovereign-engine-v2\crates\C083)
+   Compiling multiplicity_state_binding v0.1.0 (C:\Users\jessi\Desktop\sovereign-engine-v2\crates\C084)
+   Compiling tensor_runtime_binding v0.1.0 (C:\Users\jessi\Desktop\sovereign-engine-v2\crates\C082)
+   Compiling spectrum_order v0.1.0 (C:\Users\jessi\Desktop\sovereign-engine-v2\crates\C065)
+   Compiling multiplicity_arena_pointers v0.1.0 (C:\Users\jessi\Desktop\sovereign-engine-v2\crates\C015)
+   Compiling derived_homology v0.1.0 (C:\Users\jessi\Desktop\sovereign-engine-v2\crates\C054)
+   Compiling prime_gap_relationship v0.1.0 (C:\Users\jessi\Desktop\sovereign-engine-v2\crates\C029)
+   Compiling obligation_management v0.1.0 (C:\Users\jessi\Desktop\sovereign-engine-v2\crates\C072)
+   Compiling exactness_predicate v0.1.0 (C:\Users\jessi\Desktop\sovereign-engine-v2\crates\C047)
+   Compiling recursive_solver_transition v0.1.0 (C:\Users\jessi\Desktop\sovereign-engine-v2\crates\C035)
+   Compiling spectrum_chains v0.1.0 (C:\Users\jessi\Desktop\sovereign-engine-v2\crates\C066)
+   Compiling cross_layer_types v0.1.0 (C:\Users\jessi\Desktop\sovereign-engine-v2\crates\C091)
+   Compiling multiplicity_arena_allocation v0.1.0 (C:\Users\jessi\Desktop\sovereign-engine-v2\crates\C013)
+   Compiling resolution_certification v0.1.0 (C:\Users\jessi\Desktop\sovereign-engine-v2\crates\C049)
+   Compiling certificate_generation v0.1.0 (C:\Users\jessi\Desktop\sovereign-engine-v2\crates\C087)
+   Compiling runtime_invariant_checking v0.1.0 (C:\Users\jessi\Desktop\sovereign-engine-v2\crates\C089)
+   Compiling krull_dimension_definition v0.1.0 (C:\Users\jessi\Desktop\sovereign-engine-v2\crates\C067)
+   Compiling tor_invariants_computation v0.1.0 (C:\Users\jessi\Desktop\sovereign-engine-v2\crates\C058)
+   Compiling tor_higher_degrees v0.1.0 (C:\Users\jessi\Desktop\sovereign-engine-v2\crates\C056)
+   Compiling tor_zero_structure v0.1.0 (C:\Users\jessi\Desktop\sovereign-engine-v2\crates\C055)
+   Compiling functoriality_of_tor v0.1.0 (C:\Users\jessi\Desktop\sovereign-engine-v2\crates\C057)
+   Compiling dimension_upper_bounds v0.1.0 (C:\Users\jessi\Desktop\sovereign-engine-v2\crates\C068)
+   Compiling gap_verification v0.1.0 (C:\Users\jessi\Desktop\sovereign-engine-v2\crates\C028)
+   Compiling gap_multiplicity v0.1.0 (C:\Users\jessi\Desktop\sovereign-engine-v2\crates\C025)
+   Compiling recursion_backtracking v0.1.0 (C:\Users\jessi\Desktop\sovereign-engine-v2\crates\C037)
+   Compiling recursion_base_case v0.1.0 (C:\Users\jessi\Desktop\sovereign-engine-v2\crates\C036)
+   Compiling tor_resolution_lemmas_library v0.1.0 (C:\Users\jessi\Desktop\sovereign-engine-v2\crates\C077)
+   Compiling krull_certification v0.1.0 (C:\Users\jessi\Desktop\sovereign-engine-v2\crates\C069)
+   Compiling recursion_lemmas_library v0.1.0 (C:\Users\jessi\Desktop\sovereign-engine-v2\crates\C075)
+   Compiling recursive_solver_selection v0.1.0 (C:\Users\jessi\Desktop\sovereign-engine-v2\crates\C034)
+   Compiling rollback_mechanism v0.1.0 (C:\Users\jessi\Desktop\sovereign-engine-v2\crates\C088)
+   Compiling gap_lemmas_library v0.1.0 (C:\Users\jessi\Desktop\sovereign-engine-v2\crates\C073)
+   Compiling krull_lemmas_library v0.1.0 (C:\Users\jessi\Desktop\sovereign-engine-v2\crates\C078)
+   Compiling trace_recording_runtime v0.1.0 (C:\Users\jessi\Desktop\sovereign-engine-v2\crates\C086)
+   Compiling homological_lemmas_library v0.1.0 (C:\Users\jessi\Desktop\sovereign-engine-v2\crates\C076)
+   Compiling memory_lemmas_library v0.1.0 (C:\Users\jessi\Desktop\sovereign-engine-v2\crates\C074)
+   Compiling multiplicity_arena_ownership v0.1.0 (C:\Users\jessi\Desktop\sovereign-engine-v2\crates\C016)
+   Compiling recursion_solution_path v0.1.0 (C:\Users\jessi\Desktop\sovereign-engine-v2\crates\C039)
+   Compiling tor_chain_complex_interface v0.1.0 (C:\Users\jessi\Desktop\sovereign-engine-v2\crates\C059)
+   Compiling cross_layer_lemmas_library v0.1.0 (C:\Users\jessi\Desktop\sovereign-engine-v2\crates\C079)
+   Compiling multiplicity_arena_deallocation v0.1.0 (C:\Users\jessi\Desktop\sovereign-engine-v2\crates\C017)
+   Compiling runtime_bridge_tests_integration v0.1.0 (C:\Users\jessi\Desktop\sovereign-engine-v2\crates\C090)
+   Compiling rust_lean_correspondence v0.1.0 (C:\Users\jessi\Desktop\sovereign-engine-v2\crates\C093)
+   Compiling maximal_ideal_predicate v0.1.0 (C:\Users\jessi\Desktop\sovereign-engine-v2\crates\C063)
+   Compiling multiplicity_arena_failure_handling v0.1.0 (C:\Users\jessi\Desktop\sovereign-engine-v2\crates\C018)
+   Compiling multiplicity_arena_initialization v0.1.0 (C:\Users\jessi\Desktop\sovereign-engine-v2\crates\C014)
+   Compiling lean_obligation_aggregator v0.1.0 (C:\Users\jessi\Desktop\sovereign-engine-v2\crates\C080)
+   Compiling tor_tests_integration v0.1.0 (C:\Users\jessi\Desktop\sovereign-engine-v2\crates\C060)
+   Compiling recursive_solver_trace v0.1.0 (C:\Users\jessi\Desktop\sovereign-engine-v2\crates\C040)
+   Compiling prime_gap_tests_integration v0.1.0 (C:\Users\jessi\Desktop\sovereign-engine-v2\crates\C030)
+   Compiling krull_spectrum_tests_integration v0.1.0 (C:\Users\jessi\Desktop\sovereign-engine-v2\crates\C070)
+   Compiling multiplicity_arena_tests_integration v0.1.0 (C:\Users\jessi\Desktop\sovereign-engine-v2\crates\C020)
+   Compiling tor_spectrum_correspondence v0.1.0 (C:\Users\jessi\Desktop\sovereign-engine-v2\crates\C096)
+   Compiling cross_layer_invariants v0.1.0 (C:\Users\jessi\Desktop\sovereign-engine-v2\crates\C092)
+   Compiling homological_tests_integration v0.1.0 (C:\Users\jessi\Desktop\sovereign-engine-v2\crates\C050)
+   Compiling multiplicity_arena_statistics v0.1.0 (C:\Users\jessi\Desktop\sovereign-engine-v2\crates\C019)
+   Compiling prime_gap_correspondence v0.1.0 (C:\Users\jessi\Desktop\sovereign-engine-v2\crates\C094)
+   Compiling tensor_homology_correspondence v0.1.0 (C:\Users\jessi\Desktop\sovereign-engine-v2\crates\C095)
+   Compiling recursion_contradiction_detection v0.1.0 (C:\Users\jessi\Desktop\sovereign-engine-v2\crates\C038)
+   Compiling gap_tensor_arithmetic v0.1.0 (C:\Users\jessi\Desktop\sovereign-engine-v2\crates\C009)
+   Compiling end_to_end_trace_verification v0.1.0 (C:\Users\jessi\Desktop\sovereign-engine-v2\crates\C097)
+   Compiling counterexample_harness v0.1.0 (C:\Users\jessi\Desktop\sovereign-engine-v2\crates\C098)
+   Compiling full_regression_test_suite v0.1.0 (C:\Users\jessi\Desktop\sovereign-engine-v2\crates\C099)
+   Compiling final_certification_report v0.1.0 (C:\Users\jessi\Desktop\sovereign-engine-v2\crates\C100)
+error: linking with `x86_64-w64-mingw32-gcc` failed: exit code: 1
+  |
+  = note: "x86_64-w64-mingw32-gcc" "-fno-use-linker-plugin" "-Wl,--dynamicbase" "-Wl,--disable-auto-image-base" "-m64" "-Wl,--high-entropy-va" "c:\\Users\\jessi\\Desktop\\sovereign-engine-v2\\target\\debug\\deps\\rustcQW8wHp\\symbols.o" "<6 object files omitted>" "-Wl,-Bstatic" "<sysroot>\\lib\\rustlib\\x86_64-pc-windows-gnu\\lib/{libtest-*,libgetopts-*,librustc_std_workspace_std-*,libstd-*,libpanic_unwind-*,libobject-*,libmemchr-*,libaddr2line-*,libgimli-*,libcfg_if-*,libwindows_link-*,librustc_demangle-*,libstd_detect-*,libhashbrown-*,librustc_std_workspace_alloc-*,libminiz_oxide-*,libadler2-*,libunwind-*,liblibc-*,librustc_std_workspace_core-*,liballoc-*,libcore-*,libcompiler_builtins-*}.rlib" "-Wl,-Bdynamic" "-lkernel32" "-lkernel32" "-lkernel32" "-lkernel32" "-lntdll" "-luserenv" "-lws2_32" "-ldbghelp" "-lgcc_eh" "-l:libpthread.a" "-lmsvcrt" "-lmingwex" "-lmingw32" "-lgcc" "-lmsvcrt" "-lmingwex" "-luser32" "-lkernel32" "-Wl,--nxcompat" "-o" "c:\\Users\\jessi\\Desktop\\sovereign-engine-v2\\target\\debug\\deps\\prime_gap_correspondence-0efb00662b771080.exe" "-Wl,--gc-sections" "-nodefaultlibs"
+  = note: some arguments are omitted. use `--verbose` to show all linker arguments
+  = note: C:/Strawberry/c/bin/../lib/gcc/x86_64-w64-mingw32/13.2.0/../../../../x86_64-w64-mingw32/bin/ld.exe: final link failed: No space left on device
+          collect2.exe: error: ld returned 1 exit status
+          
+
+error: linking with `x86_64-w64-mingw32-gcc` failed: exit code: 1
+  |
+  = note: "x86_64-w64-mingw32-gcc" "-fno-use-linker-plugin" "-Wl,--dynamicbase" "-Wl,--disable-auto-image-base" "-m64" "-Wl,--high-entropy-va" "c:\\Users\\jessi\\Desktop\\sovereign-engine-v2\\target\\debug\\deps\\rustcJNtxkQ\\symbols.o" "<6 object files omitted>" "-Wl,-Bstatic" "<sysroot>\\lib\\rustlib\\x86_64-pc-windows-gnu\\lib/{libtest-*,libgetopts-*,librustc_std_workspace_std-*,libstd-*,libpanic_unwind-*,libobject-*,libmemchr-*,libaddr2line-*,libgimli-*,libcfg_if-*,libwindows_link-*,librustc_demangle-*,libstd_detect-*,libhashbrown-*,librustc_std_workspace_alloc-*,libminiz_oxide-*,libadler2-*,libunwind-*,liblibc-*,librustc_std_workspace_core-*,liballoc-*,libcore-*,libcompiler_builtins-*}.rlib" "-Wl,-Bdynamic" "-lkernel32" "-lkernel32" "-lkernel32" "-lkernel32" "-lntdll" "-luserenv" "-lws2_32" "-ldbghelp" "-lgcc_eh" "-l:libpthread.a" "-lmsvcrt" "-lmingwex" "-lmingw32" "-lgcc" "-lmsvcrt" "-lmingwex" "-luser32" "-lkernel32" "-Wl,--nxcompat" "-o" "c:\\Users\\jessi\\Desktop\\sovereign-engine-v2\\target\\debug\\deps\\certificate_generation-1ef2233753b98ed1.exe" "-Wl,--gc-sections" "-nodefaultlibs"
+  = note: some arguments are omitted. use `--verbose` to show all linker arguments
+  = note: C:/Strawberry/c/bin/../lib/gcc/x86_64-w64-mingw32/13.2.0/../../../../x86_64-w64-mingw32/bin/ld.exe: final link failed: No space left on device
+          collect2.exe: error: ld returned 1 exit status
+          
+
+error: linking with `x86_64-w64-mingw32-gcc` failed: exit code: 1
+  |
+  = note: "x86_64-w64-mingw32-gcc" "-fno-use-linker-plugin" "-Wl,--dynamicbase" "-Wl,--disable-auto-image-base" "-m64" "-Wl,--high-entropy-va" "c:\\Users\\jessi\\Desktop\\sovereign-engine-v2\\target\\debug\\deps\\rustckjvEHG\\symbols.o" "<6 object files omitted>" "-Wl,-Bstatic" "<sysroot>\\lib\\rustlib\\x86_64-pc-windows-gnu\\lib/{libtest-*,libgetopts-*,librustc_std_workspace_std-*,libstd-*,libpanic_unwind-*,libobject-*,libmemchr-*,libaddr2line-*,libgimli-*,libcfg_if-*,libwindows_link-*,librustc_demangle-*,libstd_detect-*,libhashbrown-*,librustc_std_workspace_alloc-*,libminiz_oxide-*,libadler2-*,libunwind-*,liblibc-*,librustc_std_workspace_core-*,liballoc-*,libcore-*,libcompiler_builtins-*}.rlib" "-Wl,-Bdynamic" "-lkernel32" "-lkernel32" "-lkernel32" "-lkernel32" "-lntdll" "-luserenv" "-lws2_32" "-ldbghelp" "-lgcc_eh" "-l:libpthread.a" "-lmsvcrt" "-lmingwex" "-lmingw32" "-lgcc" "-lmsvcrt" "-lmingwex" "-luser32" "-lkernel32" "-Wl,--nxcompat" "-o" "c:\\Users\\jessi\\Desktop\\sovereign-engine-v2\\target\\debug\\deps\\recursion_backtracking-09da14a81c5612e0.exe" "-Wl,--gc-sections" "-nodefaultlibs"
+  = note: some arguments are omitted. use `--verbose` to show all linker arguments
+  = note: C:/Strawberry/c/bin/../lib/gcc/x86_64-w64-mingw32/13.2.0/../../../../x86_64-w64-mingw32/bin/ld.exe: final link failed: No space left on device
+          collect2.exe: error: ld returned 1 exit status
+          
+
+error: could not compile `certificate_generation` (lib test) due to 1 previous error
+warning: build failed, waiting for other jobs to finish...
+error: could not compile `prime_gap_correspondence` (lib test) due to 1 previous error
+error: linking with `x86_64-w64-mingw32-gcc` failed: exit code: 1
+  |
+  = note: "x86_64-w64-mingw32-gcc" "-fno-use-linker-plugin" "-Wl,--dynamicbase" "-Wl,--disable-auto-image-base" "-m64" "-Wl,--high-entropy-va" "c:\\Users\\jessi\\Desktop\\sovereign-engine-v2\\target\\debug\\deps\\rustcuTVfKu\\symbols.o" "<6 object files omitted>" "-Wl,-Bstatic" "<sysroot>\\lib\\rustlib\\x86_64-pc-windows-gnu\\lib/{libtest-*,libgetopts-*,librustc_std_workspace_std-*,libstd-*,libpanic_unwind-*,libobject-*,libmemchr-*,libaddr2line-*,libgimli-*,libcfg_if-*,libwindows_link-*,librustc_demangle-*,libstd_detect-*,libhashbrown-*,librustc_std_workspace_alloc-*,libminiz_oxide-*,libadler2-*,libunwind-*,liblibc-*,librustc_std_workspace_core-*,liballoc-*,libcore-*,libcompiler_builtins-*}.rlib" "-Wl,-Bdynamic" "-lkernel32" "-lkernel32" "-lkernel32" "-lkernel32" "-lntdll" "-luserenv" "-lws2_32" "-ldbghelp" "-lgcc_eh" "-l:libpthread.a" "-lmsvcrt" "-lmingwex" "-lmingw32" "-lgcc" "-lmsvcrt" "-lmingwex" "-luser32" "-lkernel32" "-Wl,--nxcompat" "-o" "c:\\Users\\jessi\\Desktop\\sovereign-engine-v2\\target\\debug\\deps\\resolution_certification-2c41c1f5e43378ba.exe" "-Wl,--gc-sections" "-nodefaultlibs"
+  = note: some arguments are omitted. use `--verbose` to show all linker arguments
+  = note: C:/Strawberry/c/bin/../lib/gcc/x86_64-w64-mingw32/13.2.0/../../../../x86_64-w64-mingw32/bin/ld.exe: final link failed: No space left on device
+          collect2.exe: error: ld returned 1 exit status
+          
+
+error: could not compile `recursion_backtracking` (lib test) due to 1 previous error
+error: could not compile `resolution_certification` (lib test) due to 1 previous error
+error: linking with `x86_64-w64-mingw32-gcc` failed: exit code: 1
+  |
+  = note: "x86_64-w64-mingw32-gcc" "-fno-use-linker-plugin" "-Wl,--dynamicbase" "-Wl,--disable-auto-image-base" "-m64" "-Wl,--high-entropy-va" "c:\\Users\\jessi\\Desktop\\sovereign-engine-v2\\target\\debug\\deps\\rustcwv5F6p\\symbols.o" "<6 object files omitted>" "-Wl,-Bstatic" "<sysroot>\\lib\\rustlib\\x86_64-pc-windows-gnu\\lib/{libtest-*,libgetopts-*,librustc_std_workspace_std-*,libstd-*,libpanic_unwind-*,libobject-*,libmemchr-*,libaddr2line-*,libgimli-*,libcfg_if-*,libwindows_link-*,librustc_demangle-*,libstd_detect-*,libhashbrown-*,librustc_std_workspace_alloc-*,libminiz_oxide-*,libadler2-*,libunwind-*,liblibc-*,librustc_std_workspace_core-*,liballoc-*,libcore-*,libcompiler_builtins-*}.rlib" "-Wl,-Bdynamic" "-lkernel32" "-lkernel32" "-lkernel32" "-lkernel32" "-lntdll" "-luserenv" "-lws2_32" "-ldbghelp" "-lgcc_eh" "-l:libpthread.a" "-lmsvcrt" "-lmingwex" "-lmingw32" "-lgcc" "-lmsvcrt" "-lmingwex" "-luser32" "-lkernel32" "-Wl,--nxcompat" "-o" "c:\\Users\\jessi\\Desktop\\sovereign-engine-v2\\target\\debug\\deps\\spectrum_chains-1b121ad5484b79db.exe" "-Wl,--gc-sections" "-nodefaultlibs"
+  = note: some arguments are omitted. use `--verbose` to show all linker arguments
+  = note: C:/Strawberry/c/bin/../lib/gcc/x86_64-w64-mingw32/13.2.0/../../../../x86_64-w64-mingw32/bin/ld.exe: final link failed: No space left on device
+          collect2.exe: error: ld returned 1 exit status
+          
+
+error: could not compile `spectrum_chains` (lib test) due to 1 previous error
+error: linking with `x86_64-w64-mingw32-gcc` failed: exit code: 1
+  |
+  = note: "x86_64-w64-mingw32-gcc" "-fno-use-linker-plugin" "-Wl,--dynamicbase" "-Wl,--disable-auto-image-base" "-m64" "-Wl,--high-entropy-va" "c:\\Users\\jessi\\Desktop\\sovereign-engine-v2\\target\\debug\\deps\\rustchGijMV\\symbols.o" "<6 object files omitted>" "-Wl,-Bstatic" "<sysroot>\\lib\\rustlib\\x86_64-pc-windows-gnu\\lib/{libtest-*,libgetopts-*,librustc_std_workspace_std-*,libstd-*,libpanic_unwind-*,libobject-*,libmemchr-*,libaddr2line-*,libgimli-*,libcfg_if-*,libwindows_link-*,librustc_demangle-*,libstd_detect-*,libhashbrown-*,librustc_std_workspace_alloc-*,libminiz_oxide-*,libadler2-*,libunwind-*,liblibc-*,librustc_std_workspace_core-*,liballoc-*,libcore-*,libcompiler_builtins-*}.rlib" "-Wl,-Bdynamic" "-lkernel32" "-lkernel32" "-lkernel32" "-lkernel32" "-lntdll" "-luserenv" "-lws2_32" "-ldbghelp" "-lgcc_eh" "-l:libpthread.a" "-lmsvcrt" "-lmingwex" "-lmingw32" "-lgcc" "-lmsvcrt" "-lmingwex" "-luser32" "-lkernel32" "-Wl,--nxcompat" "-o" "c:\\Users\\jessi\\Desktop\\sovereign-engine-v2\\target\\debug\\deps\\recursion_base_case-6bfde69c67c8a816.exe" "-Wl,--gc-sections" "-nodefaultlibs"
+  = note: some arguments are omitted. use `--verbose` to show all linker arguments
+  = note: C:/Strawberry/c/bin/../lib/gcc/x86_64-w64-mingw32/13.2.0/../../../../x86_64-w64-mingw32/bin/ld.exe: final link failed: No space left on device
+          collect2.exe: error: ld returned 1 exit status
+          
+
+error: could not compile `recursion_base_case` (lib test) due to 1 previous error
+error: linking with `x86_64-w64-mingw32-gcc` failed: exit code: 1
+  |
+  = note: "x86_64-w64-mingw32-gcc" "-fno-use-linker-plugin" "-Wl,--dynamicbase" "-Wl,--disable-auto-image-base" "-m64" "-Wl,--high-entropy-va" "c:\\Users\\jessi\\Desktop\\sovereign-engine-v2\\target\\debug\\deps\\rustcTSyU7j\\symbols.o" "<6 object files omitted>" "-Wl,-Bstatic" "<sysroot>\\lib\\rustlib\\x86_64-pc-windows-gnu\\lib/{libtest-*,libgetopts-*,librustc_std_workspace_std-*,libstd-*,libpanic_unwind-*,libobject-*,libmemchr-*,libaddr2line-*,libgimli-*,libcfg_if-*,libwindows_link-*,librustc_demangle-*,libstd_detect-*,libhashbrown-*,librustc_std_workspace_alloc-*,libminiz_oxide-*,libadler2-*,libunwind-*,liblibc-*,librustc_std_workspace_core-*,liballoc-*,libcore-*,libcompiler_builtins-*}.rlib" "-Wl,-Bdynamic" "-lkernel32" "-lkernel32" "-lkernel32" "-lkernel32" "-lntdll" "-luserenv" "-lws2_32" "-ldbghelp" "-lgcc_eh" "-l:libpthread.a" "-lmsvcrt" "-lmingwex" "-lmingw32" "-lgcc" "-lmsvcrt" "-lmingwex" "-luser32" "-lkernel32" "-Wl,--nxcompat" "-o" "c:\\Users\\jessi\\Desktop\\sovereign-engine-v2\\target\\debug\\deps\\tor_zero_structure-9e1f1453934f9ccd.exe" "-Wl,--gc-sections" "-nodefaultlibs"
+  = note: some arguments are omitted. use `--verbose` to show all linker arguments
+  = note: C:/Strawberry/c/bin/../lib/gcc/x86_64-w64-mingw32/13.2.0/../../../../x86_64-w64-mingw32/bin/ld.exe: final link failed: No space left on device
+          collect2.exe: error: ld returned 1 exit status
+          
+
+error: could not compile `tor_zero_structure` (lib test) due to 1 previous error
+error: linking with `x86_64-w64-mingw32-gcc` failed: exit code: 1
+  |
+  = note: "x86_64-w64-mingw32-gcc" "-fno-use-linker-plugin" "-Wl,--dynamicbase" "-Wl,--disable-auto-image-base" "-m64" "-Wl,--high-entropy-va" "c:\\Users\\jessi\\Desktop\\sovereign-engine-v2\\target\\debug\\deps\\rustc9l9sk3\\symbols.o" "<6 object files omitted>" "-Wl,-Bstatic" "<sysroot>\\lib\\rustlib\\x86_64-pc-windows-gnu\\lib/{libtest-*,libgetopts-*,librustc_std_workspace_std-*,libstd-*,libpanic_unwind-*,libobject-*,libmemchr-*,libaddr2line-*,libgimli-*,libcfg_if-*,libwindows_link-*,librustc_demangle-*,libstd_detect-*,libhashbrown-*,librustc_std_workspace_alloc-*,libminiz_oxide-*,libadler2-*,libunwind-*,liblibc-*,librustc_std_workspace_core-*,liballoc-*,libcore-*,libcompiler_builtins-*}.rlib" "-Wl,-Bdynamic" "-lkernel32" "-lkernel32" "-lkernel32" "-lkernel32" "-lntdll" "-luserenv" "-lws2_32" "-ldbghelp" "-lgcc_eh" "-l:libpthread.a" "-lmsvcrt" "-lmingwex" "-lmingw32" "-lgcc" "-lmsvcrt" "-lmingwex" "-luser32" "-lkernel32" "-Wl,--nxcompat" "-o" "c:\\Users\\jessi\\Desktop\\sovereign-engine-v2\\target\\debug\\deps\\tor_higher_degrees-d2bb421d6b0101d6.exe" "-Wl,--gc-sections" "-nodefaultlibs"
+  = note: some arguments are omitted. use `--verbose` to show all linker arguments
+  = note: C:/Strawberry/c/bin/../lib/gcc/x86_64-w64-mingw32/13.2.0/../../../../x86_64-w64-mingw32/bin/ld.exe: final link failed: No space left on device
+          collect2.exe: error: ld returned 1 exit status
+          
+
+error: could not compile `tor_higher_degrees` (lib test) due to 1 previous error

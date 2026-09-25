@@ -1,0 +1,32 @@
+WORM Chain Verification Report
+===============================
+
+Overall Validation Status: {{validation_status}}
+
+Chain Parameters
+-----------------
+Hash Algorithm:    {{hash_algorithm}}
+PoW Algorithm:     {{pow_algorithm}}
+PoW Difficulty:    {{pow_difficulty}}
+RSA Status:        {{rsa_status}}
+
+Check Results
+--------------
+Sequence Status:   {{sequence_status}}
+Hash Status:       {{hash_status}}
+PoW Status:        {{pow_status}}
+WORM Status:       {{worm_status}}
+
+Exceptions
+-----------
+{{#exceptions}}
+  Sequence {{sequence}}: {{description}}
+{{/exceptions}}
+{{^exceptions}}
+  No exceptions recorded.
+{{/exceptions}}
+
+--
+This report reflects SAS read-only analytical validation only. It
+complements, and does not replace, Ada/SPARK cryptographic verification
+and COBOL batch reconciliation.

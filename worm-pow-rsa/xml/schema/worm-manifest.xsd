@@ -1,0 +1,153 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+           xmlns:wm="urn:sovereign-engine:worm-pow-rsa:worm-manifest"
+           targetNamespace="urn:sovereign-engine:worm-pow-rsa:worm-manifest"
+           elementFormDefault="qualified">
+
+  <xs:annotation>
+    <xs:documentation>
+      XSD schema for the WORM chain manifest: a summary document describing
+      chain identity, record count, anchor points, and the chain's
+      append-only guarantees. IMPORTANT: this manifest, and the XML
+      metadata it contains, describes INTENDED write-once-read-many
+      semantics only. XML metadata alone provides no physical enforcement
+      of immutability; true WORM guarantees require storage-layer controls
+      (e.g. object-lock/compliance-mode storage, write-once media, a
+      permissioned append-only log service, or filesystem-level
+      immutability flags). See the enforcement/caveat section below.
+    </xs:documentation>
+  </xs:annotation>
+
+  <xs:simpleType name="Sha256HexType">
+    <xs:restriction base="xs:string">
+      <xs:pattern value="[0-9a-f]{64}"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:complexType name="AnchorPointType">
+    <xs:annotation>
+      <xs:documentation>
+        A designated checkpoint record within the chain used for fast
+        verification or external attestation (e.g. published to a
+        timestamping service or a separate immutable store).
+      </xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="sequence" type="xs:nonNegativeInteger"/>
+      <xs:element name="record_id" type="xs:string"/>
+      <xs:element name="record_hash" type="wm:Sha256HexType"/>
+      <xs:element name="anchored_at" type="xs:dateTime"/>
+      <xs:element name="anchor_type" type="xs:string">
+        <xs:annotation>
+          <xs:documentation>
+            e.g. "genesis", "periodic-checkpoint", "external-attestation".
+          </xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element name="external_reference" type="xs:string" minOccurs="0">
+        <xs:annotation>
+          <xs:documentation>
+            Optional pointer to an external attestation (URI, transaction
+            id, timestamp-authority receipt id, etc).
+          </xs:documentation>
+        </xs:annotation>
+      </xs:element>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="AnchorPointsType">
+    <xs:sequence>
+      <xs:element name="anchor_point" type="wm:AnchorPointType" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="ChainIdentityType">
+    <xs:sequence>
+      <xs:element name="chain_id" type="xs:string">
+        <xs:annotation>
+          <xs:documentation>Globally unique identifier for this ledger chain instance.</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element name="chain_name" type="xs:string"/>
+      <xs:element name="created_at" type="xs:dateTime"/>
+      <xs:element name="genesis_record_hash" type="wm:Sha256HexType">
+        <xs:annotation>
+          <xs:documentation>record_hash of the sequence=0 genesis record.</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element name="owner" type="xs:string" minOccurs="0"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="RecordCountType">
+    <xs:sequence>
+      <xs:element name="total_records" type="xs:nonNegativeInteger"/>
+      <xs:element name="last_sequence" type="xs:nonNegativeInteger"/>
+      <xs:element name="last_record_hash" type="wm:Sha256HexType"/>
+      <xs:element name="last_updated_at" type="xs:dateTime"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="AppendOnlyGuaranteesType">
+    <xs:annotation>
+      <xs:documentation>
+        Declares the LOGICAL guarantees the chain format provides
+        (hash-linkage, PoW sealing) and explicitly separates those from
+        PHYSICAL storage guarantees, which are out of scope for this XML
+        document and must be provided by the storage layer.
+      </xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="hash_chain_linkage" type="xs:boolean" fixed="true">
+        <xs:annotation>
+          <xs:documentation>Each record's prev_hash equals the preceding record's record_hash.</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element name="pow_sealed" type="xs:boolean">
+        <xs:annotation>
+          <xs:documentation>Whether records in this chain are required to carry a valid PoW seal.</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element name="canonicalization" type="xs:string" fixed="RFC8785-JCS"/>
+      <xs:element name="hash_algorithm" type="xs:string" fixed="SHA-256"/>
+      <xs:element name="physical_worm_enforcement" type="xs:boolean">
+        <xs:annotation>
+          <xs:documentation>
+            Whether a physical, storage-layer write-once enforcement
+            mechanism is actually in place for this chain's persisted
+            records (e.g. object-lock, WORM tape, immutable filesystem).
+            This XML manifest can declare the INTENT of append-only /
+            immutable operation, but setting this to true asserts that a
+            real external control exists; it is NOT itself proof of that
+            control, and this field being true does not mean the XML
+            layer enforces anything on its own.
+          </xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element name="physical_enforcement_mechanism" type="xs:string" minOccurs="0">
+        <xs:annotation>
+          <xs:documentation>
+            Free-text description of the actual storage-layer mechanism
+            relied upon, if physical_worm_enforcement is true (e.g.
+            "S3 Object Lock - Compliance Mode", "append-only ext4 chattr +a",
+            "dedicated WORM optical media").
+          </xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element name="caveat" type="xs:string" fixed="XML metadata in this manifest alone does NOT provide physical WORM enforcement. Genuine write-once/immutability guarantees require storage-layer controls independent of this document."/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="WormManifestType">
+    <xs:sequence>
+      <xs:element name="schema" type="xs:string"/>
+      <xs:element name="chain_identity" type="wm:ChainIdentityType"/>
+      <xs:element name="record_count" type="wm:RecordCountType"/>
+      <xs:element name="anchor_points" type="wm:AnchorPointsType"/>
+      <xs:element name="append_only_guarantees" type="wm:AppendOnlyGuaranteesType"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:element name="worm_manifest" type="wm:WormManifestType"/>
+
+</xs:schema>

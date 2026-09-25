@@ -1,0 +1,1 @@
+C:\Users\jessi\Desktop\sovereign-engine-v2\target\debug\libchain_complex_shape.rlib: C:\Users\jessi\Desktop\sovereign-engine-v2\crates\C001\src\lib.rs C:\Users\jessi\Desktop\sovereign-engine-v2\crates\C004\src\lib.rs C:\Users\jessi\Desktop\sovereign-engine-v2\crates\C041\src\lib.rs

@@ -1,0 +1,33 @@
+WORM Ledger Exception Report
+=============================
+
+Sequence Gaps
+--------------
+{{#sequence_gaps}}
+  Sequence {{sequence}}: {{description}}
+{{/sequence_gaps}}
+{{^sequence_gaps}}
+  No sequence gaps detected.
+{{/sequence_gaps}}
+
+Duplicate Sequences
+---------------------
+{{#duplicate_sequences}}
+  Sequence {{sequence}}: {{description}}
+{{/duplicate_sequences}}
+{{^duplicate_sequences}}
+  No duplicate sequence numbers detected.
+{{/duplicate_sequences}}
+
+Hash Discontinuities
+----------------------
+{{#hash_discontinuities}}
+  Sequence {{sequence}}: {{description}}
+{{/hash_discontinuities}}
+{{^hash_discontinuities}}
+  No hash discontinuities detected.
+{{/hash_discontinuities}}
+
+--
+All exceptions above were flagged by read-only SAS analytical checks
+(string/sequence comparisons only; no cryptographic recomputation).

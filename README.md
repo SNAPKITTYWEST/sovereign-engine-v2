@@ -22,6 +22,10 @@ The Python engine contains an eleven-stage routing pipeline, ReAct agents, a too
 - [Performance & Benchmarks](#performance--benchmarks)
 - [Glossary](#glossary)
 - [Resources & License](#resources--license)
+- [Rust Verification Workspace (100 Crates)](#rust-verification-workspace-100-crates)
+  - [Crate Map](#crate-map)
+  - [Novel Techniques & Things Worth Knowing](#novel-techniques--things-worth-knowing)
+  - [Known Gaps / TODO](#known-gaps--todo)
 - [Recent changes](#recent-changes)
 
 ---
@@ -1001,10 +1005,216 @@ See [LICENSE.tri](LICENSE.tri) for full terms. Commercial licensing available.
 
 ---
 
+## Rust Verification Workspace (100 Crates)
+
+Alongside the Python engine, `crates/` holds a separate Cargo workspace: a from-scratch, gap-tensor-to-Krull-dimension verification pipeline intended to certify Rust execution traces against Lean 4 proofs. It was scaffolded in bulk (`CRATE_EXPANSION_STATUS.md`) across 10 logical layers/tiers, C001–C100. As of this pass, all 100 crates have a `crates/<ID>/README.md` documenting purpose, public API, pipeline position, and crate-specific findings. The workspace builds cleanly (`cargo build --release`), but "compiles" and "implemented" are not the same thing here — see [Known Gaps / TODO](#known-gaps--todo) below before relying on any specific layer.
+
+At a glance:
+
+- **Layers 0–2 (C001–C030):** gap tensor primitives + arena memory + prime/gap engine. Fully implemented from C021 on; C002–C010 and C012–C020 are unimplemented 7-line scaffolds.
+- **Layers 3–5 (C031–C060):** recursive backtracking solver, homological algebra (chain complexes, differentials, resolutions), and the Tor functor. Implemented with doc comments and unit tests throughout, but several crates contain placeholder math (see gaps below).
+- **Layer 6 (C061–C070):** Krull dimension over the integers (ideals, Spec(R), prime chains, dimension bounds). Genuinely implemented and tested.
+- **Layer 7 (C071–C080):** Lean 4 syntax mirror + obligation-tracking bookkeeping, plus six lemma-library crates. Infrastructure only — no lemma content is populated.
+- **Layers 8–9 (C081–C100):** runtime bindings and cross-layer/certification. All 20 crates are unimplemented scaffolds — this is the layer meant to tie Rust execution back to Lean proofs, and it currently contains no code.
+
+### Crate Map
+
+**Tier 0 — Gap Tensor Core (C001–C010)**
+| Crate | Name | Description |
+|---|---|---|
+| [C001](crates/C001/README.md) | gap_tensor_core | Root primitive: `GapTensorNode`, hand-implemented `Ord`/`Hash`. |
+| [C002](crates/C002/README.md) | gap_tensor_primes | Scaffold (unimplemented). |
+| [C003](crates/C003/README.md) | gap_tensor_spectral | Scaffold (unimplemented). |
+| [C004](crates/C004/README.md) | gap_tensor_shape | Scaffold (unimplemented). |
+| [C005](crates/C005/README.md) | gap_tensor_equality | Scaffold (unimplemented). |
+| [C006](crates/C006/README.md) | gap_tensor_serialization | Scaffold (unimplemented). |
+| [C007](crates/C007/README.md) | gap_tensor_invariants | Scaffold (unimplemented). |
+| [C008](crates/C008/README.md) | gap_tensor_ordering | Scaffold (unimplemented). |
+| [C009](crates/C009/README.md) | gap_tensor_arithmetic | Scaffold (unimplemented). |
+| [C010](crates/C010/README.md) | gap_tensor_trace | Scaffold (unimplemented). |
+
+**Tier 1 — Multiplicity Arena (C011–C020)**
+| Crate | Name | Description |
+|---|---|---|
+| [C011](crates/C011/README.md) | multiplicity_arena_core | Raw unsafe bump allocator (`MultiplicityArena`); `destroy()` pairs manual dealloc with `mem::forget` to avoid double-free. |
+| [C012](crates/C012/README.md) | multiplicity_arena_layout | Scaffold (unimplemented). |
+| [C013](crates/C013/README.md) | multiplicity_arena_allocation | Scaffold (unimplemented). |
+| [C014](crates/C014/README.md) | multiplicity_arena_initialization | Scaffold (unimplemented). |
+| [C015](crates/C015/README.md) | multiplicity_arena_pointers | Scaffold (unimplemented). |
+| [C016](crates/C016/README.md) | multiplicity_arena_ownership | Scaffold (unimplemented). |
+| [C017](crates/C017/README.md) | multiplicity_arena_deallocation | Scaffold (unimplemented). |
+| [C018](crates/C018/README.md) | multiplicity_arena_failure_handling | Scaffold (unimplemented). |
+| [C019](crates/C019/README.md) | multiplicity_arena_statistics | Scaffold (unimplemented). |
+| [C020](crates/C020/README.md) | multiplicity_arena_tests_integration | Scaffold (unimplemented). |
+
+**Tier 2 — Prime/Gap Engine (C021–C030)**
+| Crate | Name | Description |
+|---|---|---|
+| [C021](crates/C021/README.md) | prime_predicate | Primality testing (a complete test, despite a doc comment describing it as a prefilter). |
+| [C022](crates/C022/README.md) | prime_sieve | Sieve-based prime enumeration. |
+| [C023](crates/C023/README.md) | gap_candidate_set | Candidate-set construction. |
+| [C024](crates/C024/README.md) | gap_ordering | Ordering analysis over gap candidates. |
+| [C025](crates/C025/README.md) | gap_multiplicity | Multiplicity statistics (sample n-1 std-dev convention). |
+| [C026](crates/C026/README.md) | gap_absolute_difference | Difference statistics (population n std-dev convention — inconsistent with C025). |
+| [C027](crates/C027/README.md) | golden_gap_constraint | Constraint satisfaction; correctly uses saturating arithmetic. |
+| [C028](crates/C028/README.md) | verify_gaps_around_primes | Gap verification; assumes odd-prime-only gaps. |
+| [C029](crates/C029/README.md) | prime_gap_relationship | `PrimeGapPair` relationship layer; `is_first_occurrence` is near-tautological, untested. |
+| [C030](crates/C030/README.md) | prime_gap_tests_integration | End-to-end Tier 2 integration test; returns a bare bool. |
+
+**Tier 3 — Recursive Solver (C031–C040)**
+| Crate | Name | Description |
+|---|---|---|
+| [C031](crates/C031/README.md) | recursive_solver_cursor | Cursor/position state for the backtracking walk. |
+| [C032](crates/C032/README.md) | recursion_depth_guard | `RecursionDepthGuard`/`RecursionContext` — RAII-shaped but has no `Drop` impl. |
+| [C033](crates/C033/README.md) | recursive_solver_base_case | Base-case detection; `new()` hardcodes `candidates_with_gap(1)`. |
+| [C034](crates/C034/README.md) | gap_selection_heuristic | Hybrid scoring heuristic with hand-tuned magic-number weights. |
+| [C035](crates/C035/README.md) | recursive_solver_transition | Transition engine; batch API synthesizes placeholder constraint/terminal data. |
+| [C036](crates/C036/README.md) | recursive_solver_contradiction | Contradiction detection; `check_no_valid_moves` is a self-documented stub. |
+| [C037](crates/C037/README.md) | recursive_solver_backtrack | `BacktrackManager` — a second, non-interoperating backtracking mechanism vs. C031. |
+| [C038](crates/C038/README.md) | recursive_solver_selection | Candidate selection logic. |
+| [C039](crates/C039/README.md) | recursive_solver_execution_trace | Execution-trace recording. |
+| [C040](crates/C040/README.md) | recursive_solver_tests_integration | Tier 3 integration tests. |
+
+**Tier 4 — Chain Complex / Homological Algebra (C041–C050)**
+| Crate | Name | Description |
+|---|---|---|
+| [C041](crates/C041/README.md) | chain_complex_shape | Graded shape of a chain complex. |
+| [C042](crates/C042/README.md) | chain_element | Sparse chain elements. |
+| [C043](crates/C043/README.md) | differential_operator | The differential operator `d`. |
+| [C044](crates/C044/README.md) | squared_zero_verifier | Verifies `d² = 0`; early-exits on first failure, undercounting on failure. |
+| [C045](crates/C045/README.md) | projective_module | `ProjectiveModuleHomomorphism::rank()` via Gaussian elimination, no GCD reduction. |
+| [C046](crates/C046/README.md) | projective_resolution | Resolutions; `kernel_at` only detects single-generator kernel elements; differentials hardcoded to `[[1]]`. |
+| [C047](crates/C047/README.md) | exactness_checker | Kernel/image dimension estimate; pivot loop may undercount rank. |
+| [C048](crates/C048/README.md) | homology_computation | `compute_at_degree` self-admits it returns kernel dimension as a placeholder, not true homology. |
+| [C049](crates/C049/README.md) | resolution_certification | `verify_squared_zero`/`verify_exactness` are unconditional no-ops — `FullyCertified` currently certifies almost nothing. |
+| [C050](crates/C050/README.md) | homological_tests_integration | Tier 4 integration tests; `TestResult::failed()` discards the failing test's name. |
+
+**Tier 5 — Tor Functor (C051–C060)**
+| Crate | Name | Description |
+|---|---|---|
+| [C051](crates/C051/README.md) | tor_group | `TorGroup`, `BTreeMap`-based torsion representation. |
+| [C052](crates/C052/README.md) | tensor_product_module | `free_rank()` ignores declared relations — models the free module, not the quotiented tensor product. |
+| [C053](crates/C053/README.md) | tensored_resolution | `verify_complex()` doesn't actually check `d²=0`; `TensoredComplexProperties::analyze()` computes nothing. |
+| [C054](crates/C054/README.md) | tor_from_resolution | Bridges TorGroup/C048 torsion representations; resolution parameter is never read. |
+| [C055](crates/C055/README.md) | tor_functoriality | `verify_tor_zero_universal_property` is a logical tautology, always true. |
+| [C056](crates/C056/README.md) | betti_numbers | Betti-number/invariant extraction. |
+| [C057](crates/C057/README.md) | induced_tor_map | `is_injective`/`is_surjective` are weak heuristics; `induced_tor_map` ignores the matrix beyond that check. |
+| [C058](crates/C058/README.md) | tor_regularity | `regularity()` returns highest Tor degree, not Castelnuovo–Mumford regularity as named; `torsion_complexity` computes a product despite its "sum" doc comment. |
+| [C059](crates/C059/README.md) | chain_complex_interface | `from_resolution` ignores the resolution; requires a separate `update_tor()` call. |
+| [C060](crates/C060/README.md) | tor_tests_integration | Tier 5 integration tests; bare-bool result, no per-step diagnostics. |
+
+**Tier 6 — Krull Dimension (C061–C070)**
+| Crate | Name | Description |
+|---|---|---|
+| [C061](crates/C061/README.md) | ideal_divisor_set | Ideals as divisor sets over Z. |
+| [C062](crates/C062/README.md) | ideal_primality | Primality test for ideals. |
+| [C063](crates/C063/README.md) | ideal_maximality | Maximality test for ideals. |
+| [C064](crates/C064/README.md) | prime_spectrum | Spec(R) as a set of primes. |
+| [C065](crates/C065/README.md) | spectrum_order | Zariski/specialization order. |
+| [C066](crates/C066/README.md) | spectrum_chains | `MaximalChains::find_all` — worklist enumeration + subsumed-chain pruning, O(chains²). |
+| [C067](crates/C067/README.md) | krull_dimension | Dimension computation, `ringKrullDim`. |
+| [C068](crates/C068/README.md) | dimension_upper_bounds | Bounds from standard theorems; `BoundStrategy` enum is declared but never consumed; three constructors are all literally `Self(n)`. |
+| [C069](crates/C069/README.md) | krull_certification | `DimensionProof.bounds_satisfied` defaults to `true` unless `check_bounds` is explicitly called — an API misuse trap. |
+| [C070](crates/C070/README.md) | krull_tests_integration | Tier 6 integration/certification capstone. |
+
+**Tier 7 — Lean Lemma Libraries & Obligation Framework (C071–C080)**
+| Crate | Name | Description |
+|---|---|---|
+| [C071](crates/C071/README.md) | type_checking_interface | Rust mirror of Lean 4 syntax (`LeanType`/`ProofTerm`/`TypeContext`); `ProofTerm::App(_)` always reports `is_complete() == false`. |
+| [C072](crates/C072/README.md) | obligation_management | Generic obligation tracking; `topological_order` does not detect cycles. |
+| [C073](crates/C073/README.md) | gap_lemmas_library | Lemma registry for the gap-tensor domain — empty shell, no lemmas populated. |
+| [C074](crates/C074/README.md) | memory_lemmas_library | Lemma registry for memory-safety domain — empty shell. |
+| [C075](crates/C075/README.md) | recursion_lemmas_library | Lemma registry for recursion/termination domain — empty shell; flagged as highest-value gap to close. |
+| [C076](crates/C076/README.md) | homological_lemmas_library | Lemma registry for homological-algebra domain — empty shell. |
+| [C077](crates/C077/README.md) | tor_lemmas_library | Lemma registry for Tor-functor domain — empty shell. |
+| [C078](crates/C078/README.md) | krull_lemmas_library | Lemma registry for Krull-dimension domain — empty shell. |
+| [C079](crates/C079/README.md) | cross_layer_lemmas_library | Cross-layer lemma registry — empty shell. |
+| [C080](crates/C080/README.md) | lean_obligation_aggregator | Aggregates obligations across libraries; `extract_tier_from_id` buckets unparseable IDs into tier 0 via `unwrap_or(0)`. |
+
+**Tier 8 — Runtime Bindings (C081–C090)**
+| Crate | Name | Description |
+|---|---|---|
+| [C081](crates/C081/README.md) | runtime_state_snapshot | Scaffold (unimplemented). |
+| [C082](crates/C082/README.md) | runtime_execution_trace | Scaffold (unimplemented). |
+| [C083](crates/C083/README.md) | runtime_certificate | Scaffold (unimplemented). |
+| [C084](crates/C084/README.md) | runtime_binding_gap | Scaffold (unimplemented). |
+| [C085](crates/C085/README.md) | runtime_binding_memory | Scaffold (unimplemented). |
+| [C086](crates/C086/README.md) | runtime_binding_recursion | Scaffold (unimplemented). |
+| [C087](crates/C087/README.md) | runtime_binding_homological | Scaffold (unimplemented). |
+| [C088](crates/C088/README.md) | runtime_binding_tor | Scaffold (unimplemented). |
+| [C089](crates/C089/README.md) | runtime_binding_krull | Scaffold (unimplemented). |
+| [C090](crates/C090/README.md) | runtime_tests_integration | Scaffold (unimplemented). |
+
+**Tier 9 — Cross-Layer Correspondence & Certification (C091–C100)**
+| Crate | Name | Description |
+|---|---|---|
+| [C091](crates/C091/README.md) | cross_layer_types | Scaffold (unimplemented); its dependency list maps one representative crate per layer — useful as an architecture diagram. |
+| [C092](crates/C092/README.md) | cross_layer_gap_binding | Scaffold (unimplemented). |
+| [C093](crates/C093/README.md) | cross_layer_memory_binding | Scaffold (unimplemented). |
+| [C094](crates/C094/README.md) | cross_layer_recursion_binding | Scaffold (unimplemented). |
+| [C095](crates/C095/README.md) | cross_layer_homological_binding | Scaffold (unimplemented). |
+| [C096](crates/C096/README.md) | cross_layer_tor_binding | Scaffold (unimplemented). |
+| [C097](crates/C097/README.md) | cross_layer_krull_binding | Scaffold (unimplemented). |
+| [C098](crates/C098/README.md) | counterexample_harness | Scaffold (unimplemented) — would be the negative test proving the certification pipeline catches real mismatches. |
+| [C099](crates/C099/README.md) | certification_report_builder | Scaffold (unimplemented). |
+| [C100](crates/C100/README.md) | final_certification_report | Scaffold (unimplemented); aggregates all prior tiers. |
+
+### Novel Techniques & Things Worth Knowing
+
+- **`GapTensorNode`'s `Ord`/`Hash` are hand-implemented, not derived** (C001), with fixed field precedence and float-via-`to_bits` hashing to work around `f32` not being `Eq`/`Hash`.
+- **`MultiplicityArena::destroy()`** (C011) pairs an explicit `dealloc` with `mem::forget(self)` specifically to avoid a double-free through `Drop` — load-bearing; don't refactor casually. Its `sealed` flag is not enforced (nothing blocks writes to a "sealed" arena), and index access has no bounds checking outside `debug_assert` (release-mode UB on out-of-range index).
+- **Z-as-a-PID simplification** (C061–C070): the Krull-dimension layer correctly and deliberately reduces general ideal theory to divisibility arithmetic over `u64`, since Z is a PID — a well-executed simplification, not a broken general implementation.
+- **Two independent, non-interoperating backtracking mechanisms** coexist in the recursive-solver tier: C031's lightweight `path_stack` (which the transition engine in C035 actually uses) and C037's full-state-clone `BacktrackManager` (which nothing else uses).
+- **`RecursionDepthGuard`** (C032) looks RAII-shaped (`enter()` returns a guard) but has no `Drop` impl — depth is never auto-decremented on scope exit, a trap for anyone assuming real RAII.
+- **Three independent, slightly different ad hoc integer-matrix-rank estimators** exist with no shared implementation: C045's `rank()` (Gaussian elimination, no GCD reduction — overflow risk on larger matrices), C047's `compute_kernel`/`image_dimension`, and C048's `estimate_kernel_rank`.
+- **Two incompatible torsion representations** — C051's `TorGroup` (`BTreeMap<order, multiplicity>`) vs. C048's flat `Vec<u64>` — are bridged only by order-counting in C054, never unified at the type level.
+- **The six Tier 7 lemma-library crates (C073–C078) are a copy-paste-and-retarget template**: identical struct shape, only the domain tag field differs (`gap_size`/`category`/`max_depth`/`lemma_type`/`tor_degree`/`dimension_bound`). A fix to the bookkeeping likely needs to be mirrored across all six.
+- **`C091` (cross_layer_types)'s dependency list**, though itself unimplemented, reads as a deliberate one-glance map of the entire four-layer architecture — one representative crate from each of Layers 1–4.
+- **`spectrum_chains::MaximalChains::find_all`** (C066) does worklist-based enumeration of all extendable prime chains, then prunes subsumed chains via an order-preserving subsequence check — a reasonable from-scratch O(chains²) algorithm.
+- **`golden_gap_constraint`** (C027) correctly uses `saturating_sub`/`saturating_add` to avoid `u64` underflow when tolerance exceeds the target gap — one of the few crates that visibly hardens against edge-case arithmetic.
+
+### Known Gaps / TODO
+
+**Highest priority:**
+- **All 20 crates in Layer 8–9 (C081–C100)** are unimplemented stubs. This is the layer meant to certify Rust execution traces against Lean proofs; none of that certification exists in code yet.
+- **All six Tier 7 lemma libraries (C073–C078) plus the cross-layer aggregator (C079)** are populated registries with no actual lemma content — no gap, memory-safety, termination, homological, Tor, or Krull-dimension theorem is stated or proven anywhere in the workspace. `recursion_lemmas_library` (C075) is the single highest-value one to close, since an unformalized termination/depth-bound claim for the recursive solver is a real correctness risk, not just missing docs.
+- **`resolution_certification`** (C049): `verify_squared_zero` and `verify_exactness` are unconditional no-ops — `FullyCertified` currently means little beyond "has an augmentation and passed a cheap structural check." Should wire to the real C044/C047 verifiers.
+- **`homology_computation`** (C048): every "homology group" reported is actually kernel dimension (an upper bound), not true homology rank; torsion is never populated.
+- **`tensored_resolution`** (C053): `verify_complex()` doesn't check `d²=0` despite its doc comment claiming to; `TensoredComplexProperties::analyze()` always returns all-false/all-zero, making `is_exact()` unconditionally false.
+- **`counterexample_harness`** (C098) being unimplemented means nothing in the repo currently demonstrates the certification pipeline would catch a genuine Rust/Lean mismatch — there's no negative test of the verification machinery itself.
+
+**Scaffolding debt:**
+- C002–C010 and C012–C020 (18 of the first 20 crates) are pure unimplemented 7-line scaffolds with no code, no wired dependency on C001/C011 despite the implied relationship, and no tests.
+- Several crates carry unused declared dependencies suggesting template-driven scaffolding without pruning: C025–C027 (unused re-exports), C034 (four unused gap-analytics deps, scoring reimplemented by hand instead), C039/C040 (dead Cargo.toml weight), C065 and C069 (unused deps on Tier 0 crates), and every `*_lemmas_library` crate C073–C079 (unused deps on their nominal upstream crates).
+
+**Correctness / precision issues worth a second pair of eyes:**
+- `prime_gap_relationship::is_first_occurrence` (C029) is logically near-tautological as written and has zero test coverage.
+- `verify_gaps_around_primes` (C028) silently assumes odd-prime-only gaps (`gap >= 2`), and its own test suite dodges the 2→3 prime pair that would fail it.
+- Two sibling statistics crates, `gap_multiplicity` (C025) and `gap_absolute_difference` (C026), use inconsistent standard-deviation conventions (sample n-1 vs. population n) with no documentation of the discrepancy.
+- `RecursiveSolverCursor::new()` (C033) hardcodes `candidates_with_gap(1)` regardless of the passed-in `GapCandidateSet` — looks like an unfinished parameterization.
+- `check_no_valid_moves` (C036) is an explicit self-documented stub conflating "no valid moves" with "is_contradictory."
+- `kernel_at` (C046) only detects single-basis-generator kernel elements, not general linear combinations; `is_exact_at` is an explicitly-labeled "simplified" check close to vacuously true; `quotient_resolution`'s differentials are all literally `[[1]]` rather than modeling multiplication by x as claimed.
+- `verify_tor_zero_universal_property` (C055) is a logical tautology (`P || !P`) over `usize` inputs — always returns true regardless of correctness.
+- `regularity()` (C058) returns "highest Tor degree present," not the standard Castelnuovo–Mumford regularity definition — a naming/semantics mismatch that matters given the pipeline targets commutative algebra; `torsion_complexity`'s doc says "sum" but the code computes a product.
+- `krull_certification::DimensionProof.bounds_satisfied` (C069) defaults to `true` and is only updated if `check_bounds` is explicitly called afterward, so `verify()` can report success without any bounds ever having been evaluated.
+- `type_checking_interface::ProofTerm::App(_)` (C071) always reports `is_complete() == false` — likely a functional gap if `App` is meant to represent real proof composition.
+- `obligation_management::topological_order` (C072) does not detect dependency cycles; a cyclic obligation graph terminates via the visited set but can silently produce an order that violates an edge inside the cycle.
+- `lean_obligation_aggregator::extract_tier_from_id` (C080) silently buckets any malformed/unparseable obligation ID into tier 0 via `unwrap_or(0)`, conflating "genuinely tier 0" with "unparseable ID."
+- `dimension_upper_bounds` (C068) declares a `BoundStrategy` enum that is never consumed anywhere, and its three bound constructors are all literally identical (`Self(n)`) — intentional as theorem-labeling, but a surprise if someone expects differing numeric behavior.
+
+**Reporting quality:**
+- Several integration-test crates (`prime_gap_tests_integration` C030, `tor_tests_integration` C060) return a bare `bool` with no per-step diagnostic, unlike the sibling `TestResult`/`TestSummary` pattern used in C050 — a regression in reporting quality where it exists.
+- `TestResult::failed()` (C050) discards the failing test's name (hardcodes `"unknown"`), losing which of the 10 integration scenarios failed in a report.
+- Multiple tautological/weak tests across the Krull layer (C063, C065, C069, C070) of the form `assert!(cond || !cond)` verify the call doesn't panic but assert nothing about correctness for that input.
+- `gap_absolute_difference`'s `test_absolute_gap_differences` (C026) only asserts non-negativity (trivially true for `u64`), not actual correctness — placeholder-quality test.
+
+---
+
 ## Recent Changes
 
 | Commit | Change | Location |
 |--------|--------|----------|
+| (pending) | Per-crate READMEs for all 100 Rust workspace crates + README "Rust Verification Workspace" section (crate map, novelties, known gaps) via 3-agent documentation swarm | [crates/](crates/), [README.md](#rust-verification-workspace-100-crates) |
 | `d7b1dc9` | Comprehensive 3-agent documentation expansion (90K+ words) | [docs/repository-reference/](docs/repository-reference/) |
 | [`898dfbe`](https://github.com/SNAPKITTYWEST/sovereign-engine-v2/commit/898dfbe), Sep 18 | Resolved paper/formal-file placement | [research/papers/](research/papers/), [research/formal/](research/formal/) |
 | [`f97cbd8`](https://github.com/SNAPKITTYWEST/sovereign-engine-v2/commit/f97cbd8), Sep 18 | Relocated 60 files (research, training, docs) | [research/](research/), [training/](training/), [docs/](docs/) |

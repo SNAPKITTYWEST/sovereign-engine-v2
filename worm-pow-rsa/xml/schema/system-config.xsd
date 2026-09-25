@@ -1,0 +1,167 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+           xmlns:sc="urn:sovereign-engine:worm-pow-rsa:system-config"
+           targetNamespace="urn:sovereign-engine:worm-pow-rsa:system-config"
+           elementFormDefault="qualified">
+
+  <xs:annotation>
+    <xs:documentation>
+      XSD schema for the worm-pow-rsa system configuration document:
+      cryptography parameters, proof-of-work parameters, storage/WORM
+      mode, audit configuration, and Mustache template-rendering metadata
+      used to generate operator-facing reports/pages from ledger data.
+    </xs:documentation>
+  </xs:annotation>
+
+  <xs:complexType name="CryptographyConfigType">
+    <xs:sequence>
+      <xs:element name="hash_algorithm" type="xs:string" fixed="SHA-256"/>
+      <xs:element name="canonicalization" type="xs:string" fixed="RFC8785-JCS">
+        <xs:annotation>
+          <xs:documentation>
+            RFC 8785 JSON Canonicalization Scheme, applied to the logical
+            data model prior to hashing, regardless of the on-disk
+            serialization format (XML here).
+          </xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element name="signature_algorithm" type="xs:string" fixed="RSASSA-PKCS1-v1_5-SHA256">
+        <xs:annotation>
+          <xs:documentation>Optional signing extension algorithm, used only when signing is enabled.</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element name="rsa_key_size_bits" type="xs:positiveInteger" default="2048"/>
+      <xs:element name="rsa_public_exponent" type="xs:positiveInteger" default="65537"/>
+      <xs:element name="signing_enabled" type="xs:boolean" default="false"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="ProofOfWorkConfigType">
+    <xs:annotation>
+      <xs:documentation>
+        WARNING: "difficulty" here is expressed in leading-zero HEX
+        NIBBLES for backward compatibility. The project default of 18 is
+        retained as a LABELED default, but 18 hex nibbles of leading zero
+        represents approximately 16^18 (~2^72) expected SHA-256
+        operations to satisfy — computationally infeasible to generate
+        live on commodity hardware. Operators SHOULD configure
+        difficulty_bits instead (leading zero BITS), with a realistic
+        operational default in the 20-24 bit range (roughly 5-6 hex
+        nibbles), which is achievable in well under a second per record.
+      </xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="algorithm" type="xs:string" fixed="SHA-256"/>
+      <xs:element name="difficulty" type="xs:nonNegativeInteger" default="18">
+        <xs:annotation>
+          <xs:documentation>
+            Legacy/default difficulty in hex nibbles. Default = 18.
+            FLAGGED AS IMPRACTICAL for live PoW generation (~2^72 work).
+            Retained for compatibility; see difficulty_bits.
+          </xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element name="difficulty_bits" type="xs:nonNegativeInteger" minOccurs="0">
+        <xs:annotation>
+          <xs:documentation>
+            Recommended difficulty in leading-zero bits. Suggested sane
+            default range: 20-24 bits (~5-6 hex nibbles). Takes
+            precedence over "difficulty" for validation when present.
+          </xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element name="max_nonce_attempts" type="xs:positiveInteger" default="4294967295"/>
+      <xs:element name="target_seal_time_ms" type="xs:positiveInteger" minOccurs="0">
+        <xs:annotation>
+          <xs:documentation>
+            Optional operator hint: approximate wall-clock milliseconds a
+            single-core PoW search is expected to take at the configured
+            difficulty_bits, used for capacity planning/alerts.
+          </xs:documentation>
+        </xs:annotation>
+      </xs:element>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:simpleType name="WormModeType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="strict"/>
+      <xs:enumeration value="advisory"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:complexType name="StorageConfigType">
+    <xs:sequence>
+      <xs:element name="backend" type="xs:string">
+        <xs:annotation>
+          <xs:documentation>e.g. "local-filesystem", "s3-object-lock", "append-only-log-service".</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element name="worm_mode" type="sc:WormModeType" default="strict"/>
+      <xs:element name="append_only" type="xs:boolean" default="true"/>
+      <xs:element name="immutable" type="xs:boolean" default="true"/>
+      <xs:element name="physical_worm_enforcement" type="xs:boolean" default="false">
+        <xs:annotation>
+          <xs:documentation>
+            True only if a real storage-layer immutability control is
+            wired up (see worm-manifest.xsd caveat). Metadata alone is
+            not enforcement.
+          </xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element name="storage_path" type="xs:string" minOccurs="0"/>
+      <xs:element name="replication_factor" type="xs:positiveInteger" minOccurs="0" default="1"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="AuditConfigType">
+    <xs:sequence>
+      <xs:element name="enabled" type="xs:boolean" default="true"/>
+      <xs:element name="audit_log_path" type="xs:string" minOccurs="0"/>
+      <xs:element name="verify_on_read" type="xs:boolean" default="true">
+        <xs:annotation>
+          <xs:documentation>
+            Whether each record's hash chain linkage and PoW seal are
+            re-verified on every read, not only at write time.
+          </xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element name="periodic_full_chain_verification_interval_minutes" type="xs:positiveInteger" minOccurs="0" default="60"/>
+      <xs:element name="alert_on_verification_failure" type="xs:boolean" default="true"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="MustacheRenderingConfigType">
+    <xs:annotation>
+      <xs:documentation>
+        Metadata describing Mustache-template-based rendering of
+        operator-facing reports/pages from canonical ledger data.
+      </xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="engine" type="xs:string" fixed="mustache"/>
+      <xs:element name="template_directory" type="xs:string"/>
+      <xs:element name="default_template" type="xs:string" minOccurs="0"/>
+      <xs:element name="escape_html" type="xs:boolean" default="true"/>
+      <xs:element name="strict_mode" type="xs:boolean" default="true">
+        <xs:annotation>
+          <xs:documentation>Fail rendering on missing/undefined template variables rather than silently rendering blank.</xs:documentation>
+        </xs:annotation>
+      </xs:element>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="SystemConfigType">
+    <xs:sequence>
+      <xs:element name="schema" type="xs:string"/>
+      <xs:element name="cryptography" type="sc:CryptographyConfigType"/>
+      <xs:element name="proof_of_work" type="sc:ProofOfWorkConfigType"/>
+      <xs:element name="storage" type="sc:StorageConfigType"/>
+      <xs:element name="audit" type="sc:AuditConfigType"/>
+      <xs:element name="mustache_rendering" type="sc:MustacheRenderingConfigType"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:element name="system_config" type="sc:SystemConfigType"/>
+
+</xs:schema>
